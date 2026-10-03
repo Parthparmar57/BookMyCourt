@@ -1,73 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import { memberApi } from '../../../services/apiServices';
-import { MOCK_PLANS } from '../../../data/mockData';
-import { formatCurrency, formatDate, formatPhone } from '../../../shared/utils/formatters';
-import { Search, UserPlus, QrCode, Shield, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMembers, usePlans, useCreateMember } from '../../../hooks/useMembership';
+import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
+import { QueryState } from '../../../shared/components/DataState';
+import { memberSchema, applyServerErrors } from '../../../shared/validation/schemas';
+import { Search, UserPlus, AlertCircle, X, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
+// Normalize a server member (fields live on the user/plan relations) into a flat
+// view model for the table and card.
+const toView = (m) => ({
+  id: m.id,
+  memberNo: m.memberNo,
+  name: m.user?.name || '—',
+  phone: m.user?.phone || '',
+  email: m.user?.email || '',
+  planName: m.plan?.name || '—',
+  status: m.status,
+  qrCode: m.qrCode,
+  tabBalance: m.activeTabBalance ?? 0,
+  avatar: `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(m.user?.name || 'M')}`,
+});
+
 export const MembersPage = () => {
-  const [members, setMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
-  const [formError, setFormError] = useState('');
-  const [newMember, setNewMember] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    dob: '',
-    planId: 'plan-gold',
-    startDate: new Date().toISOString().split('T')[0]
+
+  const membersQuery = useMembers(searchQuery.trim() ? { q: searchQuery.trim() } : {});
+  const { data: plans = [] } = usePlans();
+  const createMember = useCreateMember();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    setError,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(memberSchema),
+    defaultValues: { name: '', phone: '', email: '', dob: '', planId: '', startDate: new Date().toISOString().split('T')[0] },
   });
 
+  const planId = watch('planId');
+
+  // Default the plan dropdown to the first plan once plans load.
   useEffect(() => {
-    memberApi.getMembers().then(setMembers);
-  }, []);
+    if (plans.length && !planId) setValue('planId', plans[0].id);
+  }, [plans, planId, setValue]);
 
-  const handleSearch = async (query) => {
-    setSearchQuery(query);
-    if (!query.trim()) {
-      const all = await memberApi.getMembers();
-      setMembers(all);
-    } else {
-      const filtered = await memberApi.searchMembers(query);
-      setMembers(filtered);
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setFormError('');
-
-    // Age validation for Junior plan (strictly < 18)
-    if (newMember.dob) {
-      const birthYear = new Date(newMember.dob).getFullYear();
-      const age = new Date().getFullYear() - birthYear;
-      if (newMember.planId === 'plan-junior' && age >= 18) {
-        setFormError('Validation Error: Junior Tier is strictly restricted to members under 18 years of age.');
+  const onSubmit = async (values) => {
+    // Client-side age gate for age-limited plans (server also enforces BR6).
+    const plan = plans.find((p) => p.id === values.planId);
+    if (plan?.maxAge && values.dob) {
+      const age = Math.floor((Date.now() - new Date(values.dob).getTime()) / (365.25 * 24 * 3600 * 1000));
+      if (age >= plan.maxAge) {
+        setError('planId', { type: 'business', message: `${plan.name} is restricted to members under ${plan.maxAge}.` });
         return;
       }
     }
-
-    const planObj = MOCK_PLANS.find(p => p.id === newMember.planId);
-    const created = await memberApi.createMember({
-      ...newMember,
-      planName: planObj?.name || 'Gold Tier',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
-    });
-
-    setShowAddModal(false);
-    setSelectedMember(created);
-    const all = await memberApi.getMembers();
-    setMembers(all);
+    try {
+      const created = await createMember.mutateAsync(values);
+      setShowAddModal(false);
+      reset();
+      setSelectedMember(toView(created));
+    } catch (err) {
+      applyServerErrors(err, setError);
+    }
   };
+
+  const fieldErr = (name) => errors[name]?.message;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4 border-slate-200">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Member Directory & Profiles</h1>
-          <p className="text-xs text-slate-500">Fast search by Name, Phone, Member ID or QR code scan (&lt; 1s search time).</p>
+          <p className="text-xs text-slate-500">Fast search by Name, Phone, Member No. or QR code scan.</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -83,9 +95,9 @@ export const MembersPage = () => {
         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
-          placeholder="Search by name, phone, member ID (e.g. Rajesh, 9820123456, BMC-2026-8842)..."
+          placeholder="Search by name, phone, member no. (e.g. Rohan, 9876543210, MEM-001001)..."
           value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-emerald-500 focus:outline-none shadow-xs"
         />
       </div>
@@ -96,7 +108,7 @@ export const MembersPage = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-900 text-white text-xs uppercase tracking-wider">
-                <th className="p-4">Member ID</th>
+                <th className="p-4">Member No.</th>
                 <th className="p-4">Name</th>
                 <th className="p-4">Phone</th>
                 <th className="p-4">Plan Tier</th>
@@ -106,37 +118,39 @@ export const MembersPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {members.map((m) => (
-                <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="p-4 font-mono font-bold text-slate-900">{m.id}</td>
-                  <td className="p-4 font-bold text-slate-900 flex items-center gap-2">
-                    <img src={m.avatar} alt={m.name} className="w-7 h-7 rounded-full object-cover" />
-                    <span>{m.name}</span>
-                  </td>
-                  <td className="p-4 font-medium text-slate-600">{formatPhone(m.phone)}</td>
-                  <td className="p-4">
-                    <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full ${
-                      m.planId === 'plan-gold' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
-                    }`}>
-                      {m.planName}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded">
-                      {m.status}
-                    </span>
-                  </td>
-                  <td className="p-4 font-semibold text-slate-900">{formatCurrency(m.activeTabBalance || 0)}</td>
-                  <td className="p-4 text-right">
-                    <button
-                      onClick={() => setSelectedMember(m)}
-                      className="text-xs font-bold text-emerald-600 hover:text-emerald-800"
-                    >
-                      View 360° Profile →
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              <QueryState
+                query={membersQuery}
+                loading={<tr><td colSpan={7} className="p-6 text-center text-slate-400"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading members…</td></tr>}
+                empty={<tr><td colSpan={7} className="p-6 text-center text-slate-400">No members found.</td></tr>}
+                emptyWhen={(d) => !d?.items?.length}
+              >
+                {(data) => data.items.map(toView).map((m) => (
+                  <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-4 font-mono font-bold text-slate-900">{m.memberNo}</td>
+                    <td className="p-4 font-bold text-slate-900 flex items-center gap-2">
+                      <img src={m.avatar} alt={m.name} className="w-7 h-7 rounded-full object-cover" />
+                      <span>{m.name}</span>
+                    </td>
+                    <td className="p-4 font-medium text-slate-600">{formatPhone(m.phone)}</td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full ${
+                        /gold/i.test(m.planName) ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        {m.planName}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded">{m.status}</span>
+                    </td>
+                    <td className="p-4 font-semibold text-slate-900">{formatCurrency(m.tabBalance || 0)}</td>
+                    <td className="p-4 text-right">
+                      <button onClick={() => setSelectedMember(m)} className="text-xs font-bold text-emerald-600 hover:text-emerald-800">
+                        View 360° Profile →
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </QueryState>
             </tbody>
           </table>
         </div>
@@ -151,79 +165,37 @@ export const MembersPage = () => {
               <button onClick={() => setShowAddModal(false)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
 
-            {formError && (
+            {errors.root && (
               <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{formError}</span>
+                <span>{errors.root.message}</span>
               </div>
             )}
 
-            <form onSubmit={handleRegister} className="space-y-3 text-xs font-semibold text-slate-700">
-              <div>
-                <label className="block mb-1">Full Name *</label>
-                <input
-                  required
-                  type="text"
-                  placeholder="e.g. Vikramaditya Singh"
-                  value={newMember.name}
-                  onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1">Phone Number (10 Digits) *</label>
-                <input
-                  required
-                  type="tel"
-                  pattern="[6-9][0-9]{9}"
-                  placeholder="9820123456"
-                  value={newMember.phone}
-                  onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1">Email Address *</label>
-                <input
-                  required
-                  type="email"
-                  placeholder="user@example.com"
-                  value={newMember.email}
-                  onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1">Date of Birth *</label>
-                <input
-                  required
-                  type="date"
-                  value={newMember.dob}
-                  onChange={(e) => setNewMember({ ...newMember, dob: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 text-xs font-semibold text-slate-700" noValidate>
+              <Field label="Full Name *" placeholder="e.g. Vikramaditya Singh" error={fieldErr('name')} {...register('name')} />
+              <Field label="Phone Number (10 Digits) *" placeholder="9820123456" error={fieldErr('phone')} {...register('phone')} />
+              <Field label="Email Address *" type="email" placeholder="user@example.com" error={fieldErr('email')} {...register('email')} />
+              <Field label="Date of Birth *" type="date" error={fieldErr('dob')} {...register('dob')} />
 
               <div>
                 <label className="block mb-1">Membership Plan Tier</label>
-                <select
-                  value={newMember.planId}
-                  onChange={(e) => setNewMember({ ...newMember, planId: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:border-emerald-500 focus:outline-none bg-white"
-                >
-                  <option value="plan-gold">Gold Tier (₹4,999/mo - 100% Free Court Slots)</option>
-                  <option value="plan-silver">Silver Tier (₹2,499/mo - 50% Off Slots)</option>
-                  <option value="plan-junior">Junior Tier (₹1,499/mo - Age &lt; 18 Only)</option>
+                <select {...register('planId')} className={selectCls(fieldErr('planId'))}>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — {formatCurrency(p.price)}/{p.durationMonths}mo{p.maxAge ? ` (Age < ${p.maxAge})` : ''}
+                    </option>
+                  ))}
                 </select>
+                {fieldErr('planId') && <p className="text-[11px] text-rose-600 mt-1">{fieldErr('planId')}</p>}
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-colors mt-2"
+                disabled={isSubmitting}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-colors mt-2 flex items-center justify-center gap-2"
               >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 Create Member & Issue Digital Card
               </button>
             </form>
@@ -240,27 +212,21 @@ export const MembersPage = () => {
               <button onClick={() => setSelectedMember(null)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
 
-            {/* Digital Card Preview */}
             <div className="bg-slate-900 text-white rounded-2xl p-6 space-y-4 shadow-xl border border-slate-800 relative overflow-hidden">
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-sm text-emerald-400">BOOKMYCOURT DIGITAL PASS</span>
-                <span className="text-[10px] bg-emerald-500 text-white font-bold px-2 py-0.5 rounded">
-                  {selectedMember.planName}
-                </span>
+                <span className="text-[10px] bg-emerald-500 text-white font-bold px-2 py-0.5 rounded">{selectedMember.planName}</span>
               </div>
-
               <div className="flex items-center gap-4">
                 <img src={selectedMember.avatar} alt={selectedMember.name} className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-400" />
                 <div>
                   <h3 className="font-extrabold text-lg">{selectedMember.name}</h3>
-                  <p className="text-xs font-mono text-slate-400">ID: {selectedMember.id}</p>
+                  <p className="text-xs font-mono text-slate-400">ID: {selectedMember.memberNo}</p>
                   <p className="text-[11px] text-slate-300">{formatPhone(selectedMember.phone)}</p>
                 </div>
               </div>
-
-              {/* QR Code */}
               <div className="bg-white p-3 rounded-xl w-32 mx-auto flex flex-col items-center gap-1 shadow-md">
-                <QRCodeSVG value={selectedMember.qrCode || selectedMember.id} size={90} />
+                <QRCodeSVG value={selectedMember.qrCode || selectedMember.memberNo || selectedMember.id} size={90} />
                 <span className="text-[8px] font-mono text-slate-800 font-bold">SCAN AT DESK / POS</span>
               </div>
             </div>
@@ -270,3 +236,25 @@ export const MembersPage = () => {
     </div>
   );
 };
+
+const selectCls = (error) =>
+  `w-full border rounded-xl px-3 py-2 text-xs focus:outline-none bg-white ${
+    error ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-emerald-500'
+  }`;
+
+const Field = React.forwardRef(({ label, type = 'text', placeholder, error, ...rest }, ref) => (
+  <div>
+    <label className="block mb-1">{label}</label>
+    <input
+      ref={ref}
+      type={type}
+      placeholder={placeholder}
+      {...rest}
+      className={`w-full border rounded-xl px-3 py-2 text-xs focus:outline-none ${
+        error ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-emerald-500'
+      }`}
+    />
+    {error && <p className="text-[11px] text-rose-600 mt-1">{error}</p>}
+  </div>
+));
+Field.displayName = 'Field';
