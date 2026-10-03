@@ -12,5 +12,7 @@ router.use(auth);
 router.post('/run', authorize('OWNER'), validate({ body: runPayrollSchema }), controller.runPayroll);
 router.get('/', authorize('OWNER'), controller.listPayrolls);
 router.patch('/:id/status', authorize('OWNER'), validate({ params: payrollIdParamSchema, body: updatePayrollStatusSchema }), controller.updateStatus);
+// G1 — download payslip as PDF
+router.get('/:id/payslip', authorize('OWNER'), controller.downloadPayslip);
 
 export default router;

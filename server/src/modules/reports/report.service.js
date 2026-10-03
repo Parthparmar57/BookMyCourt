@@ -84,3 +84,48 @@ export const getMembershipReport = async () => {
     statusBreakdown: membersByStatus.map((m) => ({ status: m.status, count: m._count })),
   };
 };
+
+// G2: Revenue report — grouped by source and payment mode, with date-range support
+export const getRevenueReport = async ({ startDate, endDate } = {}) => {
+  const where = {
+    ...((startDate || endDate) && {
+      date: {
+        ...(startDate && { gte: startOfDay(new Date(startDate)) }),
+        ...(endDate && { lte: endOfDay(new Date(endDate)) }),
+      },
+    }),
+  };
+
+  const [bySource, byMode, totalAgg] = await Promise.all([
+    prisma.transaction.groupBy({
+      by: ['source'],
+      where,
+      _sum: { amount: true, tax: true },
+    }),
+    prisma.transaction.groupBy({
+      by: ['paymentMode'],
+      where,
+      _sum: { amount: true },
+    }),
+    prisma.transaction.aggregate({
+      where,
+      _sum: { amount: true, tax: true },
+      _count: true,
+    }),
+  ]);
+
+  return {
+    totalRevenue: totalAgg._sum.amount || 0,
+    totalTax: totalAgg._sum.tax || 0,
+    totalTransactions: totalAgg._count,
+    bySource: bySource.map((s) => ({
+      source: s.source,
+      amount: s._sum.amount || 0,
+      tax: s._sum.tax || 0,
+    })),
+    byPaymentMode: byMode.map((m) => ({
+      mode: m.paymentMode,
+      amount: m._sum.amount || 0,
+    })),
+  };
+};

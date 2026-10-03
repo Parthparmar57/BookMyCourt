@@ -292,3 +292,49 @@ export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_
     return updatedMember;
   });
 };
+
+// ─── G3: QR scan lookup ───────────────────────────────────────────────────────
+// The QR payload is the JSON string generated at registration:
+//   JSON.stringify({ memberNo, email, plan })
+// We accept the raw string and resolve the full member profile so the front-desk
+// can identify a member instantly by scanning their QR card.
+export const scanMember = async (payload) => {
+  if (!payload || typeof payload !== 'string') {
+    throw new ApiError(400, 'QR payload must be a non-empty string');
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(payload);
+  } catch {
+    throw new ApiError(400, 'Invalid QR payload — expected a JSON string');
+  }
+
+  const { memberNo, email } = parsed;
+
+  if (!memberNo && !email) {
+    throw new ApiError(400, 'QR payload must contain memberNo or email');
+  }
+
+  const member = await prisma.member.findFirst({
+    where: {
+      OR: [
+        ...(memberNo ? [{ memberNo }] : []),
+        ...(email ? [{ user: { email } }] : []),
+      ],
+    },
+    include: {
+      user: { select: { id: true, name: true, email: true, phone: true } },
+      plan: true,
+      bookings: {
+        take: 5,
+        orderBy: { startTime: 'desc' },
+        include: { court: true },
+      },
+      tabs: { where: { status: 'OPEN' }, take: 3 },
+    },
+  });
+
+  if (!member) throw new ApiError(404, 'No member found for this QR code');
+  return member;
+};

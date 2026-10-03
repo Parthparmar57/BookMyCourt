@@ -92,3 +92,13 @@ export const updatePayrollStatus = async (id, { status, paidDate }) => {
     include: { employee: { include: { user: true } } },
   });
 };
+
+// ─── G1: Payslip PDF helper ───────────────────────────────────────────────────
+export const getPayrollById = async (id) => {
+  const payroll = await prisma.payroll.findUnique({
+    where: { id },
+    include: { employee: { include: { user: true } } },
+  });
+  if (!payroll) throw new ApiError(404, 'Payroll record not found');
+  return payroll;
+};

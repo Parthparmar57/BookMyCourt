@@ -29,6 +29,13 @@ router.get(
   controller.searchMembers
 );
 
+// G3 — QR scan lookup: POST /members/scan  body: { payload: "<QR string>" }
+router.post(
+  '/scan',
+  authorize('OWNER', 'FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF'),
+  controller.scanMember
+);
+
 router.get(
   '/:id',
   authorize('OWNER', 'FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'MEMBER'),
