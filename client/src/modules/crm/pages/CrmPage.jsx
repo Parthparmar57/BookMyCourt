@@ -160,8 +160,6 @@ export const CrmPage = () => {
   const handleStageMove = async (leadId, newStage) => {
     try {
       const targetLead = leads.find((l) => l.id === leadId);
-      await updateLead.mutateAsync({ id: leadId, stage: newStage });
-      setFeedback({ type: 'success', message: `Lead moved to ${newStage}.` });
 
       if (newStage === 'WON' && targetLead) {
         setSelectedLead(targetLead);
@@ -177,7 +175,11 @@ export const CrmPage = () => {
         setShowPassword(false);
         setConvertError('');
         setShowConvertModal(true);
+        return;
       }
+
+      await updateLead.mutateAsync({ id: leadId, stage: newStage });
+      setFeedback({ type: 'success', message: `Lead moved to ${newStage}.` });
     } catch (err) {
       setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Could not update lead stage.' });
     }
@@ -314,11 +316,6 @@ export const CrmPage = () => {
       if (status === 'ACCEPTED') {
         const targetLead = leads.find((l) => l.quotations?.some((q) => q.id === quotationId));
         if (targetLead) {
-          if (targetLead.stage !== 'WON') {
-            try {
-              await updateLead.mutateAsync({ id: targetLead.id, stage: 'WON' });
-            } catch (e) {}
-          }
           const quoteObj = targetLead.quotations?.find((q) => q.id === quotationId);
           const matchedPlanId = quoteObj?.planId || plans[0]?.id || '';
           setSelectedLead(targetLead);
