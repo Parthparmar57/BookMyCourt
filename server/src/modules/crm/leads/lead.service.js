@@ -38,7 +38,28 @@ export const createLead = async (data) => {
   return prisma.lead.create({ data });
 };
 
+const ALLOWED_STAGE_TRANSITIONS = {
+  NEW: ['CONTACTED', 'LOST'],
+  CONTACTED: ['QUOTED', 'LOST'],
+  QUOTED: ['WON', 'LOST'],
+  WON: [], // Terminal — converted to member
+  LOST: ['CONTACTED'], // Reopen lead
+};
+
 export const updateLead = async (id, data) => {
+  const currentLead = await prisma.lead.findUnique({ where: { id } });
+  if (!currentLead) throw new ApiError(404, 'Lead not found');
+
+  if (data.stage && data.stage !== currentLead.stage) {
+    const allowed = ALLOWED_STAGE_TRANSITIONS[currentLead.stage] || [];
+    if (!allowed.includes(data.stage)) {
+      throw new ApiError(
+        400,
+        `Invalid CRM stage transition from ${currentLead.stage} to ${data.stage}. Stage progression is forward-only.`
+      );
+    }
+  }
+
   return prisma.lead.update({
     where: { id },
     data,
