@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import {
@@ -12,6 +12,7 @@ import {
   useOpenTab,
   useSettleTab
 } from '../../../hooks/useBar';
+import { useBarOrderRealtime } from '../../../hooks/useRealtime';
 import {
   Coffee,
   Utensils,
@@ -148,8 +149,8 @@ export const MemberTabPage = () => {
       prev
         .map((ci) => {
           if (ci.id === itemId) {
-            const newQty = ci.quantity + delta;
-            return newQty > 0 ? { ...ci, quantity: newQty } : null;
+            const nextQty = ci.quantity + delta;
+            return nextQty > 0 ? { ...ci, quantity: nextQty } : null;
           }
           return ci;
         })
@@ -163,13 +164,17 @@ export const MemberTabPage = () => {
 
   const clearCart = () => setCart([]);
 
-  // Cart Subtotal Calculation (Includes 15% Member Discount)
-  const cartSubtotal = cart.reduce((sum, ci) => sum + Number(ci.price) * ci.quantity, 0);
-  const memberDiscount = cartSubtotal * 0.15;
-  const subtotalAfterDiscount = cartSubtotal - memberDiscount;
-  const tax = subtotalAfterDiscount * 0.05; // 5% GST
-  const grandTotal = subtotalAfterDiscount + tax;
+  // Price Calculations (15% Member Discount, 5% GST)
+  const cartSubtotal = cart.reduce(
+    (sum, ci) => sum + Number(ci.price) * ci.quantity,
+    0
+  );
+  const memberDiscount = cartSubtotal * 0.15; // 15% standard member discount
+  const discountedBase = Math.max(0, cartSubtotal - memberDiscount);
+  const tax = discountedBase * 0.05; // 5% GST
+  const grandTotal = discountedBase + tax;
 
+  // Handle Order Submit
   const handlePlaceOrder = async () => {
     if (cart.length === 0) return;
     setOrderFeedback(null);
@@ -195,97 +200,11 @@ export const MemberTabPage = () => {
     try {
       await createBarOrder.mutateAsync(payload);
     } catch (err) {
-      console.warn('Bar order API note:', err?.message || err);
+      setOrderFeedback({
+        type: 'error',
+        message: err.response?.data?.message || err.message || 'Failed to place order'
+      });
     }
-
-    // Add to running tab if Member Tab selected
-    if (paymentChoice === 'TAB') {
-      const newTabItems = cart.map(ci => ({
-        id: 'item-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
-        name: ci.name,
-        qty: ci.quantity,
-        price: Number(ci.price) * 0.85,
-        time: 'Just now'
-      }));
-
-      setLocalRunningTab(prev => ({
-        ...prev,
-        isOpen: true,
-        items: [...(prev.items || []), ...newTabItems]
-      }));
-    }
-
-    setCart([]);
-    setOrderNotes('');
-    setSelectedTableId('');
-    setOrderFeedback({
-      type: 'success',
-      message: paymentChoice === 'TAB'
-        ? `Order placed successfully! ₹${grandTotal.toFixed(2)} added to your running tab.`
-        : 'Order placed successfully! Chef Anthony in the kitchen has received your order.'
-    });
-
-    setTimeout(() => {
-      setActiveView(paymentChoice === 'TAB' ? 'tab' : 'orders');
-      setOrderFeedback(null);
-    }, 1200);
-  };
-
-  // Settle Running Tab Action
-  const handleSettleRunningTab = async () => {
-    if (activeTab?.id) {
-      try {
-        await settleTabMutation.mutateAsync({ id: activeTab.id, paymentMode: settlePaymentMode });
-      } catch (err) {
-        console.warn('Settle tab note:', err?.message || err);
-      }
-    }
-
-    const settledTotal = activeTabTotal;
-    const itemsCount = localRunningTab?.items?.length || 1;
-
-    setLocalRunningTab(prev => ({
-      ...prev,
-      isOpen: false,
-      items: [],
-      settlementHistory: [
-        {
-          id: 'SETTL-' + Date.now().toString().slice(-4),
-          date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-          itemsCount,
-          total: settledTotal,
-          mode: settlePaymentMode
-        },
-        ...(prev.settlementHistory || [])
-      ]
-    }));
-
-    setShowSettleModal(false);
-    setOrderFeedback({
-      type: 'success',
-      message: `🎉 Tab settled successfully! Total paid: ₹${settledTotal.toFixed(2)} via ${settlePaymentMode}.`
-    });
-
-    setTimeout(() => setOrderFeedback(null), 3500);
-  };
-
-  // Start / Reset Running Tab
-  const handleStartNewTab = () => {
-    setLocalRunningTab(prev => ({
-      ...prev,
-      isOpen: true,
-      id: 'TAB-2026-' + Math.floor(100 + Math.random() * 900),
-      openedAt: new Date().toISOString(),
-      items: [
-        { id: 'item-new-1', name: 'Whey Protein Shake', qty: 1, price: 180, time: 'Just now' },
-        { id: 'item-new-2', name: 'Fresh Citrus Cooler', qty: 1, price: 140, time: 'Just now' }
-      ]
-    }));
-    setOrderFeedback({
-      type: 'success',
-      message: 'Running tab opened! Initial items added to your cafeteria running bill.'
-    });
-    setTimeout(() => setOrderFeedback(null), 2500);
   };
 
   // Recent/Active Member Orders
@@ -336,8 +255,8 @@ export const MemberTabPage = () => {
         <button
           onClick={() => setActiveView('menu')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${activeView === 'menu'
-              ? 'bg-[#2e7d32] text-white shadow-xs'
-              : 'bg-white border border-gray-200 text-slate-700 hover:bg-slate-50'
+            ? 'bg-[#2e7d32] text-white shadow-xs'
+            : 'bg-white border border-gray-200 text-slate-700 hover:bg-slate-50'
             }`}
         >
           <Utensils className="w-4 h-4" />
@@ -347,8 +266,8 @@ export const MemberTabPage = () => {
         <button
           onClick={() => setActiveView('orders')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${activeView === 'orders'
-              ? 'bg-[#2e7d32] text-white shadow-xs'
-              : 'bg-white border border-gray-200 text-slate-700 hover:bg-slate-50'
+            ? 'bg-[#2e7d32] text-white shadow-xs'
+            : 'bg-white border border-gray-200 text-slate-700 hover:bg-slate-50'
             }`}
         >
           <ChefHat className="w-4 h-4" />
@@ -364,8 +283,8 @@ export const MemberTabPage = () => {
         <button
           onClick={() => setActiveView('tab')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${activeView === 'tab'
-              ? 'bg-white text-slate-900 shadow-lg'
-              : 'bg-white/10 text-white hover:bg-white/20'
+            ? 'bg-white text-slate-900 shadow-lg'
+            : 'bg-white/10 text-white hover:bg-white/20'
             }`}
         >
           <Receipt className="w-4 h-4" />
@@ -379,8 +298,8 @@ export const MemberTabPage = () => {
     orderFeedback && (
       <div
         className={`p-4 rounded-2xl flex items-center gap-3 text-sm font-semibold animate-in fade-in slide-in-from-top-2 ${orderFeedback.type === 'success'
-            ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-            : 'bg-rose-50 border border-rose-200 text-rose-800'
+          ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+          : 'bg-rose-50 border border-rose-200 text-rose-800'
           }`}
       >
         {orderFeedback.type === 'success' ? (
@@ -417,8 +336,8 @@ export const MemberTabPage = () => {
                 type="button"
                 onClick={() => setDeliveryType('DINE_IN')}
                 className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${deliveryType === 'DINE_IN'
-                    ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
-                    : 'border-gray-200 hover:border-gray-300 text-slate-700 bg-slate-50/50'
+                  ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
+                  : 'border-gray-200 hover:border-gray-300 text-slate-700 bg-slate-50/50'
                   }`}
               >
                 <Utensils className="w-4 h-4 mx-auto mb-1 text-[#2e7d32]" />
@@ -429,8 +348,8 @@ export const MemberTabPage = () => {
                 type="button"
                 onClick={() => setDeliveryType('COURT_DELIVERY')}
                 className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${deliveryType === 'COURT_DELIVERY'
-                    ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
-                    : 'border-gray-200 hover:border-gray-300 text-slate-700 bg-slate-50/50'
+                  ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
+                  : 'border-gray-200 hover:border-gray-300 text-slate-700 bg-slate-50/50'
                   }`}
               >
                 <MapPin className="w-4 h-4 mx-auto mb-1 text-[#2e7d32]" />
@@ -441,8 +360,8 @@ export const MemberTabPage = () => {
                 type="button"
                 onClick={() => setDeliveryType('COUNTER_PICKUP')}
                 className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${deliveryType === 'COUNTER_PICKUP'
-                    ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
-                    : 'border-gray-200 hover:border-gray-300 text-slate-700 bg-slate-50/50'
+                  ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
+                  : 'border-gray-200 hover:border-gray-300 text-slate-700 bg-slate-50/50'
                   }`}
               >
                 <Coffee className="w-4 h-4 mx-auto mb-1 text-[#2e7d32]" />
@@ -470,10 +389,10 @@ export const MemberTabPage = () => {
                         disabled={!isAvail}
                         onClick={() => setSelectedTableId(t.id)}
                         className={`p-2 rounded-xl border text-center text-xs transition-all cursor-pointer ${isSel
-                            ? 'border-emerald-600 bg-emerald-600 text-white font-extrabold shadow-md'
-                            : isAvail
-                              ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 font-bold'
-                              : 'border-slate-100 bg-slate-100 text-slate-400 opacity-50 cursor-not-allowed'
+                          ? 'border-emerald-600 bg-emerald-600 text-white font-extrabold shadow-md'
+                          : isAvail
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 font-bold'
+                            : 'border-slate-100 bg-slate-100 text-slate-400 opacity-50 cursor-not-allowed'
                           }`}
                       >
                         T-{t.number}
@@ -494,8 +413,8 @@ export const MemberTabPage = () => {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${selectedCategory === cat
-                      ? 'bg-slate-900 text-white shadow-sm'
-                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                 >
                   {cat}
@@ -673,8 +592,8 @@ export const MemberTabPage = () => {
                       type="button"
                       onClick={() => setPaymentChoice('TAB')}
                       className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${paymentChoice === 'TAB'
-                          ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
-                          : 'border-gray-200 text-slate-600 hover:bg-slate-50'
+                        ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
+                        : 'border-gray-200 text-slate-600 hover:bg-slate-50'
                         }`}
                     >
                       Member Tab
@@ -683,8 +602,8 @@ export const MemberTabPage = () => {
                       type="button"
                       onClick={() => setPaymentChoice('UPI')}
                       className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${paymentChoice === 'UPI'
-                          ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
-                          : 'border-gray-200 text-slate-600 hover:bg-slate-50'
+                        ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
+                        : 'border-gray-200 text-slate-600 hover:bg-slate-50'
                         }`}
                     >
                       UPI
@@ -693,8 +612,8 @@ export const MemberTabPage = () => {
                       type="button"
                       onClick={() => setPaymentChoice('CARD')}
                       className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${paymentChoice === 'CARD'
-                          ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
-                          : 'border-gray-200 text-slate-600 hover:bg-slate-50'
+                        ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
+                        : 'border-gray-200 text-slate-600 hover:bg-slate-50'
                         }`}
                     >
                       Card / Counter
@@ -832,10 +751,10 @@ export const MemberTabPage = () => {
                     {/* Status Badge */}
                     <span
                       className={`text-[10px] font-black uppercase px-3 py-1 rounded-full flex items-center gap-1 ${isServed
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : isPreparing
-                            ? 'bg-blue-100 text-blue-800 animate-pulse'
-                            : 'bg-amber-100 text-amber-800'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : isPreparing
+                          ? 'bg-blue-100 text-blue-800 animate-pulse'
+                          : 'bg-amber-100 text-amber-800'
                         }`}
                     >
                       {isServed ? (
@@ -920,8 +839,8 @@ export const MemberTabPage = () => {
 
               <span
                 className={`text-[10px] font-black uppercase px-3 py-1 rounded-full border ${activeTabTotal > 0 || localRunningTab?.isOpen
-                    ? 'bg-amber-50 text-amber-800 border-amber-300'
-                    : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  ? 'bg-amber-50 text-amber-800 border-amber-300'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-300'
                   }`}
               >
                 {activeTabTotal > 0 || localRunningTab?.isOpen ? 'TAB OPEN' : 'NO UNPAID TAB'}
@@ -1129,8 +1048,8 @@ export const MemberTabPage = () => {
                   type="button"
                   onClick={() => setSettlePaymentMode(mode)}
                   className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${settlePaymentMode === mode
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 font-black'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-slate-50'
+                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 font-black'
+                    : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-slate-50'
                     }`}
                 >
                   {mode}

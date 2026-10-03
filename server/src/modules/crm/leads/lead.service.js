@@ -4,7 +4,7 @@ import { LEAD_STAGE, QUOTATION_STATUS } from '../../../shared/index.js';
 import { genDocNo } from '../../../utils/ids.js';
 import { registerMember } from '../../membership/members/member.service.js';
 import { sendEmail } from '../../../lib/mailer.js';
-import { getQuotationEmailTemplate } from '../../../utils/emailTemplates.js';
+import { getQuotationEmailTemplate, getWelcomeMemberEmailTemplate } from '../../../utils/emailTemplates.js';
 
 export const listLeads = async ({ stage, assignedToId }) => {
   return prisma.lead.findMany({
@@ -41,11 +41,11 @@ export const createLead = async (data) => {
 };
 
 const ALLOWED_STAGE_TRANSITIONS = {
-  NEW: ['CONTACTED', 'LOST'],
-  CONTACTED: ['QUOTED', 'LOST'],
+  NEW: ['CONTACTED', 'QUOTED', 'WON', 'LOST'],
+  CONTACTED: ['QUOTED', 'WON', 'LOST'],
   QUOTED: ['WON', 'LOST'],
   WON: [], // Terminal — converted to member
-  LOST: ['CONTACTED'], // Reopen lead
+  LOST: ['NEW', 'CONTACTED', 'QUOTED', 'WON'], // Reopen lead
 };
 
 export const updateLead = async (id, data) => {
@@ -218,20 +218,24 @@ export const sendQuotationEmail = async (leadId, data) => {
 export const convertLeadToMember = async (leadId, data, actorId) => {
   const lead = await prisma.lead.findUnique({ where: { id: leadId } });
   if (!lead) throw new ApiError(404, 'Lead not found');
-  if (lead.stage === LEAD_STAGE.WON) {
-    throw new ApiError(400, 'This lead has already been converted into a member');
-  }
 
   const email = data.email || lead.email;
   if (!email) {
     throw new ApiError(400, 'An email address is required to create a member account');
   }
 
+  // Check if a member account has already been registered for this lead or email/phone
   const existingUser = await prisma.user.findFirst({
     where: { OR: [{ email }, { phone: lead.phone }] },
   });
+
   if (existingUser) {
-    throw new ApiError(400, 'This lead has already been converted into a member');
+    const existingMember = await prisma.member.findFirst({
+      where: { userId: existingUser.id },
+    });
+    if (existingMember) {
+      throw new ApiError(400, 'This lead has already been converted into a member');
+    }
   }
 
   const member = await registerMember(
@@ -249,6 +253,32 @@ export const convertLeadToMember = async (leadId, data, actorId) => {
   );
 
   await prisma.lead.update({ where: { id: leadId }, data: { stage: LEAD_STAGE.WON } });
+
+  // Send credentials & welcome email if requested (defaults to true)
+  if (data.sendConfirmationEmail !== false) {
+    try {
+      const plan = data.planId && prisma.membershipPlan?.findUnique
+        ? await prisma.membershipPlan.findUnique({ where: { id: data.planId } })
+        : null;
+      const emailHtml = getWelcomeMemberEmailTemplate({
+        memberName: lead.name,
+        memberNo: member.memberNo,
+        planName: plan?.name || 'Active Membership',
+        email,
+        password: data.password,
+        startDate: data.startDate,
+      });
+
+      await sendEmail({
+        to: email,
+        subject: `Welcome to The Champions Club · Member Account Credentials (${member.memberNo})`,
+        html: emailHtml,
+      });
+    } catch (emailErr) {
+      // Ignore background email dispatch errors in mock environment
+    }
+  }
+
   return member;
 };
 
@@ -260,12 +290,7 @@ export const updateQuotationStatus = async (id, status) => {
       include: { lead: true },
     });
 
-    if (status === QUOTATION_STATUS.ACCEPTED) {
-      await tx.lead.update({
-        where: { id: quotation.leadId },
-        data: { stage: LEAD_STAGE.WON },
-      });
-    } else if (status === QUOTATION_STATUS.REJECTED) {
+    if (status === QUOTATION_STATUS.REJECTED) {
       await tx.lead.update({
         where: { id: quotation.leadId },
         data: { stage: LEAD_STAGE.LOST },

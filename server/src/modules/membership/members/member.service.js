@@ -135,7 +135,7 @@ export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 })
     }),
   };
 
-  const [total, members] = await Promise.all([
+  const [total, rawMembers] = await Promise.all([
     prisma.member.count({ where }),
     prisma.member.findMany({
       where,
@@ -145,9 +145,25 @@ export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 })
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },
         plan: true,
+        tabs: {
+          where: { status: 'OPEN' },
+          select: { totalAmount: true },
+        },
       },
     }),
   ]);
+
+  const members = rawMembers.map((m) => {
+    const activeTabBalance = (m.tabs || []).reduce(
+      (sum, tab) => sum + Number(tab.totalAmount || 0),
+      0
+    );
+    const { tabs, ...rest } = m;
+    return {
+      ...rest,
+      activeTabBalance,
+    };
+  });
 
   return { members, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -200,7 +216,15 @@ export const getMemberProfile = async (idOrMemberNo, actor) => {
     throw new ApiError(403, 'You can only view your own profile');
   }
 
-  return member;
+  const activeTabBalance = (member.tabs || []).reduce(
+    (sum, tab) => sum + Number(tab.totalAmount || 0),
+    0
+  );
+
+  return {
+    ...member,
+    activeTabBalance,
+  };
 };
 
 export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_MODE.UPI }, actor) => {
@@ -336,7 +360,14 @@ export const scanMember = async (payload) => {
   });
 
   if (!member) throw new ApiError(404, 'No member found for this QR code');
-  return member;
+  const activeTabBalance = (member.tabs || []).reduce(
+    (sum, tab) => sum + Number(tab.totalAmount || 0),
+    0
+  );
+  return {
+    ...member,
+    activeTabBalance,
+  };
 };
 
 export const updateMember = async (id, data, actorId) => {

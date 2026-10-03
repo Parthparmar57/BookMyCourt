@@ -3,11 +3,17 @@ import { qk } from '../lib/queryKeys';
 import { dashboardApi, reportsApi } from '../services/dashboard.service';
 
 /* ---------------- Dashboard KPIs ---------------- */
-export const useDashboardSummary = () =>
-  useQuery({ queryKey: qk.dashboard.summary, queryFn: dashboardApi.summary });
+export const useDashboardSummary = (period = 'today') =>
+  useQuery({
+    queryKey: ['dashboard', 'summary', period],
+    queryFn: () => dashboardApi.summary({ period }),
+  });
 
-export const useDashboardUtilisation = () =>
-  useQuery({ queryKey: qk.dashboard.utilisation, queryFn: dashboardApi.utilisation });
+export const useDashboardUtilisation = (period = 'today') =>
+  useQuery({
+    queryKey: ['dashboard', 'utilisation', period],
+    queryFn: () => dashboardApi.utilisation({ period }),
+  });
 
 /* ---------------- Reports ---------------- */
 export const useTaxReport = (filters = {}) =>

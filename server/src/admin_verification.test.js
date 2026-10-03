@@ -394,7 +394,11 @@ test('Phase 3 - Issue #3: Executive Dashboard supports period query parameter (t
     const res = await request('/api/dashboard/summary?period=' + period, { token: ownerToken });
     assert.strictEqual(res.status, 200, `Dashboard request for period=${period} should return 200`);
     assert.ok(res.data.success, `Dashboard summary response for period=${period} should be successful`);
-    assert.ok(res.data.data.kpis.todayRevenue !== undefined, 'Summary KPIs contains todayRevenue');
+    assert.ok(res.data.data.kpis.periodRevenue !== undefined, 'Summary KPIs contains periodRevenue');
+    assert.ok(res.data.data.kpis.periodBookings !== undefined, 'Summary KPIs contains periodBookings');
+    assert.ok(res.data.data.kpis.revenueGrowthPct !== undefined, 'Summary KPIs contains revenueGrowthPct');
+    assert.ok(Array.isArray(res.data.data.revenueBySource), 'revenueBySource is array');
+    assert.ok(Array.isArray(res.data.data.paymentModeSplit), 'paymentModeSplit is array');
   }
 });
 

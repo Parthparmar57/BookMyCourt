@@ -396,3 +396,64 @@ export const getQuotationEmailTemplate = ({
     footerNote: 'This quote is valid up to the date mentioned above. Subject to club terms & conditions.',
   });
 };
+
+/**
+ * 5. Welcome & Member Credentials Confirmation Email
+ */
+export const getWelcomeMemberEmailTemplate = ({
+  memberName,
+  memberNo,
+  planName,
+  email,
+  password,
+  startDate,
+}) => {
+  const contentHtml = `
+    <div style="text-align: center; margin-bottom: 20px;">
+      <span class="badge-pill badge-success">Membership Activated &#127881;</span>
+    </div>
+
+    <p style="font-size: 15px; margin-top: 0; line-height: 1.5;">
+      Welcome to <strong>The Champions Club</strong>, <strong>${memberName}</strong>!
+    </p>
+    <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+      Your membership account has been successfully registered. Below are your account credentials to log into our member portal:
+    </p>
+
+    <div class="card">
+      <table class="table-details">
+        <tr>
+          <td>Member ID</td>
+          <td><strong style="font-family: monospace; color: #047857;">${memberNo}</strong></td>
+        </tr>
+        <tr>
+          <td>Plan Tier</td>
+          <td><strong>${planName || 'Active Membership'}</strong></td>
+        </tr>
+        <tr>
+          <td>Start Date</td>
+          <td>${startDate || 'Today'}</td>
+        </tr>
+        <tr>
+          <td>Portal Login Email</td>
+          <td><strong>${email}</strong></td>
+        </tr>
+        <tr>
+          <td>Portal Password</td>
+          <td><strong style="font-family: monospace; color: #047857; font-size: 16px;">${password}</strong></td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="font-size: 13px; color: #64748b; line-height: 1.5;">
+      Log into your member portal to reserve court slots, view invoices, book trial sessions, and check cafeteria balances.
+    </p>
+  `;
+
+  return baseEmailLayout({
+    title: 'Welcome to The Champions Club',
+    subtitle: `Membership Account Activated · Member #${memberNo}`,
+    contentHtml,
+    footerNote: 'Please keep your credentials confidential. You can change your password anytime after logging in.',
+  });
+};

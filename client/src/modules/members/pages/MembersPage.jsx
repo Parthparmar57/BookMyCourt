@@ -383,13 +383,14 @@ export const MembersPage = () => {
                 <th className="p-4">Plan Tier</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Bar Tab Balance</th>
+                <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
               <QueryState
                 query={membersQuery}
-                loading={<tr><td colSpan={6} className="p-6 text-center text-slate-400"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading members…</td></tr>}
-                empty={<tr><td colSpan={6} className="p-6 text-center text-slate-400">No members found.</td></tr>}
+                loading={<tr><td colSpan={7} className="p-6 text-center text-slate-400"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading members…</td></tr>}
+                empty={<tr><td colSpan={7} className="p-6 text-center text-slate-400">No members found.</td></tr>}
                 emptyWhen={(d) => !d?.items?.length}
               >
                 {(data) => data.items.map(toView).map((m) => {
@@ -414,10 +415,10 @@ export const MembersPage = () => {
                       <td className="p-4 font-semibold text-slate-600">{formatPhone(m.phone)}</td>
                       <td className="p-4">
                         <span className={`px-2.5 py-1 text-[10px] font-black rounded-full border shadow-2xs ${isGold
-                            ? 'bg-amber-100 text-amber-950 border-amber-400'
-                            : isJunior
-                              ? 'bg-sky-100 text-sky-950 border-sky-400'
-                              : 'bg-slate-100 text-slate-800 border-slate-300'
+                          ? 'bg-amber-100 text-amber-950 border-amber-400'
+                          : isJunior
+                            ? 'bg-sky-100 text-sky-950 border-sky-400'
+                            : 'bg-slate-100 text-slate-800 border-slate-300'
                           }`}>
                           {currentTier}
                         </span>
@@ -427,7 +428,6 @@ export const MembersPage = () => {
                           {m.status || 'ACTIVE'}
                         </span>
                       </td>
-                      <td className="p-4 font-extrabold text-slate-900">{formatCurrency(m.tabBalance || 0)}</td>
                     </tr>
                   );
                 })}

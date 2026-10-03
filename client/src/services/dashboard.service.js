@@ -2,8 +2,8 @@ import apiClient from '../lib/apiClient';
 
 /** Owner dashboard KPIs. */
 export const dashboardApi = {
-  summary: () => apiClient.get('/dashboard/summary'),
-  utilisation: () => apiClient.get('/dashboard/utilisation'),
+  summary: (params = {}) => apiClient.get('/dashboard/summary', { params }),
+  utilisation: (params = {}) => apiClient.get('/dashboard/utilisation', { params }),
 };
 
 /** Reports + Excel/PDF export. */
