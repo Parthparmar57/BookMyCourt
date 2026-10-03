@@ -45,3 +45,30 @@ export const useKitchenRealtime = () => {
     };
   }, [qc]);
 };
+
+/**
+ * Live HR & Staff Leave tracking — when a leave is requested or its status is updated (Approved/Rejected),
+ * automatically invalidate leave queries and refresh employee details in real-time.
+ */
+export const useLeaveRealtime = (onStatusChange) => {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const socket = getSocket();
+    const handleLeaveChange = (data) => {
+      qc.invalidateQueries({ queryKey: qk.leave.all });
+      qc.invalidateQueries({ queryKey: qk.employees.all });
+      if (onStatusChange) {
+        onStatusChange(data);
+      }
+    };
+
+    socket.on('leave_requested', handleLeaveChange);
+    socket.on('leave_status_updated', handleLeaveChange);
+
+    return () => {
+      socket.off('leave_requested', handleLeaveChange);
+      socket.off('leave_status_updated', handleLeaveChange);
+    };
+  }, [qc, onStatusChange]);
+};
+

@@ -16,6 +16,7 @@ import {
   LogOut,
   QrCode,
   Utensils,
+  Package,
   X
 } from 'lucide-react';
 
@@ -53,6 +54,7 @@ export const Sidebar = () => {
       case 'SHOP_STAFF':
         return [
           { label: 'Shop POS', path: '/staff/shop', icon: ShoppingBag },
+          { label: 'Shop Orders', path: '/staff/shop/orders', icon: Package },
           { label: 'Inventory Audit', path: '/staff/shop/inventory', icon: FileText }
         ];
       case 'MEMBER':
@@ -61,6 +63,7 @@ export const Sidebar = () => {
           { label: 'Book a Court', path: '/member/book', icon: Calendar },
           { label: 'My Bookings', path: '/member/bookings', icon: Calendar },
           { label: 'Member Shop', path: '/member/shop', icon: ShoppingBag },
+          { label: 'My Orders', path: '/member/orders', icon: Package },
           { label: 'Bar Tab', path: '/member/tab', icon: Coffee },
           { label: 'Digital Card', path: '/member/card', icon: QrCode }
         ];
