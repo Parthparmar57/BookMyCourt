@@ -101,6 +101,7 @@ export const CrmPage = () => {
     password: 'Password@123',
     emergencyContact: '',
   });
+  const [convertError, setConvertError] = useState('');
 
   const handleCreateLead = async (e) => {
     e.preventDefault();
@@ -199,10 +200,22 @@ export const CrmPage = () => {
   const handleConvertLead = async (e) => {
     e.preventDefault();
     if (!selectedLead) return;
+    setConvertError('');
+
+    const targetPlanId = convertForm.planId || plans[0]?.id;
+    const plan = plans.find((p) => p.id === targetPlanId);
+    if (plan?.maxAge && convertForm.dob) {
+      const age = Math.floor((Date.now() - new Date(convertForm.dob).getTime()) / (365.25 * 24 * 3600 * 1000));
+      if (age >= plan.maxAge) {
+        setConvertError(`Member age is ${age}. ${plan.name} plan requires age under ${plan.maxAge}.`);
+        return;
+      }
+    }
+
     try {
       await convertLead.mutateAsync({
         id: selectedLead.id,
-        planId: convertForm.planId || plans[0]?.id,
+        planId: targetPlanId,
         dob: convertForm.dob,
         startDate: convertForm.startDate,
         password: convertForm.password,
@@ -211,7 +224,7 @@ export const CrmPage = () => {
       setShowConvertModal(false);
       setFeedback({ type: 'success', message: `Successfully converted ${selectedLead.name} to active Member!` });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Lead conversion failed.' });
+      setConvertError(err?.response?.data?.message || err?.message || 'Lead conversion failed.');
     }
   };
 
@@ -403,7 +416,7 @@ export const CrmPage = () => {
                               <span>Send Quote</span>
                             </button>
                             <button
-                              onClick={() => { setSelectedLead(lead); setShowConvertModal(true); }}
+                              onClick={() => { setSelectedLead(lead); setConvertError(''); setShowConvertModal(true); }}
                               className="text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer font-bold border border-emerald-200"
                             >
                               <UserCheck className="w-3 h-3 text-emerald-600" />
@@ -643,6 +656,13 @@ export const CrmPage = () => {
               <div className="font-bold text-emerald-900">{selectedLead.name}</div>
               <div className="text-emerald-700">{formatPhone(selectedLead.phone)} · {selectedLead.email || 'No email provided'}</div>
             </div>
+
+            {convertError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{convertError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleConvertLead} className="space-y-3 text-xs font-semibold">
               <div>
