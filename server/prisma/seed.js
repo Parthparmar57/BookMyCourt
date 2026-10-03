@@ -23,6 +23,7 @@ async function main() {
     'socialParticipant',
     'trialBooking',
     'booking',
+    'court',
     'leadFollowUp',
     'quotation',
     'lead',
@@ -37,6 +38,7 @@ async function main() {
     'member',
     'employee',
     'user',
+    'plan',
   ];
   for (const model of deleteOrder) {
     if (prisma[model]) {
@@ -49,16 +51,16 @@ async function main() {
   console.log('1. Creating core staff and management users...');
 
   const staffUsersData = [
-    { name: 'Vikram Mehta (Owner)', email: 'owner@championsclub.com', phone: '9876543210', role: 'OWNER', empNo: 'EMP-000', desig: 'Managing Director & Owner', salary: 150000 },
-    { name: 'Priya Sharma (Front Desk)', email: 'frontdesk@championsclub.com', phone: '9876543211', role: 'FRONT_DESK', empNo: 'EMP-001', desig: 'Head Receptionist', salary: 35000 },
-    { name: 'Rahul Verma (Bar Staff)', email: 'bar@championsclub.com', phone: '9876543212', role: 'BAR_STAFF', empNo: 'EMP-002', desig: 'Bar & Cafe Supervisor', salary: 32000 },
-    { name: 'Chef Anthony (Kitchen)', email: 'kitchen@championsclub.com', phone: '9876543213', role: 'KITCHEN', empNo: 'EMP-003', desig: 'Executive Head Chef', salary: 42000 },
-    { name: 'Sunil Kumar (Shop Staff)', email: 'shop@championsclub.com', phone: '9876543214', role: 'SHOP_STAFF', empNo: 'EMP-004', desig: 'Pro Shop Manager', salary: 30000 },
-    { name: 'Mahesh Bhupathi (Head Coach)', email: 'coach.tennis@championsclub.com', phone: '9876543280', role: 'FRONT_DESK', empNo: 'EMP-005', desig: 'Senior Tennis Coach', salary: 55000 },
-    { name: 'Pullela Gopichand (Badminton Coach)', email: 'coach.badminton@championsclub.com', phone: '9876543281', role: 'FRONT_DESK', empNo: 'EMP-006', desig: 'Head Badminton Coach', salary: 50000 },
-    { name: 'Anjali Bhagwat (Fitness Trainer)', email: 'trainer@championsclub.com', phone: '9876543282', role: 'FRONT_DESK', empNo: 'EMP-007', desig: 'Strength & Conditioning Coach', salary: 38000 },
-    { name: 'Ramesh Patel (Accountant)', email: 'accounts@championsclub.com', phone: '9876543283', role: 'FRONT_DESK', empNo: 'EMP-008', desig: 'Senior Club Accountant', salary: 40000 },
-    { name: 'Devendra Joshi (Facilities)', email: 'facilities@championsclub.com', phone: '9876543284', role: 'FRONT_DESK', empNo: 'EMP-009', desig: 'Court & Turf Facility Manager', salary: 32000 },
+    { name: 'Vikram Mehta', email: 'owner@championsclub.com', phone: '9876543210', role: 'OWNER', empNo: 'EMP-000', desig: 'Managing Director & Owner', salary: 150000 },
+    { name: 'Priya Sharma', email: 'frontdesk@championsclub.com', phone: '9876543211', role: 'FRONT_DESK', empNo: 'EMP-001', desig: 'Head Receptionist', salary: 35000 },
+    { name: 'Rahul Verma', email: 'bar@championsclub.com', phone: '9876543212', role: 'BAR_STAFF', empNo: 'EMP-002', desig: 'Bar & Cafe Supervisor', salary: 32000 },
+    { name: 'Anthony D\'Souza', email: 'kitchen@championsclub.com', phone: '9876543213', role: 'KITCHEN', empNo: 'EMP-003', desig: 'Executive Head Chef', salary: 42000 },
+    { name: 'Sunil Kumar', email: 'shop@championsclub.com', phone: '9876543214', role: 'SHOP_STAFF', empNo: 'EMP-004', desig: 'Pro Shop Manager', salary: 30000 },
+    { name: 'Mahesh Bhupathi', email: 'coach.tennis@championsclub.com', phone: '9876543280', role: 'FRONT_DESK', empNo: 'EMP-005', desig: 'Senior Tennis Coach', salary: 55000 },
+    { name: 'Pullela Gopichand', email: 'coach.badminton@championsclub.com', phone: '9876543281', role: 'FRONT_DESK', empNo: 'EMP-006', desig: 'Head Badminton Coach', salary: 50000 },
+    { name: 'Anjali Bhagwat', email: 'trainer@championsclub.com', phone: '9876543282', role: 'FRONT_DESK', empNo: 'EMP-007', desig: 'Strength & Conditioning Coach', salary: 38000 },
+    { name: 'Ramesh Patel', email: 'accounts@championsclub.com', phone: '9876543283', role: 'FRONT_DESK', empNo: 'EMP-008', desig: 'Senior Club Accountant', salary: 40000 },
+    { name: 'Devendra Joshi', email: 'facilities@championsclub.com', phone: '9876543284', role: 'FRONT_DESK', empNo: 'EMP-009', desig: 'Court & Turf Facility Manager', salary: 32000 },
   ];
 
   const createdStaffUsers = [];
