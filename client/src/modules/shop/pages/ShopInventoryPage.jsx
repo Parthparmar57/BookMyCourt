@@ -56,6 +56,7 @@ export const ShopInventoryPage = () => {
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState(emptyProductForm);
+  const [productError, setProductError] = useState('');
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -122,6 +123,7 @@ export const ShopInventoryPage = () => {
 
   // Open the product modal in "add" mode (no product) or "edit" mode (existing product).
   const openProductModal = (product = null) => {
+    setProductError('');
     setEditingProduct(product);
     setProductForm(
       product
@@ -142,6 +144,7 @@ export const ShopInventoryPage = () => {
 
   const handleSaveProduct = async (e) => {
     e.preventDefault();
+    setProductError('');
     try {
       if (editingProduct) {
         await updateProduct.mutateAsync({
@@ -170,7 +173,7 @@ export const ShopInventoryPage = () => {
       setShowProductModal(false);
       setEditingProduct(null);
     } catch (err) {
-      alert(err?.message || 'Error saving product.');
+      setProductError(err?.response?.data?.message || err?.message || 'Error saving product.');
     }
   };
 
@@ -567,8 +570,15 @@ export const ShopInventoryPage = () => {
               <h3 className="font-extrabold text-base text-slate-900">
                 {editingProduct ? 'Edit Catalog Product' : 'Add New Pro Shop Product'}
               </h3>
-              <button onClick={() => setShowProductModal(false)}><X className="w-5 h-5 text-slate-400" /></button>
+              <button onClick={() => { setShowProductModal(false); setProductError(''); }} className="cursor-pointer"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
+
+            {productError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{productError}</span>
+              </div>
+            )}
             <form onSubmit={handleSaveProduct} className="space-y-3 text-xs font-semibold text-slate-700">
               <div className="grid grid-cols-2 gap-3">
                 <div>

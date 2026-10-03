@@ -22,7 +22,7 @@ const sendExpiryReminders = async (now) => {
       if (!member.user?.email) continue;
       await sendEmail({
         to: member.user.email,
-        subject: `Your Champions Club membership expires in ${daysBefore} day(s)`,
+        subject: `Your BookMyCourt membership expires in ${daysBefore} day(s)`,
         text: `Hi ${member.user.name}, your ${member.plan?.name || ''} membership expires on ${new Date(member.endDate).toDateString()}. Please renew to keep your benefits.`,
       });
     }

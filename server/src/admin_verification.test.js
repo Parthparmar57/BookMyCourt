@@ -333,13 +333,13 @@ test('Phase 2 - Issue #6: Admin daily limit override on member bookings', async 
   const user = await prisma.user.findFirst({ where: { role: 'MEMBER' }, include: { member: { include: { plan: true } } } });
   const member = user?.member;
   if (court && member) {
-    const maxPerDay = member.plan.maxBookingsDay || 2;
+    const maxPerDay = Math.min(member.plan?.maxBookingsDay ?? 2, 2);
     const date = '2026-12-15';
     await prisma.booking.deleteMany({
-      where: { courtId: court.id, startTime: { gte: new Date(`${date}T00:00:00Z`), lte: new Date(`${date}T23:59:59Z`) } }
-    });
-    await prisma.booking.deleteMany({
-      where: { memberId: member.id, startTime: { gte: new Date(`${date}T00:00:00Z`), lte: new Date(`${date}T23:59:59Z`) } }
+      where: {
+        OR: [{ courtId: court.id }, { memberId: member.id }],
+        startTime: { gte: new Date('2026-12-14T00:00:00Z'), lte: new Date('2026-12-16T23:59:59Z') },
+      },
     });
 
     // Fill all allowed slots up to maxPerDay

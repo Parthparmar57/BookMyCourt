@@ -190,7 +190,7 @@ export const forgotPassword = async ({ login }) => {
 
   const mailResult = await sendEmail({
     to: user.email,
-    subject: 'Password Reset Request · The Champions Club',
+    subject: 'Password Reset Request · BookMyCourt',
     html: emailHtml,
   });
 

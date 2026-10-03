@@ -158,13 +158,6 @@ enum LeaveStatus {
   REJECTED
 }
 
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  HALF_DAY
-  ON_LEAVE
-}
-
 enum PayrollStatus {
   DRAFT
   PROCESSED
@@ -568,23 +561,8 @@ model Employee {
   shifts        Shift[]
   leaves        LeaveRequest[]
   payrolls      Payroll[]
-  attendances   Attendance[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-}
-
-model Attendance {
-  id         String           @id @default(uuid())
-  employeeId String
-  employee   Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  date       DateTime         @db.Date
-  checkIn    DateTime?
-  checkOut   DateTime?
-  status     AttendanceStatus @default(PRESENT)
-  notes      String?
-  createdAt  DateTime         @default(now())
-
-  @@unique([employeeId, date])
 }
 
 model LeaveRequest {

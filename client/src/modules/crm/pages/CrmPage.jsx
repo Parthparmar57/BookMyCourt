@@ -272,7 +272,7 @@ export const CrmPage = () => {
     setQuoteForm({
       email: lead.email || '',
       planId: selectedPlan?.id || '',
-      packageName: selectedPlan ? `${selectedPlan.name} Membership Package` : 'Champions Club Custom Package',
+      packageName: selectedPlan ? `${selectedPlan.name} Membership Package` : 'BookMyCourt Custom Package',
       amount: selectedPlan ? String(selectedPlan.price) : '10000',
       discount: '1000',
       validUntil: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],

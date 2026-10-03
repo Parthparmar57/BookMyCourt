@@ -28,7 +28,6 @@ async function main() {
     'quotation',
     'lead',
     'enquiry',
-    'attendance',
     'payroll',
     'leaveRequest',
     'shift',
@@ -51,16 +50,16 @@ async function main() {
   console.log('1. Creating core staff and management users...');
 
   const staffUsersData = [
-    { name: 'Vikram Mehta', email: 'owner@championsclub.com', phone: '9876543210', role: 'OWNER', empNo: 'EMP-000', desig: 'Managing Director & Owner', salary: 150000 },
-    { name: 'Priya Sharma', email: 'frontdesk@championsclub.com', phone: '9876543211', role: 'FRONT_DESK', empNo: 'EMP-001', desig: 'Head Receptionist', salary: 35000 },
-    { name: 'Rahul Verma', email: 'bar@championsclub.com', phone: '9876543212', role: 'BAR_STAFF', empNo: 'EMP-002', desig: 'Bar & Cafe Supervisor', salary: 32000 },
-    { name: 'Anthony D\'Souza', email: 'kitchen@championsclub.com', phone: '9876543213', role: 'KITCHEN', empNo: 'EMP-003', desig: 'Executive Head Chef', salary: 42000 },
-    { name: 'Sunil Kumar', email: 'shop@championsclub.com', phone: '9876543214', role: 'SHOP_STAFF', empNo: 'EMP-004', desig: 'Pro Shop Manager', salary: 30000 },
-    { name: 'Mahesh Bhupathi', email: 'coach.tennis@championsclub.com', phone: '9876543280', role: 'FRONT_DESK', empNo: 'EMP-005', desig: 'Senior Tennis Coach', salary: 55000 },
-    { name: 'Pullela Gopichand', email: 'coach.badminton@championsclub.com', phone: '9876543281', role: 'FRONT_DESK', empNo: 'EMP-006', desig: 'Head Badminton Coach', salary: 50000 },
-    { name: 'Anjali Bhagwat', email: 'trainer@championsclub.com', phone: '9876543282', role: 'FRONT_DESK', empNo: 'EMP-007', desig: 'Strength & Conditioning Coach', salary: 38000 },
-    { name: 'Ramesh Patel', email: 'accounts@championsclub.com', phone: '9876543283', role: 'FRONT_DESK', empNo: 'EMP-008', desig: 'Senior Club Accountant', salary: 40000 },
-    { name: 'Devendra Joshi', email: 'facilities@championsclub.com', phone: '9876543284', role: 'FRONT_DESK', empNo: 'EMP-009', desig: 'Court & Turf Facility Manager', salary: 32000 },
+    { name: 'Vikram Mehta', email: 'owner@bookmycourt.com', phone: '9876543210', role: 'OWNER', empNo: 'EMP-000', desig: 'Managing Director & Owner', salary: 150000 },
+    { name: 'Priya Sharma', email: 'frontdesk@bookmycourt.com', phone: '9876543211', role: 'FRONT_DESK', empNo: 'EMP-001', desig: 'Head Receptionist', salary: 35000 },
+    { name: 'Rahul Verma', email: 'bar@bookmycourt.com', phone: '9876543212', role: 'BAR_STAFF', empNo: 'EMP-002', desig: 'Bar & Cafe Supervisor', salary: 32000 },
+    { name: 'Anthony D\'Souza', email: 'kitchen@bookmycourt.com', phone: '9876543213', role: 'KITCHEN', empNo: 'EMP-003', desig: 'Executive Head Chef', salary: 42000 },
+    { name: 'Sunil Kumar', email: 'shop@bookmycourt.com', phone: '9876543214', role: 'SHOP_STAFF', empNo: 'EMP-004', desig: 'Pro Shop Manager', salary: 30000 },
+    { name: 'Mahesh Bhupathi', email: 'coach.tennis@bookmycourt.com', phone: '9876543280', role: 'FRONT_DESK', empNo: 'EMP-005', desig: 'Senior Tennis Coach', salary: 55000 },
+    { name: 'Pullela Gopichand', email: 'coach.badminton@bookmycourt.com', phone: '9876543281', role: 'FRONT_DESK', empNo: 'EMP-006', desig: 'Head Badminton Coach', salary: 50000 },
+    { name: 'Anjali Bhagwat', email: 'trainer@bookmycourt.com', phone: '9876543282', role: 'FRONT_DESK', empNo: 'EMP-007', desig: 'Strength & Conditioning Coach', salary: 38000 },
+    { name: 'Ramesh Patel', email: 'accounts@bookmycourt.com', phone: '9876543283', role: 'FRONT_DESK', empNo: 'EMP-008', desig: 'Senior Club Accountant', salary: 40000 },
+    { name: 'Devendra Joshi', email: 'facilities@bookmycourt.com', phone: '9876543284', role: 'FRONT_DESK', empNo: 'EMP-009', desig: 'Court & Turf Facility Manager', salary: 32000 },
   ];
 
   const createdStaffUsers = [];
@@ -92,20 +91,6 @@ async function main() {
       },
     });
     createdEmployees.push(emp);
-
-    // Attendance records for past 5 days
-    for (let i = 1; i <= 5; i++) {
-      const attDate = subDays(now, i);
-      await prisma.attendance.create({
-        data: {
-          employeeId: emp.id,
-          date: attDate,
-          checkIn: setHours(attDate, 8),
-          checkOut: setHours(attDate, 17),
-          status: i === 4 ? 'HALF_DAY' : 'PRESENT',
-        },
-      });
-    }
 
     // Processed payroll
     await prisma.payroll.create({
@@ -140,7 +125,7 @@ async function main() {
       freeSessions: 12,
       shopDiscountPct: 20,
       barDiscountPct: 15,
-      maxBookingsDay: 3,
+      maxBookingsDay: 2,
     },
   });
 
@@ -180,71 +165,71 @@ async function main() {
 
   const rawMembers = [
     // Primary Demo User
-    { name: 'Rohan Gupta (Gold Member)', email: 'member@championsclub.com', phone: '9876543215', plan: goldPlan, status: 'ACTIVE', age: 28, endMonths: 10 },
+    { name: 'Rohan Gupta (Gold Member)', email: 'member@bookmycourt.com', phone: '9876543215', plan: goldPlan, status: 'ACTIVE', age: 28, endMonths: 10 },
     // 24 More Gold VIP Members
-    { name: 'Suresh Raina', email: 'suresh.raina@championsclub.com', phone: '9876543216', plan: goldPlan, status: 'ACTIVE', age: 37, endMonths: 11 },
-    { name: 'Deepika Padukone', email: 'deepika.p@championsclub.com', phone: '9876543222', plan: goldPlan, status: 'ACTIVE', age: 36, endMonths: 9 },
-    { name: 'Rajesh Khanna', email: 'rajesh.k@championsclub.com', phone: '9876543221', plan: goldPlan, status: 'ACTIVE', age: 49, endMonths: 8 },
-    { name: 'Sania Mirza', email: 'sania.mirza@championsclub.com', phone: '9876543231', plan: goldPlan, status: 'ACTIVE', age: 37, endMonths: 12 },
-    { name: 'Leander Paes', email: 'leander.p@championsclub.com', phone: '9876543232', plan: goldPlan, status: 'ACTIVE', age: 50, endMonths: 10 },
-    { name: 'Rohan Bopanna', email: 'rohan.bopanna@championsclub.com', phone: '9876543233', plan: goldPlan, status: 'ACTIVE', age: 44, endMonths: 11 },
-    { name: 'PV Sindhu', email: 'pv.sindhu@championsclub.com', phone: '9876543234', plan: goldPlan, status: 'ACTIVE', age: 29, endMonths: 8 },
-    { name: 'Saina Nehwal', email: 'saina.nehwal@championsclub.com', phone: '9876543235', plan: goldPlan, status: 'ACTIVE', age: 34, endMonths: 9 },
-    { name: 'Virat Kohli', email: 'virat.k@championsclub.com', phone: '9876543236', plan: goldPlan, status: 'ACTIVE', age: 35, endMonths: 12 },
-    { name: 'MS Dhoni', email: 'ms.dhoni@championsclub.com', phone: '9876543237', plan: goldPlan, status: 'ACTIVE', age: 43, endMonths: 11 },
-    { name: 'Sachin Tendulkar', email: 'sachin.t@championsclub.com', phone: '9876543238', plan: goldPlan, status: 'ACTIVE', age: 51, endMonths: 10 },
-    { name: 'Rohit Sharma', email: 'rohit.s@championsclub.com', phone: '9876543239', plan: goldPlan, status: 'ACTIVE', age: 37, endMonths: 7 },
-    { name: 'Jasprit Bumrah', email: 'jasprit.b@championsclub.com', phone: '9876543240', plan: goldPlan, status: 'ACTIVE', age: 30, endMonths: 8 },
-    { name: 'Hardik Pandya', email: 'hardik.p@championsclub.com', phone: '9876543241', plan: goldPlan, status: 'ACTIVE', age: 30, endMonths: 9 },
-    { name: 'Shubman Gill', email: 'shubman.g@championsclub.com', phone: '9876543242', plan: goldPlan, status: 'ACTIVE', age: 25, endMonths: 10 },
-    { name: 'KL Rahul', email: 'kl.rahul@championsclub.com', phone: '9876543243', plan: goldPlan, status: 'ACTIVE', age: 32, endMonths: 6 },
-    { name: 'Rishabh Pant', email: 'rishabh.p@championsclub.com', phone: '9876543244', plan: goldPlan, status: 'ACTIVE', age: 26, endMonths: 11 },
-    { name: 'Neeraj Chopra', email: 'neeraj.c@championsclub.com', phone: '9876543245', plan: goldPlan, status: 'ACTIVE', age: 26, endMonths: 12 },
-    { name: 'Abhinav Bindra', email: 'abhinav.b@championsclub.com', phone: '9876543246', plan: goldPlan, status: 'ACTIVE', age: 41, endMonths: 8 },
-    { name: 'Sunil Chhetri', email: 'sunil.c@championsclub.com', phone: '9876543247', plan: goldPlan, status: 'ACTIVE', age: 40, endMonths: 7 },
-    { name: 'Mary Kom', email: 'mary.kom@championsclub.com', phone: '9876543248', plan: goldPlan, status: 'ACTIVE', age: 41, endMonths: 9 },
-    { name: 'Gautam Adani', email: 'gautam.a@championsclub.com', phone: '9876543249', plan: goldPlan, status: 'ACTIVE', age: 58, endMonths: 12 },
-    { name: 'Anand Mahindra', email: 'anand.m@championsclub.com', phone: '9876543250', plan: goldPlan, status: 'ACTIVE', age: 60, endMonths: 10 },
-    { name: 'Kiran Mazumdar', email: 'kiran.m@championsclub.com', phone: '9876543251', plan: goldPlan, status: 'ACTIVE', age: 55, endMonths: 11 },
+    { name: 'Suresh Raina', email: 'suresh.raina@bookmycourt.com', phone: '9876543216', plan: goldPlan, status: 'ACTIVE', age: 37, endMonths: 11 },
+    { name: 'Deepika Padukone', email: 'deepika.p@bookmycourt.com', phone: '9876543222', plan: goldPlan, status: 'ACTIVE', age: 36, endMonths: 9 },
+    { name: 'Rajesh Khanna', email: 'rajesh.k@bookmycourt.com', phone: '9876543221', plan: goldPlan, status: 'ACTIVE', age: 49, endMonths: 8 },
+    { name: 'Sania Mirza', email: 'sania.mirza@bookmycourt.com', phone: '9876543231', plan: goldPlan, status: 'ACTIVE', age: 37, endMonths: 12 },
+    { name: 'Leander Paes', email: 'leander.p@bookmycourt.com', phone: '9876543232', plan: goldPlan, status: 'ACTIVE', age: 50, endMonths: 10 },
+    { name: 'Rohan Bopanna', email: 'rohan.bopanna@bookmycourt.com', phone: '9876543233', plan: goldPlan, status: 'ACTIVE', age: 44, endMonths: 11 },
+    { name: 'PV Sindhu', email: 'pv.sindhu@bookmycourt.com', phone: '9876543234', plan: goldPlan, status: 'ACTIVE', age: 29, endMonths: 8 },
+    { name: 'Saina Nehwal', email: 'saina.nehwal@bookmycourt.com', phone: '9876543235', plan: goldPlan, status: 'ACTIVE', age: 34, endMonths: 9 },
+    { name: 'Virat Kohli', email: 'virat.k@bookmycourt.com', phone: '9876543236', plan: goldPlan, status: 'ACTIVE', age: 35, endMonths: 12 },
+    { name: 'MS Dhoni', email: 'ms.dhoni@bookmycourt.com', phone: '9876543237', plan: goldPlan, status: 'ACTIVE', age: 43, endMonths: 11 },
+    { name: 'Sachin Tendulkar', email: 'sachin.t@bookmycourt.com', phone: '9876543238', plan: goldPlan, status: 'ACTIVE', age: 51, endMonths: 10 },
+    { name: 'Rohit Sharma', email: 'rohit.s@bookmycourt.com', phone: '9876543239', plan: goldPlan, status: 'ACTIVE', age: 37, endMonths: 7 },
+    { name: 'Jasprit Bumrah', email: 'jasprit.b@bookmycourt.com', phone: '9876543240', plan: goldPlan, status: 'ACTIVE', age: 30, endMonths: 8 },
+    { name: 'Hardik Pandya', email: 'hardik.p@bookmycourt.com', phone: '9876543241', plan: goldPlan, status: 'ACTIVE', age: 30, endMonths: 9 },
+    { name: 'Shubman Gill', email: 'shubman.g@bookmycourt.com', phone: '9876543242', plan: goldPlan, status: 'ACTIVE', age: 25, endMonths: 10 },
+    { name: 'KL Rahul', email: 'kl.rahul@bookmycourt.com', phone: '9876543243', plan: goldPlan, status: 'ACTIVE', age: 32, endMonths: 6 },
+    { name: 'Rishabh Pant', email: 'rishabh.p@bookmycourt.com', phone: '9876543244', plan: goldPlan, status: 'ACTIVE', age: 26, endMonths: 11 },
+    { name: 'Neeraj Chopra', email: 'neeraj.c@bookmycourt.com', phone: '9876543245', plan: goldPlan, status: 'ACTIVE', age: 26, endMonths: 12 },
+    { name: 'Abhinav Bindra', email: 'abhinav.b@bookmycourt.com', phone: '9876543246', plan: goldPlan, status: 'ACTIVE', age: 41, endMonths: 8 },
+    { name: 'Sunil Chhetri', email: 'sunil.c@bookmycourt.com', phone: '9876543247', plan: goldPlan, status: 'ACTIVE', age: 40, endMonths: 7 },
+    { name: 'Mary Kom', email: 'mary.kom@bookmycourt.com', phone: '9876543248', plan: goldPlan, status: 'ACTIVE', age: 41, endMonths: 9 },
+    { name: 'Gautam Adani', email: 'gautam.a@bookmycourt.com', phone: '9876543249', plan: goldPlan, status: 'ACTIVE', age: 58, endMonths: 12 },
+    { name: 'Anand Mahindra', email: 'anand.m@bookmycourt.com', phone: '9876543250', plan: goldPlan, status: 'ACTIVE', age: 60, endMonths: 10 },
+    { name: 'Kiran Mazumdar', email: 'kiran.m@bookmycourt.com', phone: '9876543251', plan: goldPlan, status: 'ACTIVE', age: 55, endMonths: 11 },
 
     // 18 Silver Members
-    { name: 'Amitabh Sen', email: 'amitabh.sen@championsclub.com', phone: '9876543217', plan: silverPlan, status: 'ACTIVE', age: 42, endMonths: 4 },
-    { name: 'Kavita Krishnan', email: 'kavita.k@championsclub.com', phone: '9876543218', plan: silverPlan, status: 'ACTIVE', age: 31, endMonths: 5 },
-    { name: 'Nikhil Kamath', email: 'nikhil.kamath@championsclub.com', phone: '9876543223', plan: silverPlan, status: 'ACTIVE', age: 38, endMonths: 2 },
-    { name: 'Meera Nambiar', email: 'meera.n@championsclub.com', phone: '9876543224', plan: silverPlan, status: 'ACTIVE', age: 27, endMonths: 6 },
-    { name: 'Arjun Rampal', email: 'arjun.r@championsclub.com', phone: '9876543252', plan: silverPlan, status: 'ACTIVE', age: 35, endMonths: 5 },
-    { name: 'Anushka Sharma', email: 'anushka.s@championsclub.com', phone: '9876543253', plan: silverPlan, status: 'ACTIVE', age: 35, endMonths: 4 },
-    { name: 'Farhan Akhtar', email: 'farhan.a@championsclub.com', phone: '9876543254', plan: silverPlan, status: 'ACTIVE', age: 45, endMonths: 3 },
-    { name: 'Kareena Kapoor', email: 'kareena.k@championsclub.com', phone: '9876543255', plan: silverPlan, status: 'ACTIVE', age: 40, endMonths: 5 },
-    { name: 'Ranbir Kapoor', email: 'ranbir.k@championsclub.com', phone: '9876543256', plan: silverPlan, status: 'ACTIVE', age: 39, endMonths: 6 },
-    { name: 'Alia Bhatt', email: 'alia.b@championsclub.com', phone: '9876543257', plan: silverPlan, status: 'ACTIVE', age: 30, endMonths: 4 },
-    { name: 'Varun Dhawan', email: 'varun.d@championsclub.com', phone: '9876543258', plan: silverPlan, status: 'ACTIVE', age: 34, endMonths: 5 },
-    { name: 'Sidharth Malhotra', email: 'sidharth.m@championsclub.com', phone: '9876543259', plan: silverPlan, status: 'ACTIVE', age: 36, endMonths: 2 },
-    { name: 'Kiara Advani', email: 'kiara.a@championsclub.com', phone: '9876543260', plan: silverPlan, status: 'ACTIVE', age: 31, endMonths: 6 },
-    { name: 'Ayushmann Khurrana', email: 'ayushmann.k@championsclub.com', phone: '9876543261', plan: silverPlan, status: 'ACTIVE', age: 38, endMonths: 3 },
-    { name: 'Taapsee Pannu', email: 'taapsee.p@championsclub.com', phone: '9876543262', plan: silverPlan, status: 'ACTIVE', age: 33, endMonths: 5 },
-    { name: 'Rajkummar Rao', email: 'rajkummar.r@championsclub.com', phone: '9876543263', plan: silverPlan, status: 'ACTIVE', age: 37, endMonths: 4 },
-    { name: 'Bhumi Pednekar', email: 'bhumi.p@championsclub.com', phone: '9876543264', plan: silverPlan, status: 'ACTIVE', age: 32, endMonths: 5 },
-    { name: 'Kartik Aaryan', email: 'kartik.a@championsclub.com', phone: '9876543265', plan: silverPlan, status: 'ACTIVE', age: 32, endMonths: 6 },
+    { name: 'Amitabh Sen', email: 'amitabh.sen@bookmycourt.com', phone: '9876543217', plan: silverPlan, status: 'ACTIVE', age: 42, endMonths: 4 },
+    { name: 'Kavita Krishnan', email: 'kavita.k@bookmycourt.com', phone: '9876543218', plan: silverPlan, status: 'ACTIVE', age: 31, endMonths: 5 },
+    { name: 'Nikhil Kamath', email: 'nikhil.kamath@bookmycourt.com', phone: '9876543223', plan: silverPlan, status: 'ACTIVE', age: 38, endMonths: 2 },
+    { name: 'Meera Nambiar', email: 'meera.n@bookmycourt.com', phone: '9876543224', plan: silverPlan, status: 'ACTIVE', age: 27, endMonths: 6 },
+    { name: 'Arjun Rampal', email: 'arjun.r@bookmycourt.com', phone: '9876543252', plan: silverPlan, status: 'ACTIVE', age: 35, endMonths: 5 },
+    { name: 'Anushka Sharma', email: 'anushka.s@bookmycourt.com', phone: '9876543253', plan: silverPlan, status: 'ACTIVE', age: 35, endMonths: 4 },
+    { name: 'Farhan Akhtar', email: 'farhan.a@bookmycourt.com', phone: '9876543254', plan: silverPlan, status: 'ACTIVE', age: 45, endMonths: 3 },
+    { name: 'Kareena Kapoor', email: 'kareena.k@bookmycourt.com', phone: '9876543255', plan: silverPlan, status: 'ACTIVE', age: 40, endMonths: 5 },
+    { name: 'Ranbir Kapoor', email: 'ranbir.k@bookmycourt.com', phone: '9876543256', plan: silverPlan, status: 'ACTIVE', age: 39, endMonths: 6 },
+    { name: 'Alia Bhatt', email: 'alia.b@bookmycourt.com', phone: '9876543257', plan: silverPlan, status: 'ACTIVE', age: 30, endMonths: 4 },
+    { name: 'Varun Dhawan', email: 'varun.d@bookmycourt.com', phone: '9876543258', plan: silverPlan, status: 'ACTIVE', age: 34, endMonths: 5 },
+    { name: 'Sidharth Malhotra', email: 'sidharth.m@bookmycourt.com', phone: '9876543259', plan: silverPlan, status: 'ACTIVE', age: 36, endMonths: 2 },
+    { name: 'Kiara Advani', email: 'kiara.a@bookmycourt.com', phone: '9876543260', plan: silverPlan, status: 'ACTIVE', age: 31, endMonths: 6 },
+    { name: 'Ayushmann Khurrana', email: 'ayushmann.k@bookmycourt.com', phone: '9876543261', plan: silverPlan, status: 'ACTIVE', age: 38, endMonths: 3 },
+    { name: 'Taapsee Pannu', email: 'taapsee.p@bookmycourt.com', phone: '9876543262', plan: silverPlan, status: 'ACTIVE', age: 33, endMonths: 5 },
+    { name: 'Rajkummar Rao', email: 'rajkummar.r@bookmycourt.com', phone: '9876543263', plan: silverPlan, status: 'ACTIVE', age: 37, endMonths: 4 },
+    { name: 'Bhumi Pednekar', email: 'bhumi.p@bookmycourt.com', phone: '9876543264', plan: silverPlan, status: 'ACTIVE', age: 32, endMonths: 5 },
+    { name: 'Kartik Aaryan', email: 'kartik.a@bookmycourt.com', phone: '9876543265', plan: silverPlan, status: 'ACTIVE', age: 32, endMonths: 6 },
 
     // 10 Junior Members (Age < 18)
-    { name: 'Aryan Sharma (Junior)', email: 'aryan.sharma@championsclub.com', phone: '9876543219', plan: juniorPlan, status: 'ACTIVE', age: 15, endMonths: 4 },
-    { name: 'Tanvi Deshmukh (Junior)', email: 'tanvi.d@championsclub.com', phone: '9876543220', plan: juniorPlan, status: 'ACTIVE', age: 16, endMonths: 3 },
-    { name: 'Dhruv Jurel', email: 'dhruv.j@championsclub.com', phone: '9876543266', plan: juniorPlan, status: 'ACTIVE', age: 17, endMonths: 5 },
-    { name: 'Yashasvi Jaiswal', email: 'yashasvi.j@championsclub.com', phone: '9876543267', plan: juniorPlan, status: 'ACTIVE', age: 17, endMonths: 6 },
-    { name: 'Shafali Verma', email: 'shafali.v@championsclub.com', phone: '9876543268', plan: juniorPlan, status: 'ACTIVE', age: 16, endMonths: 4 },
-    { name: 'Richa Ghosh', email: 'richa.g@championsclub.com', phone: '9876543269', plan: juniorPlan, status: 'ACTIVE', age: 17, endMonths: 5 },
-    { name: 'Aman Sehrawat', email: 'aman.s@championsclub.com', phone: '9876543270', plan: juniorPlan, status: 'ACTIVE', age: 16, endMonths: 6 },
-    { name: 'Manu Bhaker', email: 'manu.b@championsclub.com', phone: '9876543271', plan: juniorPlan, status: 'ACTIVE', age: 17, endMonths: 5 },
-    { name: 'Lakshya Sen (Junior Grad)', email: 'lakshya.s@championsclub.com', phone: '9876543272', plan: juniorPlan, status: 'ACTIVE', age: 18, endMonths: 2 },
-    { name: 'Anmol Kharb', email: 'anmol.k@championsclub.com', phone: '9876543273', plan: juniorPlan, status: 'ACTIVE', age: 15, endMonths: 5 },
+    { name: 'Aryan Sharma (Junior)', email: 'aryan.sharma@bookmycourt.com', phone: '9876543219', plan: juniorPlan, status: 'ACTIVE', age: 15, endMonths: 4 },
+    { name: 'Tanvi Deshmukh (Junior)', email: 'tanvi.d@bookmycourt.com', phone: '9876543220', plan: juniorPlan, status: 'ACTIVE', age: 16, endMonths: 3 },
+    { name: 'Dhruv Jurel', email: 'dhruv.j@bookmycourt.com', phone: '9876543266', plan: juniorPlan, status: 'ACTIVE', age: 17, endMonths: 5 },
+    { name: 'Yashasvi Jaiswal', email: 'yashasvi.j@bookmycourt.com', phone: '9876543267', plan: juniorPlan, status: 'ACTIVE', age: 17, endMonths: 6 },
+    { name: 'Shafali Verma', email: 'shafali.v@bookmycourt.com', phone: '9876543268', plan: juniorPlan, status: 'ACTIVE', age: 16, endMonths: 4 },
+    { name: 'Richa Ghosh', email: 'richa.g@bookmycourt.com', phone: '9876543269', plan: juniorPlan, status: 'ACTIVE', age: 17, endMonths: 5 },
+    { name: 'Aman Sehrawat', email: 'aman.s@bookmycourt.com', phone: '9876543270', plan: juniorPlan, status: 'ACTIVE', age: 16, endMonths: 6 },
+    { name: 'Manu Bhaker', email: 'manu.b@bookmycourt.com', phone: '9876543271', plan: juniorPlan, status: 'ACTIVE', age: 17, endMonths: 5 },
+    { name: 'Lakshya Sen (Junior Grad)', email: 'lakshya.s@bookmycourt.com', phone: '9876543272', plan: juniorPlan, status: 'ACTIVE', age: 18, endMonths: 2 },
+    { name: 'Anmol Kharb', email: 'anmol.k@bookmycourt.com', phone: '9876543273', plan: juniorPlan, status: 'ACTIVE', age: 15, endMonths: 5 },
 
     // 5 Expired / Inactive Members
-    { name: 'Vikramaditya Rao (Expired)', email: 'vikram.rao@championsclub.com', phone: '9876543225', plan: goldPlan, status: 'EXPIRED', age: 45, endMonths: -1 },
-    { name: 'Sneha Roy (Expired)', email: 'sneha.roy@championsclub.com', phone: '9876543226', plan: silverPlan, status: 'EXPIRED', age: 29, endMonths: -2 },
-    { name: 'Prashant Nair (Expired)', email: 'prashant.n@championsclub.com', phone: '9876543274', plan: silverPlan, status: 'EXPIRED', age: 41, endMonths: -3 },
-    { name: 'Divya Agarwal (Expired)', email: 'divya.a@championsclub.com', phone: '9876543275', plan: juniorPlan, status: 'EXPIRED', age: 18, endMonths: -1 },
-    { name: 'Harsh Vardhan (Suspended)', email: 'harsh.v@championsclub.com', phone: '9876543276', plan: goldPlan, status: 'SUSPENDED', age: 39, endMonths: 1 },
+    { name: 'Vikramaditya Rao (Expired)', email: 'vikram.rao@bookmycourt.com', phone: '9876543225', plan: goldPlan, status: 'EXPIRED', age: 45, endMonths: -1 },
+    { name: 'Sneha Roy (Expired)', email: 'sneha.roy@bookmycourt.com', phone: '9876543226', plan: silverPlan, status: 'EXPIRED', age: 29, endMonths: -2 },
+    { name: 'Prashant Nair (Expired)', email: 'prashant.n@bookmycourt.com', phone: '9876543274', plan: silverPlan, status: 'EXPIRED', age: 41, endMonths: -3 },
+    { name: 'Divya Agarwal (Expired)', email: 'divya.a@bookmycourt.com', phone: '9876543275', plan: juniorPlan, status: 'EXPIRED', age: 18, endMonths: -1 },
+    { name: 'Harsh Vardhan (Suspended)', email: 'harsh.v@bookmycourt.com', phone: '9876543276', plan: goldPlan, status: 'SUSPENDED', age: 39, endMonths: 1 },
   ];
 
   const createdMembers = [];
@@ -449,11 +434,11 @@ async function main() {
     { name: 'Asics Gel-Resolution 9 Tennis Shoes', sku: 'SHOE-ASC-09', category: 'SHOES', price: 11999, stock: 7, reorderLevel: 3 },
     { name: 'Babolat Jet Mach 3 Shoes', sku: 'SHOE-BAB-03', category: 'SHOES', price: 8500, stock: 5, reorderLevel: 2 },
     { name: 'Yonex Power Cushion 65 Z3', sku: 'SHOE-YON-65', category: 'SHOES', price: 10499, stock: 6, reorderLevel: 3 },
-    { name: 'Champions Club Dry-Fit Match Jersey', sku: 'APP-DRY-01', category: 'APPAREL', price: 1299, stock: 28, reorderLevel: 10 },
+    { name: 'BookMyCourt Dry-Fit Match Jersey', sku: 'APP-DRY-01', category: 'APPAREL', price: 1299, stock: 28, reorderLevel: 10 },
     { name: 'Nike Court Athletic Shorts', sku: 'APP-NIK-02', category: 'APPAREL', price: 999, stock: 32, reorderLevel: 8 },
     { name: 'Tourna Grip Original Overgrip (Pack of 3)', sku: 'ACC-TRN-03', category: 'ACCESSORIES', price: 450, stock: 45, reorderLevel: 15 },
     { name: 'Wilson Wristbands (Pair)', sku: 'ACC-WIL-WR', category: 'ACCESSORIES', price: 299, stock: 35, reorderLevel: 10 },
-    { name: 'Champions Club Insulated Thermal Bottle (750ml)', sku: 'ACC-BOT-01', category: 'ACCESSORIES', price: 899, stock: 20, reorderLevel: 5 },
+    { name: 'BookMyCourt Insulated Thermal Bottle (750ml)', sku: 'ACC-BOT-01', category: 'ACCESSORIES', price: 899, stock: 20, reorderLevel: 5 },
   ];
 
   const createdProducts = [];
@@ -726,12 +711,12 @@ async function main() {
 
   console.log('✅ 65+ User Master Dataset seeded successfully into local database!');
   console.log('----------------------------------------------------');
-  console.log('👑 Owner:      owner@championsclub.com      / Password@123');
-  console.log('🏢 Front Desk: frontdesk@championsclub.com  / Password@123');
-  console.log('🍸 Bar Staff:  bar@championsclub.com        / Password@123');
-  console.log('👨‍🍳 Kitchen:    kitchen@championsclub.com    / Password@123');
-  console.log('🛍️ Shop Staff: shop@championsclub.com       / Password@123');
-  console.log('🎾 VIP Member: member@championsclub.com     / Password@123');
+  console.log('👑 Owner:      owner@bookmycourt.com      / Password@123');
+  console.log('🏢 Front Desk: frontdesk@bookmycourt.com  / Password@123');
+  console.log('🍸 Bar Staff:  bar@bookmycourt.com        / Password@123');
+  console.log('👨‍🍳 Kitchen:    kitchen@bookmycourt.com    / Password@123');
+  console.log('🛍️ Shop Staff: shop@bookmycourt.com       / Password@123');
+  console.log('🎾 VIP Member: member@bookmycourt.com     / Password@123');
   console.log('----------------------------------------------------');
 }
 

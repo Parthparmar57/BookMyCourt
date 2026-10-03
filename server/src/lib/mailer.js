@@ -27,7 +27,7 @@ export const sendEmail = async ({ to, subject, text, html }) => {
 
   try {
     const info = await transporter.sendMail({
-      from: `"${env.SMTP_FROM_NAME || 'The Champions Club'}" <${env.SMTP_FROM}>`,
+      from: `"${env.SMTP_FROM_NAME || 'BookMyCourt'}" <${env.SMTP_FROM}>`,
       to,
       subject,
       text: text || (html ? html.replace(/<[^>]*>?/gm, '') : ''),

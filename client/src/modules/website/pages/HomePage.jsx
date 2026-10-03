@@ -179,7 +179,7 @@ export const HomePage = () => {
           phone: formData.phone.trim(),
           email: formData.email.trim(),
           interest: formData.sport,
-          message: formData.message?.trim() || `General enquiry regarding ${formData.sport} membership at The Champions Club.`
+          message: formData.message?.trim() || `General enquiry regarding ${formData.sport} membership at BookMyCourt.`
         });
       }
       setFormSubmitted(true);
@@ -305,7 +305,7 @@ export const HomePage = () => {
             <div className="relative overflow-hidden bg-white border border-gray-200 shadow-2xl hover:shadow-3xl transition-shadow">
               <img
                 src="/9923a9a7-ccb8-44f4-b085-21df8fc8691d.png"
-                alt="The Champions Club Courts & Management System"
+                alt="BookMyCourt Courts & Management System"
                 className="w-full h-auto max-h-[480px] object-cover object-center"
               />
             </div>
@@ -358,7 +358,7 @@ export const HomePage = () => {
             ABOUT THE CLUB
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-black text-[#121212] tracking-tight leading-tight">
-            Welcome to The Champions Club
+            Welcome to BookMyCourt
           </h2>
           <p className="text-base sm:text-lg text-gray-600 font-normal leading-relaxed">
             Experience our 3 world-class facilities designed for elite athletic performance, premium equipment, and post-game social relaxation.
@@ -779,7 +779,7 @@ export const HomePage = () => {
               BOOK A TRIAL & ENQUIRIES
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-[#121212] tracking-tight">
-              Get Started at The Champions Club
+              Get Started at BookMyCourt
             </h2>
             <p className="text-sm sm:text-base text-gray-600">
               Submit your request on the spot. Saved directly to our concierge team so someone gets in touch immediately!

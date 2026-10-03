@@ -8,13 +8,6 @@ export const employeesApi = {
   update: (id, payload) => apiClient.patch(`/employees/${id}`, payload),
 };
 
-/** Attendance. */
-export const attendanceApi = {
-  list: (params = {}) => apiClient.get('/attendance', { params }),
-  checkIn: (payload = {}) => apiClient.post('/attendance/check-in', payload),
-  checkOut: (payload = {}) => apiClient.post('/attendance/check-out', payload),
-};
-
 /** Leave. */
 export const leaveApi = {
   list: () => apiClient.get('/leave'),

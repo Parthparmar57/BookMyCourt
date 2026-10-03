@@ -6,12 +6,12 @@ import { authService } from '../../../services/auth.service';
 import { Loader2, AlertCircle, Mail, X, CheckCircle2 } from 'lucide-react';
 
 const DEMO_ACCOUNTS = [
-  { role: 'OWNER', label: 'Owner / Admin', login: 'owner@championsclub.com' },
-  { role: 'FRONT_DESK', label: 'Front Desk', login: 'frontdesk@championsclub.com' },
-  { role: 'BAR_STAFF', label: 'Bar Staff', login: 'bar@championsclub.com' },
-  { role: 'KITCHEN', label: 'Kitchen', login: 'kitchen@championsclub.com' },
-  { role: 'SHOP_STAFF', label: 'Shop Staff', login: 'shop@championsclub.com' },
-  { role: 'MEMBER', label: 'Member', login: 'member@championsclub.com' },
+  { role: 'OWNER', label: 'Owner / Admin', login: 'owner@bookmycourt.com' },
+  { role: 'FRONT_DESK', label: 'Front Desk', login: 'frontdesk@bookmycourt.com' },
+  { role: 'BAR_STAFF', label: 'Bar Staff', login: 'bar@bookmycourt.com' },
+  { role: 'KITCHEN', label: 'Kitchen', login: 'kitchen@bookmycourt.com' },
+  { role: 'SHOP_STAFF', label: 'Shop Staff', login: 'shop@bookmycourt.com' },
+  { role: 'MEMBER', label: 'Member', login: 'member@bookmycourt.com' },
 ];
 
 const DEMO_PASSWORD = 'Password@123';
@@ -127,7 +127,7 @@ export const LoginPage = () => {
               required
               value={form.login}
               onChange={(e) => setForm((prev) => ({ ...prev, login: e.target.value }))}
-              placeholder="e.g. owner@championsclub.com"
+              placeholder="e.g. owner@bookmycourt.com"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-slate-400"
             />
           </div>
@@ -289,7 +289,7 @@ export const LoginPage = () => {
                     required
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="e.g. member@championsclub.com"
+                    placeholder="e.g. member@bookmycourt.com"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   />
                 </div>

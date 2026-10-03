@@ -1,9 +1,40 @@
 /**
- * Branded HTML Email Templates for The Champions Club / BookMyCourt.
- * Matches the club's emerald/mint aesthetic with responsive, mobile-ready layout.
+ * Branded HTML Email Templates for BookMyCourt.
+ * Matches the club's emerald/mint aesthetic with responsive, mobile-ready layout & brand logo header.
  */
 
-const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => `
+import fs from 'fs';
+import path from 'path';
+
+let cachedLogoBase64 = null;
+const getLogoBase64 = () => {
+  if (cachedLogoBase64 !== null) return cachedLogoBase64;
+  try {
+    const primaryPath = path.join(process.cwd(), 'src/assets/bookmycourt_logo.png');
+    let logoPath = fs.existsSync(primaryPath) ? primaryPath : null;
+    if (!logoPath) {
+      const clientPath = path.join(process.cwd(), '../client/public/bookmycourt_logo.png');
+      if (fs.existsSync(clientPath)) logoPath = clientPath;
+    }
+    if (logoPath) {
+      const buf = fs.readFileSync(logoPath);
+      cachedLogoBase64 = `data:image/png;base64,${buf.toString('base64')}`;
+    } else {
+      cachedLogoBase64 = '';
+    }
+  } catch (e) {
+    cachedLogoBase64 = '';
+  }
+  return cachedLogoBase64;
+};
+
+const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => {
+  const logoData = getLogoBase64();
+  const logoHeaderHtml = logoData
+    ? `<img src="${logoData}" alt="BookMyCourt Logo" style="height: 44px; width: auto; max-width: 220px; object-fit: contain; margin-bottom: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));" />`
+    : `<div class="club-badge">BOOKMYCOURT</div>`;
+
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,7 +65,7 @@ const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => `
       border: 1px solid #e2e8f0;
     }
     .header {
-      background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #047857 100%);
       padding: 32px 28px;
       text-align: center;
       color: #ffffff;
@@ -53,8 +84,8 @@ const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => `
       color: #a7f3d0;
     }
     .header h1 {
-      margin: 0;
-      font-size: 24px;
+      margin: 4px 0 0;
+      font-size: 22px;
       font-weight: 800;
       letter-spacing: -0.5px;
       color: #ffffff;
@@ -153,7 +184,7 @@ const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => `
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <div class="club-badge">THE CHAMPIONS CLUB</div>
+        ${logoHeaderHtml}
         <h1>${title}</h1>
         ${subtitle ? `<p>${subtitle}</p>` : ''}
       </div>
@@ -161,8 +192,8 @@ const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => `
         ${contentHtml}
       </div>
       <div class="footer">
-        <strong>The Champions Club · BookMyCourt</strong><br>
-        100 Sports Club Boulevard · Tennis, Cricket & Padel Facility<br>
+        <strong>BookMyCourt · Digital Club OS</strong><br>
+        100 Sports Club Boulevard · Tennis, Badminton, Cricket & Padel Facility<br>
         ${footerNote || 'This is an automated operational notification.'}
       </div>
     </div>
@@ -170,6 +201,7 @@ const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => `
 </body>
 </html>
 `;
+};
 
 /**
  * 1. Password Reset Email Template
@@ -180,7 +212,7 @@ export const getPasswordResetTemplate = ({ name, resetLink, otpCode, expiryMinut
       Hello <strong>${name || 'Member'}</strong>,
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      We received a request to reset your password for <strong>The Champions Club</strong> portal. Use the verification code below or click the reset button to set a new password.
+      We received a request to reset your password for your <strong>BookMyCourt</strong> portal account. Use the verification code below or click the reset button to set a new password.
     </p>
 
     <div class="otp-box">
@@ -203,9 +235,9 @@ export const getPasswordResetTemplate = ({ name, resetLink, otpCode, expiryMinut
 
   return baseEmailLayout({
     title: 'Password Reset Request',
-    subtitle: 'Secure access to your Champions Club account',
+    subtitle: 'Secure access to your BookMyCourt account',
     contentHtml,
-    footerNote: 'Need help? Contact our front desk at support@championsclub.com',
+    footerNote: 'Need help? Contact our front desk at support@bookmycourt.com',
   });
 };
 
@@ -234,7 +266,7 @@ export const getBookingConfirmationTemplate = ({
       Hi <strong>${customerName || 'Player'}</strong>,
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      Your court reservation at <strong>The Champions Club</strong> has been locked and confirmed. Below are your session details:
+      Your court reservation at <strong>BookMyCourt</strong> has been locked and confirmed. Below are your session details:
     </p>
 
     <div class="card">
@@ -294,7 +326,7 @@ export const getEnquiryAcknowledgmentTemplate = ({ name, interest, message }) =>
       Dear <strong>${name || 'Visitor'}</strong>,
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      Thank you for reaching out to <strong>The Champions Club</strong>! We have received your inquiry and our team is already reviewing your request.
+      Thank you for reaching out to <strong>BookMyCourt</strong>! We have received your inquiry and our team is already reviewing your request.
     </p>
 
     <div class="card">
@@ -323,9 +355,9 @@ export const getEnquiryAcknowledgmentTemplate = ({ name, interest, message }) =>
 
   return baseEmailLayout({
     title: 'Thank You for Contacting Us',
-    subtitle: 'We have received your message at The Champions Club',
+    subtitle: 'We have received your message at BookMyCourt',
     contentHtml,
-    footerNote: 'Operating hours: 6:00 AM - 11:00 PM Daily',
+    footerNote: 'Operating hours: 6:00 AM - 10:00 PM Daily',
   });
 };
 
@@ -351,7 +383,7 @@ export const getQuotationEmailTemplate = ({
       Dear <strong>${leadName || 'Client'}</strong>,
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      Thank you for your interest in <strong>The Champions Club</strong>. As discussed with our team, we are delighted to present your customized quotation:
+      Thank you for your interest in <strong>BookMyCourt</strong>. As discussed with our team, we are delighted to present your customized quotation:
     </p>
 
     <div class="card">
@@ -390,7 +422,7 @@ export const getQuotationEmailTemplate = ({
   `;
 
   return baseEmailLayout({
-    title: 'Your Champions Club Quotation',
+    title: 'Your BookMyCourt Quotation',
     subtitle: `Quotation #${quotationNo} for ${leadName}`,
     contentHtml,
     footerNote: 'This quote is valid up to the date mentioned above. Subject to club terms & conditions.',
@@ -414,7 +446,7 @@ export const getWelcomeMemberEmailTemplate = ({
     </div>
 
     <p style="font-size: 15px; margin-top: 0; line-height: 1.5;">
-      Welcome to <strong>The Champions Club</strong>, <strong>${memberName}</strong>!
+      Welcome to <strong>BookMyCourt</strong>, <strong>${memberName}</strong>!
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
       Your membership account has been successfully registered. Below are your account credentials to log into our member portal:
@@ -451,7 +483,7 @@ export const getWelcomeMemberEmailTemplate = ({
   `;
 
   return baseEmailLayout({
-    title: 'Welcome to The Champions Club',
+    title: 'Welcome to BookMyCourt',
     subtitle: `Membership Account Activated · Member #${memberNo}`,
     contentHtml,
     footerNote: 'Please keep your credentials confidential. You can change your password anytime after logging in.',

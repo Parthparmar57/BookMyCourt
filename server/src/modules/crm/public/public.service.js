@@ -26,7 +26,7 @@ const sendVisitorAcknowledgment = async ({ name, email, interest, message }) => 
     const html = getEnquiryAcknowledgmentTemplate({ name, interest, message });
     await sendEmail({
       to: email,
-      subject: 'Inquiry Received · The Champions Club',
+      subject: 'Inquiry Received · BookMyCourt',
       html,
     });
   } catch (err) {

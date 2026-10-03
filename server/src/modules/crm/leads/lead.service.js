@@ -193,7 +193,7 @@ export const sendQuotationEmail = async (leadId, data) => {
 
   const mailResult = await sendEmail({
     to: targetEmail,
-    subject: `Official Quotation #${quotation.quotationNo} · The Champions Club`,
+    subject: `Official Quotation #${quotation.quotationNo} · BookMyCourt`,
     html: emailHtml,
   });
 
@@ -271,7 +271,7 @@ export const convertLeadToMember = async (leadId, data, actorId) => {
 
       await sendEmail({
         to: email,
-        subject: `Welcome to The Champions Club · Member Account Credentials (${member.memberNo})`,
+        subject: `Welcome to BookMyCourt · Member Account Credentials (${member.memberNo})`,
         html: emailHtml,
       });
     } catch (emailErr) {

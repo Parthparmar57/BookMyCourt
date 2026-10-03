@@ -19,7 +19,6 @@ export const getEmployeeById = async (id) => {
       user: true,
       leaves: { orderBy: { createdAt: 'desc' } },
       payrolls: { orderBy: [{ year: 'desc' }, { month: 'desc' }] },
-      attendances: { orderBy: { date: 'desc' }, take: 30 },
     },
   });
   if (!employee) throw new ApiError(404, 'Employee not found');
