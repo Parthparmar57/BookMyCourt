@@ -1,14 +1,43 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Send } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { CheckCircle2, Send, AlertCircle, Loader2 } from 'lucide-react';
+import { useBookTrial } from '../../../hooks/useCrm';
+import { trialSchema, applyServerErrors } from '../../../shared/validation/schemas';
+
+const TIME_SLOTS = Array.from({ length: 17 }, (_, i) => `${String(6 + i).padStart(2, '0')}:00`);
 
 export const TrialPage = () => {
-  const [submitted, setSubmitted] = useState(false);
-  const [formData, setFormData] = useState({ name: '', phone: '', email: '', sport: 'Tennis', date: '', time: '07:00 AM' });
+  const bookTrial = useBookTrial();
+  const [submittedPhone, setSubmittedPhone] = useState('');
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting, isSubmitSuccessful },
+  } = useForm({
+    resolver: zodResolver(trialSchema),
+    defaultValues: { name: '', phone: '', email: '', sport: 'Tennis', preferredDate: '', preferredTime: '07:00' },
+  });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmitted(true);
+  const onSubmit = async (values) => {
+    try {
+      await bookTrial.mutateAsync({
+        name: values.name,
+        phone: values.phone,
+        sport: values.sport,
+        preferredDate: values.preferredDate,
+        preferredTime: values.preferredTime,
+        ...(values.email ? { email: values.email } : {}),
+      });
+      setSubmittedPhone(values.phone);
+    } catch (err) {
+      applyServerErrors(err, setError);
+    }
   };
+
+  const err = (name) => errors[name]?.message;
 
   return (
     <div className="py-16 px-4 max-w-xl mx-auto">
@@ -21,65 +50,67 @@ export const TrialPage = () => {
           <p className="text-xs text-slate-600">Experience BookMyCourt facilities and software demo first-hand.</p>
         </div>
 
-        {submitted ? (
+        {isSubmitSuccessful ? (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center space-y-3 animate-in fade-in">
             <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
             <h3 className="text-lg font-bold text-slate-900">Trial Request Submitted!</h3>
-            <p className="text-xs text-slate-600">Our club concierge will contact you on <strong>{formData.phone}</strong> within 30 minutes to confirm your trial slot.</p>
-            <button
-              onClick={() => setSubmitted(false)}
-              className="text-xs font-bold text-emerald-700 underline pt-2"
-            >
-              Submit another request
-            </button>
+            <p className="text-xs text-slate-600">Our club concierge will contact you on <strong>{submittedPhone}</strong> to confirm your trial slot.</p>
+            <button onClick={() => reset()} className="text-xs font-bold text-emerald-700 underline pt-2">Submit another request</button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs font-medium text-slate-700">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-xs font-medium text-slate-700" noValidate>
+            {errors.root && (
+              <div className="flex items-start gap-2 bg-rose-50 text-rose-700 text-xs rounded-xl px-3 py-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{errors.root.message}</span>
+              </div>
+            )}
+
             <div>
               <label className="block mb-1 font-bold text-slate-900">Full Name *</label>
-              <input
-                required
-                type="text"
-                placeholder="e.g. Rahul Sharma"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-emerald-500"
-              />
+              <input {...register('name')} placeholder="e.g. Rahul Sharma" className={inputCls(err('name'))} />
+              {err('name') && <p className="text-[11px] text-rose-600 mt-1">{err('name')}</p>}
             </div>
 
             <div>
               <label className="block mb-1 font-bold text-slate-900">Phone Number (10 Digits) *</label>
-              <input
-                required
-                type="tel"
-                pattern="[6-9][0-9]{9}"
-                placeholder="9820123456"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-emerald-500"
-              />
+              <input {...register('phone')} placeholder="9820123456" className={inputCls(err('phone'))} />
+              {err('phone') && <p className="text-[11px] text-rose-600 mt-1">{err('phone')}</p>}
+            </div>
+
+            <div>
+              <label className="block mb-1 font-bold text-slate-900">Email (optional)</label>
+              <input {...register('email')} type="email" placeholder="you@example.com" className={inputCls(err('email'))} />
+              {err('email') && <p className="text-[11px] text-rose-600 mt-1">{err('email')}</p>}
             </div>
 
             <div>
               <label className="block mb-1 font-bold text-slate-900">Preferred Sport</label>
-              <select
-                value={formData.sport}
-                onChange={(e) => setFormData({ ...formData, sport: e.target.value })}
-                className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-white"
-              >
+              <select {...register('sport')} className={`${inputCls()} bg-white`}>
                 <option value="Tennis">Tennis</option>
                 <option value="Badminton">Badminton</option>
                 <option value="Padel">Padel</option>
-                <option value="Squash">Squash</option>
+                <option value="Cricket">Cricket</option>
               </select>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm py-3 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"
-            >
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block mb-1 font-bold text-slate-900">Preferred Date *</label>
+                <input {...register('preferredDate')} type="date" className={inputCls(err('preferredDate'))} />
+                {err('preferredDate') && <p className="text-[11px] text-rose-600 mt-1">{err('preferredDate')}</p>}
+              </div>
+              <div>
+                <label className="block mb-1 font-bold text-slate-900">Preferred Time *</label>
+                <select {...register('preferredTime')} className={`${inputCls()} bg-white`}>
+                  {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" disabled={isSubmitting} className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold text-sm py-3 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2">
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-emerald-400" />}
               <span>Submit Trial Request</span>
-              <Send className="w-4 h-4 text-emerald-400" />
             </button>
           </form>
         )}
@@ -87,3 +118,8 @@ export const TrialPage = () => {
     </div>
   );
 };
+
+const inputCls = (error) =>
+  `w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none ${
+    error ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-emerald-500'
+  }`;
