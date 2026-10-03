@@ -88,7 +88,7 @@ export const LoginPage = () => {
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 bg-gradient-to-b from-slate-50 via-white to-slate-50 font-sans">
       <div className="w-full max-w-md bg-white border border-slate-200/90 rounded-3xl shadow-xl shadow-slate-200/50 p-8 sm:p-9 space-y-6 relative overflow-hidden">
-        
+
         {/* Top Emerald Accent Bar */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
 
@@ -96,7 +96,7 @@ export const LoginPage = () => {
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex flex-col items-center gap-1.5 group">
             <img
-              src="/bookmycourt_logo.jpg"
+              src="/bookmycourt_logo.png"
               alt="Book My Court"
               className="h-12 w-auto object-contain transition-transform group-hover:scale-105"
             />
@@ -195,11 +195,10 @@ export const LoginPage = () => {
                   type="button"
                   disabled={submitting}
                   onClick={() => handleRoleSelect(acc)}
-                  className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-all text-center cursor-pointer ${
-                    isSelected
+                  className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-all text-center cursor-pointer ${isSelected
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                       : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50'
-                  } disabled:opacity-60`}
+                    } disabled:opacity-60`}
                 >
                   {isSelected ? 'Signing in…' : acc.label}
                 </button>

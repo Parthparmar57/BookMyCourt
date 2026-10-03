@@ -61,7 +61,6 @@ const getNextFriday = () => {
 
 export const BookingsPage = () => {
   const { role, user } = useAuth();
-  const { role, user } = useAuth();
   const isOwner = role === 'OWNER';
   const isFrontDesk = role === 'FRONT_DESK';
   const isStaff = isOwner || isFrontDesk;
@@ -155,15 +154,6 @@ export const BookingsPage = () => {
       ? allSlotTimes
       : ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
   }, [allSlotTimes, slotIntervalFilter]);
-
-  const columns = allColumns.filter((timeStr) => {
-    if (timeFilter === 'ALL') return true;
-    const hour = parseInt(timeStr.split(':')[0], 10);
-    if (timeFilter === 'MORNING') return hour >= 6 && hour < 12;
-    if (timeFilter === 'AFTERNOON') return hour >= 12 && hour < 17;
-    if (timeFilter === 'EVENING') return hour >= 17 && hour <= 23;
-    return true;
-  });
 
   // Executive Metric Calculations
   let totalSlotsCount = 0;

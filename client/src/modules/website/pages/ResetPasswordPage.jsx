@@ -53,8 +53,8 @@ export const ResetPasswordPage = () => {
     } catch (err) {
       setError(
         err?.response?.data?.message ||
-          err?.message ||
-          'Failed to reset password. The link or code may have expired.'
+        err?.message ||
+        'Failed to reset password. The link or code may have expired.'
       );
     } finally {
       setLoading(false);
@@ -64,7 +64,7 @@ export const ResetPasswordPage = () => {
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 bg-gradient-to-b from-slate-50 via-white to-slate-50 font-sans">
       <div className="w-full max-w-md bg-white border border-slate-200/90 rounded-3xl shadow-xl shadow-slate-200/50 p-8 sm:p-9 space-y-6 relative overflow-hidden">
-        
+
         {/* Top Accent Bar */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
 
@@ -72,7 +72,7 @@ export const ResetPasswordPage = () => {
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex flex-col items-center gap-1.5 group">
             <img
-              src="/bookmycourt_logo.jpg"
+              src="/bookmycourt_logo.png"
               alt="Book My Court"
               className="h-12 w-auto object-contain transition-transform group-hover:scale-105"
             />

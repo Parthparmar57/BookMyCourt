@@ -2,17 +2,17 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
-import { 
-  CheckCircle2, 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  Coffee, 
-  ShoppingBag, 
-  Kanban, 
-  Receipt, 
-  UserCheck, 
-  FileText, 
+import {
+  CheckCircle2,
+  LayoutDashboard,
+  Users,
+  Calendar,
+  Coffee,
+  ShoppingBag,
+  Kanban,
+  Receipt,
+  UserCheck,
+  FileText,
   LogOut,
   QrCode,
   Utensils,
@@ -83,12 +83,12 @@ export const Sidebar = () => {
       <div className="flex items-center justify-between py-1 shrink-0">
         <Link to="/" className="block group">
           <img
-            src="/bookmycourt_logo.jpg"
+            src="/bookmycourt_logo.png"
             alt="BookMyCourt Logo"
             className="h-14 sm:h-16 w-auto object-contain transition-transform group-hover:scale-105"
           />
         </Link>
-        
+
         {/* Mobile close button inside sidebar */}
         <button
           onClick={closeSidebar}
@@ -111,11 +111,10 @@ export const Sidebar = () => {
               onClick={() => {
                 if (window.innerWidth < 1024) closeSidebar();
               }}
-              className={`flex items-center gap-3.5 px-4 py-2.5 rounded-2xl text-xs font-medium transition-all ${
-                isActive
+              className={`flex items-center gap-3.5 px-4 py-2.5 rounded-2xl text-xs font-medium transition-all ${isActive
                   ? 'bg-[#e8f5e9] text-[#2e7d32] shadow-2xs font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
+                }`}
             >
               <Icon className={`w-4 h-4 ${isActive ? 'text-[#2e7d32]' : 'text-slate-400'}`} />
               <span className="truncate">{link.label}</span>
