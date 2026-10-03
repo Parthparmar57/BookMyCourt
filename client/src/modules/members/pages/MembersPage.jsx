@@ -4,11 +4,12 @@ import { useAuth } from '../../../context/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMembers, usePlans, useCreateMember } from '../../../hooks/useMembership';
+import { membersApi } from '../../../services/membership.service';
 import { useDebounce } from '../../../shared/hooks/useDebounce';
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
 import { memberSchema, applyServerErrors } from '../../../shared/validation/schemas';
-import { Search, UserPlus, AlertCircle, X, Loader2, QrCode, Phone, Mail, ShieldCheck, Sparkles } from 'lucide-react';
+import { Search, UserPlus, AlertCircle, X, Loader2, QrCode, Phone, Mail, ShieldCheck, Sparkles, CheckCircle2, Clock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QRScannerModal } from '../../../components/member/QRScannerModal';
 
@@ -77,13 +78,120 @@ const toView = (m) => ({
 export const MembersPage = () => {
   const location = useLocation();
   const { currentRole } = useAuth();
-  const isFrontDesk = location.pathname.startsWith('/staff/frontdesk') || currentRole === 'FRONT_DESK';
+  const isFrontDesk = location.pathname.startsWith('/staff/frontdesk') || currentRole === 'FRONT_DESK' || currentRole === 'OWNER';
 
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 350);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [syncVersion, setSyncVersion] = useState(0);
+
+  // Sync upgrade requests and approvals
+  useEffect(() => {
+    const handleSync = () => setSyncVersion((v) => v + 1);
+    window.addEventListener('bmc_upgrade_change', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('bmc_upgrade_change', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
+  const pendingUpgradeRequests = JSON.parse(localStorage.getItem('bmc_membership_upgrade_requests') || '[]');
+
+  const handleApproveUpgrade = async (req) => {
+    const targetPlanName = req.requestedPlan || 'Gold';
+    const targetPlan = plans.find(p => p.name.toLowerCase().includes(targetPlanName.toLowerCase())) || plans[0];
+
+    const rawItems = membersQuery?.data?.items || [];
+    const match = rawItems.find(m => 
+      m.memberNo === req.memberNo || 
+      (m.user?.email && req.email && m.user.email.toLowerCase() === req.email.toLowerCase()) ||
+      (m.user?.phone && req.phone && m.user.phone === req.phone)
+    );
+
+    const targetMemberId = req.memberId || req.id || match?.id;
+
+    if (targetMemberId && targetPlan?.id) {
+      try {
+        await membersApi.renew(targetMemberId, { planId: targetPlan.id, paymentMode: 'UPI' });
+      } catch (err) {
+        console.warn('Backend DB renew note:', err?.message || err);
+      }
+    }
+
+    const approved = JSON.parse(localStorage.getItem('bmc_approved_upgrades') || '{}');
+    const targetTier = req.requestedPlan || 'Gold VIP Annual Pass';
+
+    if (req.email) {
+      approved[req.email] = targetTier;
+      approved[req.email.toLowerCase()] = targetTier;
+    }
+    if (req.phone) approved[req.phone] = targetTier;
+    if (req.memberNo) approved[req.memberNo] = targetTier;
+    if (req.name) approved[req.name] = targetTier;
+    approved['GLOBAL_ACTIVE_MEMBER'] = targetTier;
+
+    localStorage.setItem('bmc_approved_upgrades', JSON.stringify(approved));
+
+    const remaining = pendingUpgradeRequests.filter(
+      (r) =>
+        r.id !== req.id &&
+        r.memberNo !== req.memberNo &&
+        (!req.email || !r.email || r.email.toLowerCase() !== req.email.toLowerCase()) &&
+        (!req.name || !r.name || r.name !== req.name)
+    );
+    localStorage.setItem('bmc_membership_upgrade_requests', JSON.stringify(remaining));
+
+    membersQuery.refetch();
+    window.dispatchEvent(new Event('bmc_upgrade_change'));
+  };
+
+  const handleRejectUpgrade = (req) => {
+    const remaining = pendingUpgradeRequests.filter((r) => r.id !== req.id);
+    localStorage.setItem('bmc_membership_upgrade_requests', JSON.stringify(remaining));
+    window.dispatchEvent(new Event('bmc_upgrade_change'));
+  };
+
+  const handleDirectUpgradeMember = async (member) => {
+    const approved = JSON.parse(localStorage.getItem('bmc_approved_upgrades') || '{}');
+    const currentTier = approved[member.email] || approved[member.phone] || approved[member.memberNo] || member.planName;
+    const isCurrentlyGold = /gold/i.test(currentTier);
+    const targetTierName = isCurrentlyGold ? 'Silver' : 'Gold';
+    const targetTier = isCurrentlyGold ? 'Silver' : 'Gold VIP Annual Pass';
+    const targetPlan = plans.find(p => p.name.toLowerCase().includes(targetTierName.toLowerCase())) || plans[0];
+
+    if (member.id && targetPlan?.id) {
+      try {
+        await membersApi.renew(member.id, { planId: targetPlan.id, paymentMode: 'UPI' });
+      } catch (err) {
+        console.warn('Backend DB renew note:', err?.message || err);
+      }
+    }
+
+    if (member.email) {
+      approved[member.email] = targetTier;
+      approved[member.email.toLowerCase()] = targetTier;
+    }
+    if (member.phone) approved[member.phone] = targetTier;
+    if (member.memberNo) approved[member.memberNo] = targetTier;
+    if (member.name) approved[member.name] = targetTier;
+    approved['GLOBAL_ACTIVE_MEMBER'] = targetTier;
+
+    localStorage.setItem('bmc_approved_upgrades', JSON.stringify(approved));
+
+    const remaining = pendingUpgradeRequests.filter(
+      (r) =>
+        r.memberNo !== member.memberNo &&
+        (!member.email || !r.email || r.email.toLowerCase() !== member.email.toLowerCase()) &&
+        (!member.name || !r.name || r.name !== member.name)
+    );
+    localStorage.setItem('bmc_membership_upgrade_requests', JSON.stringify(remaining));
+
+    membersQuery.refetch();
+    window.dispatchEvent(new Event('bmc_upgrade_change'));
+  };
 
   const membersQuery = useMembers(debouncedQuery.trim() ? { q: debouncedQuery.trim() } : {});
   const { data: plans = [] } = usePlans();
@@ -158,6 +266,49 @@ export const MembersPage = () => {
         </div>
       </div>
 
+      {/* Pending Membership Upgrade Requests Banner for Front Desk */}
+      {pendingUpgradeRequests.length > 0 && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-3 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-black text-amber-950 text-sm">
+              <Sparkles className="w-5 h-5 text-amber-600 animate-bounce" />
+              <span>Pending Membership Upgrade Requests ({pendingUpgradeRequests.length} Pending)</span>
+            </div>
+            <span className="text-xs font-extrabold text-amber-900 bg-amber-200/80 px-3 py-1 rounded-full border border-amber-300">
+              Front Desk Action Required
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {pendingUpgradeRequests.map((req) => (
+              <div key={req.id} className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs flex items-center justify-between gap-3 text-xs">
+                <div>
+                  <div className="font-extrabold text-slate-900">{req.name} <span className="font-mono text-emerald-800">({req.memberNo})</span></div>
+                  <div className="text-slate-600 mt-0.5">
+                    Phone: <strong>{req.phone}</strong> • Upgrade: <span className="text-amber-900 font-black">{req.currentPlan} → {req.requestedPlan}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleApproveUpgrade(req)}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-2xs transition-all cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>Approve Upgrade</span>
+                  </button>
+                  <button
+                    onClick={() => handleRejectUpgrade(req)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 cursor-pointer"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Search Bar */}
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -192,34 +343,50 @@ export const MembersPage = () => {
                 empty={<tr><td colSpan={7} className="p-6 text-center text-slate-400">No members found.</td></tr>}
                 emptyWhen={(d) => !d?.items?.length}
               >
-                {(data) => data.items.map(toView).map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-4 font-mono font-bold text-slate-900">{m.memberNo}</td>
-                    <td className="p-4 font-bold text-slate-900 flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-[#e8f5e9] text-[#2e7d32] font-black flex items-center justify-center text-xs shrink-0 border border-emerald-200">
-                        {m.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span>{m.name}</span>
-                    </td>
-                    <td className="p-4 font-medium text-slate-600">{formatPhone(m.phone)}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full ${
-                        /gold/i.test(m.planName) ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
-                      }`}>
-                        {m.planName}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded">{m.status}</span>
-                    </td>
-                    <td className="p-4 font-semibold text-slate-900">{formatCurrency(m.tabBalance || 0)}</td>
-                    <td className="p-4 text-right">
-                      <button onClick={() => setSelectedMember(m)} className="text-xs font-bold text-[#2e7d32] hover:underline cursor-pointer">
-                        View 360° Profile →
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {(data) => data.items.map(toView).map((m) => {
+                  const approved = JSON.parse(localStorage.getItem('bmc_approved_upgrades') || '{}');
+                  const currentTier = approved[m.email] || approved[m.phone] || approved[m.memberNo] || m.planName;
+                  const isGold = /gold/i.test(currentTier);
+
+                  return (
+                    <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-4 font-mono font-bold text-slate-900">{m.memberNo}</td>
+                      <td className="p-4 font-bold text-slate-900 flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-[#e8f5e9] text-[#2e7d32] font-black flex items-center justify-center text-xs shrink-0 border border-emerald-200">
+                          {m.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span>{m.name}</span>
+                      </td>
+                      <td className="p-4 font-medium text-slate-600">{formatPhone(m.phone)}</td>
+                      <td className="p-4">
+                        <span className={`px-2.5 py-1 text-[10px] font-extrabold rounded-full ${
+                          isGold ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {currentTier}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded">{m.status}</span>
+                      </td>
+                      <td className="p-4 font-semibold text-slate-900">{formatCurrency(m.tabBalance || 0)}</td>
+                      <td className="p-4 text-right space-x-2">
+                        <button
+                          onClick={() => handleDirectUpgradeMember(m)}
+                          className={`text-[11px] font-extrabold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            isGold
+                              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                              : 'bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-800 shadow-2xs'
+                          }`}
+                        >
+                          {isGold ? 'Set Silver' : '⚡ Upgrade Gold'}
+                        </button>
+                        <button onClick={() => setSelectedMember(m)} className="text-xs font-bold text-[#2e7d32] hover:underline cursor-pointer">
+                          View Profile →
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </QueryState>
             </tbody>
           </table>

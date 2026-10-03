@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { useMembers } from '../../../hooks/useMembership';
+import { useMembers, usePlans } from '../../../hooks/useMembership';
+import { membersApi } from '../../../services/membership.service';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   Download,
@@ -11,14 +12,30 @@ import {
   CheckCircle2,
   Phone,
   Mail,
-  Calendar,
-  CreditCard
+  Sparkles,
+  Clock,
+  ArrowUpRight,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 
 export const MemberCardPage = () => {
   const { user } = useAuth();
   const membersQuery = useMembers();
+  const { data: plans = [] } = usePlans();
   const [copied, setCopied] = useState(false);
+  const [syncVersion, setSyncVersion] = useState(0);
+
+  // Synchronize upgrade requests & approvals across windows/components
+  useEffect(() => {
+    const handleSync = () => setSyncVersion((v) => v + 1);
+    window.addEventListener('bmc_upgrade_change', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('bmc_upgrade_change', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   const rawMembers = membersQuery?.data?.items || [];
 
@@ -38,8 +55,30 @@ export const MemberCardPage = () => {
   const userPhone = user?.phone || foundMember?.user?.phone || '8401517177';
   const memberNo = realMember?.memberNo || user?.memberNo || `MEM-${userPhone}`;
 
-  const rawPlanName = realMember?.plan?.name || user?.plan || user?.membershipTier || 'Gold';
-  const planName = rawPlanName.replace(/pass|annual|standard|youth/gi, '').trim() || 'Gold';
+  // Check localStorage for approved upgrades across all identifier keys
+  const approvedUpgrades = JSON.parse(localStorage.getItem('bmc_approved_upgrades') || '{}');
+  const approvedTier = 
+    approvedUpgrades[userEmail] || 
+    (userEmail && approvedUpgrades[userEmail.toLowerCase()]) || 
+    approvedUpgrades[userPhone] || 
+    approvedUpgrades[memberNo] || 
+    approvedUpgrades[user?.id] || 
+    approvedUpgrades[userName] ||
+    approvedUpgrades['GLOBAL_ACTIVE_MEMBER'];
+
+  const rawPlanName = approvedTier || realMember?.plan?.name || user?.plan || user?.membershipTier || 'Silver';
+  const planName = rawPlanName.replace(/pass|annual|standard|youth/gi, '').trim() || 'Silver';
+  const isGold = /gold/i.test(planName);
+
+  // Check for pending upgrade request (ignored if already approved as Gold)
+  const pendingRequests = JSON.parse(localStorage.getItem('bmc_membership_upgrade_requests') || '[]');
+  const rawPendingRequest = pendingRequests.find(r =>
+    (userEmail && r.email && r.email.toLowerCase() === userEmail.toLowerCase()) ||
+    (userPhone && r.phone === userPhone) ||
+    (memberNo && r.memberNo === memberNo) ||
+    (userName && r.name === userName)
+  );
+  const myPendingRequest = isGold ? null : rawPendingRequest;
 
   const endDateStr = realMember?.endDate
     ? new Date(realMember.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -65,6 +104,64 @@ export const MemberCardPage = () => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleRequestGoldUpgrade = () => {
+    const existing = JSON.parse(localStorage.getItem('bmc_membership_upgrade_requests') || '[]');
+    const filtered = existing.filter(r => r.email !== userEmail && r.memberNo !== memberNo);
+
+    const newReq = {
+      id: 'UPG-' + Date.now(),
+      memberNo,
+      name: userName,
+      email: userEmail,
+      phone: userPhone,
+      currentPlan: planName,
+      requestedPlan: 'Gold VIP Annual Pass',
+      requestedAt: new Date().toISOString(),
+      status: 'PENDING'
+    };
+
+    localStorage.setItem('bmc_membership_upgrade_requests', JSON.stringify([newReq, ...filtered]));
+    window.dispatchEvent(new Event('bmc_upgrade_change'));
+  };
+
+  const handleCancelRequest = () => {
+    const existing = JSON.parse(localStorage.getItem('bmc_membership_upgrade_requests') || '[]');
+    const filtered = existing.filter(r => r.email !== userEmail && r.memberNo !== memberNo);
+    localStorage.setItem('bmc_membership_upgrade_requests', JSON.stringify(filtered));
+    window.dispatchEvent(new Event('bmc_upgrade_change'));
+  };
+
+  const handleToggleDemoTier = async () => {
+    const nextTier = isGold ? 'Silver' : 'Gold';
+    const targetPlan = plans.find(p => p.name.toLowerCase().includes(nextTier.toLowerCase()));
+    const mId = realMember?.id || foundMember?.id;
+
+    if (mId && targetPlan?.id) {
+      try {
+        await membersApi.renew(mId, { planId: targetPlan.id, paymentMode: 'UPI' });
+      } catch (err) {
+        console.warn('Central DB renew note:', err?.message || err);
+      }
+    }
+
+    const approved = JSON.parse(localStorage.getItem('bmc_approved_upgrades') || '{}');
+    approved[userEmail] = nextTier;
+    if (userEmail) approved[userEmail.toLowerCase()] = nextTier;
+    approved[userPhone] = nextTier;
+    approved[memberNo] = nextTier;
+    approved[userName] = nextTier;
+    approved['GLOBAL_ACTIVE_MEMBER'] = nextTier;
+    localStorage.setItem('bmc_approved_upgrades', JSON.stringify(approved));
+
+    // Clear pending request if toggled manually
+    const existing = JSON.parse(localStorage.getItem('bmc_membership_upgrade_requests') || '[]');
+    const filtered = existing.filter(r => r.email !== userEmail && r.memberNo !== memberNo);
+    localStorage.setItem('bmc_membership_upgrade_requests', JSON.stringify(filtered));
+
+    membersQuery.refetch();
+    window.dispatchEvent(new Event('bmc_upgrade_change'));
   };
 
   const handleDownloadPNG = () => {
@@ -255,7 +352,7 @@ export const MemberCardPage = () => {
   };
 
   return (
-    <div className="py-8 px-4 max-w-4xl mx-auto space-y-8 font-sans">
+    <div className="py-8 px-4 max-w-4xl mx-auto space-y-6 font-sans">
       {/* Print Stylesheet */}
       <style>{`
         @media print {
@@ -290,6 +387,62 @@ export const MemberCardPage = () => {
         </p>
       </div>
 
+      {/* Upgrade Request / Approval Banner */}
+      {myPendingRequest ? (
+        <div className="max-w-2xl mx-auto bg-amber-50 border-2 border-amber-400 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-950 shadow-xs">
+          <div className="flex items-center gap-3">
+            <Clock className="w-6 h-6 text-amber-600 shrink-0 animate-pulse" />
+            <div>
+              <h4 className="font-extrabold text-sm">Upgrade Request Pending Front Desk Approval</h4>
+              <p className="text-xs text-amber-900">
+                You requested an upgrade from <strong>{planName}</strong> to <strong>Gold VIP Member Pass</strong>. Front desk staff will approve your request.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleCancelRequest}
+            className="text-xs font-bold px-3 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 rounded-xl transition-all shrink-0 cursor-pointer"
+          >
+            Cancel Request
+          </button>
+        </div>
+      ) : isGold ? (
+        <div className="max-w-2xl mx-auto bg-emerald-50 border border-emerald-300 p-3.5 rounded-2xl flex items-center justify-between gap-3 text-emerald-900 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
+            <span className="text-xs font-bold">You are an active <strong>Gold VIP Member</strong> with full court privileges!</span>
+          </div>
+          <button
+            onClick={handleToggleDemoTier}
+            className="text-[11px] font-semibold text-emerald-700 hover:underline cursor-pointer shrink-0"
+            title="Switch tier for testing"
+          >
+            Switch to Silver Tier (Demo)
+          </button>
+        </div>
+      ) : (
+        <div className="max-w-2xl mx-auto bg-slate-900 text-white p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md border border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm text-white">Upgrade to Gold VIP Pass</h4>
+              <p className="text-xs text-slate-300">
+                Get 100% Free Court Access, 20% Gear Shop discount, and 15% Bar discount. Send approval request to Front Desk.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleRequestGoldUpgrade}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+          >
+            <span>Request Gold Upgrade</span>
+            <ArrowUpRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Action Toolbar */}
       <div className="flex flex-wrap items-center justify-center gap-3">
         <button
@@ -315,6 +468,16 @@ export const MemberCardPage = () => {
           {copied ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4 text-slate-500" />}
           <span>{copied ? 'Copied Member ID!' : 'Copy ID'}</span>
         </button>
+
+        {!isGold && !myPendingRequest && (
+          <button
+            onClick={handleToggleDemoTier}
+            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-4 py-2.5 rounded-xl border border-emerald-300 flex items-center gap-1.5 transition-all cursor-pointer text-xs"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Instant Switch to Gold (Demo)</span>
+          </button>
+        )}
       </div>
 
       {/* Official Light Theme Rectangular Member ID Card (White, Black, Green) */}
@@ -398,7 +561,7 @@ export const MemberCardPage = () => {
             {/* Perks Box */}
             <div className="pt-1 flex items-center gap-2 text-[11px] text-emerald-900 font-bold bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl">
               <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-700" />
-              <span>Free Court Access • 20% Shop • 15% Bar</span>
+              <span>{isGold ? 'Free Court Access • 20% Shop • 15% Bar' : 'Standard Rate • 10% Shop • 5% Bar'}</span>
             </div>
           </div>
 
