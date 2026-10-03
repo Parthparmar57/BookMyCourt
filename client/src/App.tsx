@@ -7,6 +7,7 @@ import { AppShell } from './components/layout/AppShell';
 import { RoleGuard } from './routes/RoleGuard';
 
 // Pages
+import { LandingPage } from './pages/public/LandingPage';
 import { OwnerDashboard } from './pages/admin/OwnerDashboard';
 
 const queryClient = new QueryClient({
@@ -25,6 +26,9 @@ export const App: React.FC = () => {
         <ToastProvider>
           <BrowserRouter>
             <Routes>
+              {/* Public Website Landing Page */}
+              <Route path="/" element={<LandingPage />} />
+
               {/* Executive Admin Suite */}
               <Route
                 path="/admin/*"
@@ -94,26 +98,6 @@ export const App: React.FC = () => {
                       <div className="p-6 bg-white rounded-lg border">Member Portal Active</div>
                     </AppShell>
                   </RoleGuard>
-                }
-              />
-
-              {/* Public Website Routes */}
-              <Route
-                path="/"
-                element={
-                  <AppShell isPublic pageTitle="Champions Club">
-                    <div className="min-h-screen bg-surface flex flex-col justify-center items-center p-8 text-center space-y-4">
-                      <h1 className="text-4xl font-extrabold text-foreground tracking-tight">
-                        CHAMPIONS CLUB
-                      </h1>
-                      <p className="text-lg font-semibold text-primary max-w-xl">
-                        "One club. One connected experience."
-                      </p>
-                      <p className="text-sm text-text-muted max-w-md">
-                        Digital Club OS for Court Booking, Membership, Gear Shop, Cafeteria POS, and Executive Analytics.
-                      </p>
-                    </div>
-                  </AppShell>
                 }
               />
 
