@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  CaretRight, 
-  User as UserIcon 
+import {
+  CaretRight,
+  User as UserIcon
 } from '@phosphor-icons/react';
 import { useAuth } from '../../context/AuthContext';
 import { roleHomePath } from '../utils/roles';
@@ -22,7 +22,7 @@ export const Navbar = () => {
         {/* Main Brand Logo */}
         <Link to="/" className="flex items-center gap-3 group">
           <img
-            src="/bookmycourt_logo.jpg"
+            src="/bookmycourt_logo.png"
             alt="BookMyCourt Logo"
             className="h-10 sm:h-12 w-auto object-contain"
           />

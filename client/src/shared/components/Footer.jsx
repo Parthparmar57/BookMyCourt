@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  EnvelopeSimple, 
-  Phone, 
+import {
+  EnvelopeSimple,
+  Phone,
   CaretRight,
   MapPin,
   Clock
@@ -195,7 +195,7 @@ export const Footer = () => {
             <div className="flex flex-wrap items-center gap-6">
               <Link to="/">
                 <img
-                  src="/bookmycourt_logo.jpg"
+                  src="/bookmycourt_logo.png"
                   alt="BookMyCourt Logo"
                   className="h-10 sm:h-12 w-auto object-contain rounded bg-white p-1"
                 />

@@ -219,6 +219,14 @@ export const BookingsPage = () => {
     setDate(today());
   };
 
+  const handleTomorrow = () => {
+    try {
+      setDate(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
+    } catch {
+      setDate(today());
+    }
+  };
+
   // Slot click handling
   const handleSlotClick = (court, slot) => {
     setErrorMsg('');
@@ -310,13 +318,13 @@ export const BookingsPage = () => {
     }
 
     try {
-      await createBooking.mutateAsync(payload);
+      const res = await createBooking.mutateAsync(payload);
       setSuccessMsg(
         bookingTab === 'maintenance'
           ? `Court ${selectedSlot.courtName} locked for maintenance at ${selectedSlot.slotTime}.`
           : bookingTab === 'event'
-          ? `Club event scheduled on ${selectedSlot.courtName} at ${selectedSlot.slotTime}.`
-          : `Court reserved successfully on ${selectedSlot.courtName} at ${selectedSlot.slotTime}.`
+            ? `Club event scheduled on ${selectedSlot.courtName} at ${selectedSlot.slotTime}.`
+            : `Court reserved successfully on ${selectedSlot.courtName} at ${selectedSlot.slotTime}.`
       );
       setSelectedSlot(null);
       setWalkInName('');
@@ -500,22 +508,20 @@ export const BookingsPage = () => {
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-medium">
           <button
             onClick={() => setActiveMainTab('schedule')}
-            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeMainTab === 'schedule'
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeMainTab === 'schedule'
                 ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             <Calendar className="w-3.5 h-3.5 text-emerald-700" />
             <span>Master Schedule</span>
           </button>
           <button
             onClick={() => setActiveMainTab('social')}
-            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeMainTab === 'social'
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeMainTab === 'social'
                 ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             <Trophy className="w-3.5 h-3.5 text-amber-600" />
             <span>Friday Social Play</span>
@@ -527,11 +533,10 @@ export const BookingsPage = () => {
           </button>
           <button
             onClick={() => setActiveMainTab('history')}
-            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeMainTab === 'history'
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeMainTab === 'history'
                 ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             <TrendingUp className="w-3.5 h-3.5 text-sky-600" />
             <span>Revenue & Logs</span>
@@ -539,11 +544,10 @@ export const BookingsPage = () => {
           {isStaff && (
             <button
               onClick={() => setActiveMainTab('rules')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeMainTab === 'rules'
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeMainTab === 'rules'
                   ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
-              }`}
+                }`}
             >
               <Settings className="w-3.5 h-3.5 text-purple-600" />
               <span>Pricing & Rules</span>
@@ -628,17 +632,15 @@ export const BookingsPage = () => {
                   <button
                     key={tab.key}
                     onClick={() => setSelectedSport(tab.key)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 cursor-pointer border ${
-                      isSelected
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 cursor-pointer border ${isSelected
                         ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
                         : 'bg-white text-slate-600 border-gray-200 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     <span>{tab.label}</span>
                     <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-md font-medium ${
-                        isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}
+                      className={`text-[10px] px-1.5 py-0.2 rounded-md font-medium ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                        }`}
                     >
                       {tab.count}
                     </span>
@@ -654,11 +656,10 @@ export const BookingsPage = () => {
                 <button
                   type="button"
                   onClick={() => setSlotIntervalFilter('ALL')}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
-                    slotIntervalFilter === 'ALL'
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${slotIntervalFilter === 'ALL'
                       ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                       : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                    }`}
                   title="Show all 30-minute booking intervals"
                 >
                   All (30m)
@@ -666,11 +667,10 @@ export const BookingsPage = () => {
                 <button
                   type="button"
                   onClick={() => setSlotIntervalFilter('HOURLY')}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
-                    slotIntervalFilter === 'HOURLY'
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${slotIntervalFilter === 'HOURLY'
                       ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                       : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                    }`}
                   title="Show standard hourly interval slots"
                 >
                   Hourly (:00)
@@ -681,9 +681,17 @@ export const BookingsPage = () => {
               <div className="flex items-center bg-white border border-gray-200 rounded-xl shadow-2xs text-xs font-medium text-slate-600 overflow-hidden">
                 <button
                   onClick={handleToday}
-                  className="px-3 py-1.5 hover:bg-slate-50 border-r border-gray-200 transition-colors cursor-pointer"
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${date === today() ? 'bg-[#2e7d32] text-white shadow-2xs font-extrabold' : 'hover:bg-slate-200/80'
+                    }`}
                 >
                   Today
+                </button>
+                <button
+                  onClick={handleTomorrow}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${date === format(addDays(new Date(), 1), 'yyyy-MM-dd') ? 'bg-[#2e7d32] text-white shadow-2xs font-extrabold' : 'hover:bg-slate-200/80'
+                    }`}
+                >
+                  Tomorrow
                 </button>
                 <button
                   onClick={handlePrevDay}
@@ -696,28 +704,29 @@ export const BookingsPage = () => {
                 <button
                   onClick={handleNextDay}
                   title="Next Day"
-                  className="px-2 py-1.5 hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                  className="px-1.5 py-1.5 hover:bg-slate-200/80 rounded-lg text-slate-600 transition-colors cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs">
+              {/* Native Calendar Picker Input */}
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 shadow-2xs hover:border-emerald-500 transition-colors">
                 <Calendar className="w-4 h-4 text-[#2e7d32]" />
                 <input
                   type="date"
                   value={date}
                   min={today()}
                   onChange={(e) => setDate(e.target.value)}
-                  className="bg-transparent focus:outline-none cursor-pointer text-slate-700 font-medium"
+                  className="bg-transparent focus:outline-none cursor-pointer text-slate-800 font-bold text-xs"
                 />
               </div>
             </div>
           </div>
 
-          {/* Matrix Grid */}
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-2xs">
-            <div className="overflow-x-auto max-h-[calc(100vh-310px)] overflow-y-auto">
+          {/* Matrix Grid Container - Fully Utilizes Bottom Space */}
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-2xs flex flex-col">
+            <div className="overflow-x-auto max-h-[calc(100vh-250px)] min-h-[440px] overflow-y-auto">
               <QueryState
                 query={availabilityQuery}
                 emptyWhen={(d) => !d?.length}
@@ -727,13 +736,13 @@ export const BookingsPage = () => {
                   <table className="w-full text-left border-collapse table-fixed">
                     <thead className="sticky top-0 z-20 bg-slate-50 border-b border-gray-200 shadow-2xs">
                       <tr>
-                        <th className="p-3 w-20 sm:w-24 font-medium text-slate-500 text-[11px] uppercase tracking-wider sticky left-0 bg-slate-100 z-30 border-r border-gray-200">
+                        <th className="p-3 w-20 sm:w-24 font-bold text-slate-500 text-[11px] uppercase tracking-wider sticky left-0 bg-slate-100 z-30 border-r border-gray-200">
                           Time
                         </th>
                         {displayedCourts.map((court) => (
                           <th key={court.courtId} className="p-3 text-center border-l border-gray-200">
-                            <span className="font-medium text-xs text-slate-800 block truncate">{court.courtName}</span>
-                            <span className="text-[10px] font-medium text-[#2e7d32] block uppercase tracking-wider mt-0.5">
+                            <span className="font-bold text-xs text-slate-900 block truncate">{court.courtName}</span>
+                            <span className="text-[10px] font-extrabold text-[#2e7d32] block uppercase tracking-wider mt-0.5">
                               {court.sport} · {formatCurrency(court.walkInRate)}/hr
                             </span>
                           </th>
@@ -743,13 +752,21 @@ export const BookingsPage = () => {
                     <tbody className="divide-y divide-gray-100 text-xs">
                       {columns.map((time) => (
                         <tr key={time} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="p-3 font-normal text-slate-500 font-mono text-[11px] whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-100 shadow-2xs">
+                          <td className="p-3 font-semibold text-slate-600 font-mono text-[11px] whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-100 shadow-2xs">
                             {time}
                           </td>
 
                           {displayedCourts.map((court) => {
                             const slot = court.slots.find((s) => s.slotTime === time);
                             if (!slot) return <td key={court.courtId} className="p-2 border-l border-gray-100" />;
+
+                            // Filter by Slot Status if filter active
+                            if (slotStatusFilter === 'AVAILABLE' && !slot.isAvailable) {
+                              return <td key={court.courtId} className="p-1 border-l border-gray-100 bg-slate-50/40" />;
+                            }
+                            if (slotStatusFilter === 'BOOKED' && slot.isAvailable) {
+                              return <td key={court.courtId} className="p-1 border-l border-gray-100 bg-slate-50/40" />;
+                            }
 
                             // 1. Social Play Session
                             if (!slot.isAvailable && slot.bookingType === 'SOCIAL') {
@@ -773,8 +790,6 @@ export const BookingsPage = () => {
                             if (!slot.isAvailable) {
                               const isMaintenance = slot.memberName?.includes('[MAINTENANCE]');
                               const isVIP = slot.memberName?.includes('[VIP]');
-                              const isGold = slot.planName === 'Gold' || isVIP;
-                              const isJunior = slot.planName === 'Junior';
 
                               if (isMaintenance) {
                                 return (
@@ -785,7 +800,7 @@ export const BookingsPage = () => {
                                     >
                                       <div className="flex items-center justify-center gap-1">
                                         <ShieldAlert className="w-3 h-3 text-amber-700" />
-                                        <span className="block text-[11px] truncate font-medium text-amber-900">Maintenance</span>
+                                        <span className="block text-[11px] truncate font-bold text-amber-900">Maintenance</span>
                                       </div>
                                       <span className="text-[9px] text-amber-700 block truncate mt-0.5 font-normal">Blocked · Click to inspect</span>
                                     </button>
@@ -793,34 +808,21 @@ export const BookingsPage = () => {
                                 );
                               }
 
+                              {/* HIGHLIGHT BOOKED MATCHES WITH EXECUTIVE DARK GREEN COLOR */ }
                               return (
                                 <td key={court.courtId} className="p-1.5 border-l border-gray-100">
                                   <button
                                     onClick={() => handleSlotClick(court, slot)}
-                                    className={`w-full p-2.5 rounded-xl font-normal text-center shadow-2xs hover:shadow-xs transition-all cursor-pointer block border ${
-                                      isGold
-                                        ? 'bg-emerald-50/90 hover:bg-emerald-100/90 border-emerald-300 text-emerald-950'
-                                        : isJunior
-                                        ? 'bg-teal-50/90 hover:bg-teal-100/90 border-teal-200 text-teal-950'
-                                        : 'bg-[#f4fbf7] hover:bg-[#e6f7ee] border-emerald-200 text-slate-900'
-                                    }`}
+                                    className="w-full p-2.5 rounded-xl font-bold text-center shadow-md hover:shadow-lg transition-all cursor-pointer block border border-emerald-950 bg-[#1b4d2e] hover:bg-[#23633b] text-white group"
                                   >
                                     <div className="text-center">
                                       <span className="block text-[11px] truncate font-medium text-slate-800">
                                         {slot.memberName || 'Reserved Session'}
                                       </span>
                                     </div>
-                                    <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                                      <span
-                                        className={`text-[8px] px-1.5 py-0.2 rounded font-medium uppercase tracking-wider ${
-                                          isGold
-                                            ? 'bg-amber-100 text-amber-900 border border-amber-300/80'
-                                            : isJunior
-                                            ? 'bg-teal-100 text-teal-800'
-                                            : 'bg-emerald-100 text-emerald-800'
-                                        }`}
-                                      >
-                                        {isVIP ? 'VIP' : slot.planName || 'Standard'}
+                                    <div className="flex items-center justify-center gap-1 mt-1">
+                                      <span className="text-[8px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-2xs">
+                                        {isVIP ? 'VIP' : slot.planName || 'GOLD'}
                                       </span>
                                       <span className="text-[9px] text-slate-500 font-normal">Confirmed</span>
                                     </div>
@@ -860,8 +862,8 @@ export const BookingsPage = () => {
                                   className="group w-full py-2 px-2 rounded-xl border border-dashed border-gray-200 hover:border-emerald-500 hover:bg-emerald-50/60 text-slate-400 hover:text-[#2e7d32] font-normal text-[11px] transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-white"
                                   title="Available slot. Click to book for a member, walk-in, or manage."
                                 >
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform" />
-                                  <span className="text-[10px] font-medium">Available</span>
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform" />
+                                  <span className="text-[10px] font-bold">Available</span>
                                 </button>
                               </td>
                             );
@@ -872,6 +874,31 @@ export const BookingsPage = () => {
                   </table>
                 )}
               </QueryState>
+            </div>
+
+            {/* Bottom Overview Strip */}
+            <div className="bg-slate-50 border-t border-slate-200 p-3 px-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex flex-wrap items-center gap-4 text-slate-600">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#1b4d2e] inline-block" />
+                  <span className="font-bold text-slate-800 text-xs">Dark Green: Booked Match</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                  <span className="font-bold text-slate-800 text-xs">Emerald: Available Slot</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                  <span className="font-bold text-slate-800 text-xs">Amber: Maintenance</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
+                  <span className="font-bold text-slate-800 text-xs">Sky Blue: Event Session</span>
+                </div>
+              </div>
+              <div className="text-slate-500 font-bold text-xs">
+                Showing {displayedCourts.length} active facilities · {columns.length} time windows
+              </div>
             </div>
           </div>
         </div>
@@ -937,11 +964,10 @@ export const BookingsPage = () => {
                         </h4>
                       </div>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
-                          isFull
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${isFull
                             ? 'bg-rose-100 text-rose-800'
                             : 'bg-emerald-100 text-emerald-800'
-                        }`}
+                          }`}
                       >
                         {isFull ? 'FULL' : `${maxPlayers - participants.length} SPOTS LEFT`}
                       </span>
@@ -974,9 +1000,8 @@ export const BookingsPage = () => {
                       </div>
                       <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div
-                          className={`h-full transition-all duration-300 ${
-                            isFull ? 'bg-rose-500' : fillPct > 70 ? 'bg-amber-500' : 'bg-emerald-500'
-                          }`}
+                          className={`h-full transition-all duration-300 ${isFull ? 'bg-rose-500' : fillPct > 70 ? 'bg-amber-500' : 'bg-emerald-500'
+                            }`}
                           style={{ width: `${Math.min(fillPct, 100)}%` }}
                         />
                       </div>
@@ -1044,11 +1069,10 @@ export const BookingsPage = () => {
                           setSocialGuestPhone('');
                         }}
                         disabled={isFull}
-                        className={`w-full py-2 font-medium text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
-                          isFull
+                        className={`w-full py-2 font-medium text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${isFull
                             ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                             : 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs'
-                        }`}
+                          }`}
                       >
                         <Users className="w-3.5 h-3.5" />
                         <span>{isFull ? 'Session Full' : isMember ? 'Join Session' : 'Enroll Player / Guest'}</span>
@@ -1143,11 +1167,10 @@ export const BookingsPage = () => {
                       </td>
                       <td className="p-3">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase ${
-                            isCancelled
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase ${isCancelled
                               ? 'bg-rose-100 text-rose-800'
                               : 'bg-emerald-100 text-emerald-800'
-                          }`}
+                            }`}
                         >
                           {b.status}
                         </span>
@@ -1210,9 +1233,8 @@ export const BookingsPage = () => {
                     <span className="text-[11px] text-[#2e7d32] font-medium block uppercase tracking-wider">{c.sport}</span>
                   </div>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase ${
-                      c.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                    }`}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase ${c.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                      }`}
                   >
                     {c.isOpen ? 'Operational' : 'Closed'}
                   </span>
@@ -1281,9 +1303,9 @@ export const BookingsPage = () => {
                   <h3 className="font-semibold text-base text-slate-800">
                     {isMember ? 'Reserve Court Slot' : 'Court Reservation'}
                   </h3>
-                  <p className="text-xs text-slate-400">{selectedSlot.courtName} · {date} ({selectedSlot.slotTime})</p>
+                  <p className="text-xs font-bold text-[#2e7d32] mt-0.5">{selectedSlot.courtName} · {date} ({selectedSlot.slotTime})</p>
                 </div>
-                <button onClick={() => setSelectedSlot(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <button onClick={() => setSelectedSlot(null)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -1294,11 +1316,10 @@ export const BookingsPage = () => {
                   <button
                     type="button"
                     onClick={() => setBookingTab('member')}
-                    className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                      bookingTab === 'member'
+                    className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${bookingTab === 'member'
                         ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                         : 'text-slate-500 hover:text-slate-800'
-                    }`}
+                      }`}
                   >
                     <User className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Member</span>
@@ -1306,11 +1327,10 @@ export const BookingsPage = () => {
                   <button
                     type="button"
                     onClick={() => setBookingTab('walkin')}
-                    className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                      bookingTab === 'walkin'
+                    className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${bookingTab === 'walkin'
                         ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                         : 'text-slate-500 hover:text-slate-800'
-                    }`}
+                      }`}
                   >
                     <UserPlus className="w-3.5 h-3.5 text-blue-600" />
                     <span>Walk-in</span>
@@ -1318,11 +1338,10 @@ export const BookingsPage = () => {
                   <button
                     type="button"
                     onClick={() => setBookingTab('maintenance')}
-                    className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                      bookingTab === 'maintenance'
+                    className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${bookingTab === 'maintenance'
                         ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                         : 'text-slate-500 hover:text-slate-800'
-                    }`}
+                      }`}
                   >
                     <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
                     <span>Block</span>
@@ -1330,11 +1349,10 @@ export const BookingsPage = () => {
                   <button
                     type="button"
                     onClick={() => setBookingTab('event')}
-                    className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                      bookingTab === 'event'
+                    className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${bookingTab === 'event'
                         ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                         : 'text-slate-500 hover:text-slate-800'
-                    }`}
+                      }`}
                   >
                     <Trophy className="w-3.5 h-3.5 text-sky-600" />
                     <span>Event</span>
@@ -1485,15 +1503,15 @@ export const BookingsPage = () => {
               {bookingTab === 'maintenance' && (
                 <div className="space-y-4 text-xs font-medium">
                   <div>
-                    <label className="text-slate-700 block mb-1">Maintenance Reason</label>
+                    <label className="text-slate-800 block mb-1.5 font-extrabold text-sm">Maintenance Reason</label>
                     <input
                       value={maintenanceReason}
                       onChange={(e) => setMaintenanceReason(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-amber-500 focus:outline-none font-medium text-xs"
+                      className="w-full border border-slate-200 rounded-xl p-3 focus:border-amber-500 focus:outline-none font-semibold text-sm shadow-2xs"
                       placeholder="e.g. Clay Rolling, Net Replacement, Floodlight Repair"
                     />
                   </div>
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] leading-relaxed font-normal">
+                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs leading-relaxed font-medium">
                     This court slot will be blocked on the master matrix and marked unavailable for member self-booking.
                   </div>
                 </div>
@@ -1503,11 +1521,11 @@ export const BookingsPage = () => {
               {bookingTab === 'event' && (
                 <div className="space-y-4 text-xs font-medium">
                   <div>
-                    <label className="text-slate-700 block mb-1">Event / Tournament Title</label>
+                    <label className="text-slate-800 block mb-1.5 font-extrabold text-sm">Event / Tournament Title</label>
                     <input
                       value={sessionTitle}
                       onChange={(e) => setSessionTitle(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-sky-500 focus:outline-none font-medium text-xs"
+                      className="w-full border border-slate-200 rounded-xl p-3 focus:border-sky-500 focus:outline-none font-semibold text-sm shadow-2xs"
                       placeholder="e.g. Weekend Club Open Championship"
                     />
                   </div>
@@ -1521,25 +1539,24 @@ export const BookingsPage = () => {
             <button
               onClick={handleConfirmBooking}
               disabled={createBooking.isPending}
-              className={`w-full text-white font-medium text-xs py-3 rounded-2xl shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer ${
-                bookingTab === 'maintenance'
+              className={`w-full text-white font-medium text-xs py-3 rounded-2xl shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer ${bookingTab === 'maintenance'
                   ? 'bg-amber-700 hover:bg-amber-800'
                   : bookingTab === 'event'
-                  ? 'bg-sky-700 hover:bg-sky-800'
-                  : bookingTab === 'walkin'
-                  ? 'bg-blue-700 hover:bg-blue-800'
-                  : 'bg-emerald-700 hover:bg-emerald-800'
-              }`}
+                    ? 'bg-sky-700 hover:bg-sky-800'
+                    : bookingTab === 'walkin'
+                      ? 'bg-blue-700 hover:bg-blue-800'
+                      : 'bg-emerald-700 hover:bg-emerald-800'
+                }`}
             >
               {createBooking.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>
                 {bookingTab === 'maintenance'
                   ? 'Lock Court for Maintenance'
                   : bookingTab === 'event'
-                  ? 'Schedule Club Event Slot'
-                  : bookingTab === 'walkin'
-                  ? `Confirm Walk-in Booking (${formatCurrency(selectedSlot.walkInRate)})`
-                  : `Confirm Member Reservation`}
+                    ? 'Schedule Club Event Slot'
+                    : bookingTab === 'walkin'
+                      ? `Confirm Walk-in Booking (${formatCurrency(selectedSlot.walkInRate)})`
+                      : `Confirm Member Reservation`}
               </span>
             </button>
           </div>
@@ -1585,19 +1602,30 @@ export const BookingsPage = () => {
                   <span className="font-mono font-medium">{date} · {inspectedBooking.slotTime}</span>
                 </div>
                 {inspectedBooking.bookingPrice != null && (
-                  <div className="flex justify-between text-slate-600">
-                    <span>Revenue Collected:</span>
-                    <span className="font-semibold text-slate-900">{formatCurrency(inspectedBooking.bookingPrice)}</span>
-                  </div>
+                  <>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Total Charged:</span>
+                      <span className="font-extrabold text-[#2e7d32]">
+                        {Number(inspectedBooking.bookingPrice || 0) === 0
+                          ? '₹0.00 (Included in Plan)'
+                          : formatCurrency(inspectedBooking.bookingPrice)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Payment Status:</span>
+                      <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+                        COMPLETED (Direct Approval)
+                      </span>
+                    </div>
+                  </>
                 )}
                 <div className="flex justify-between text-slate-600">
                   <span>Booking Status:</span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase ${
-                      inspectedBooking.bookingStatus === 'CANCELLED'
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase ${inspectedBooking.bookingStatus === 'CANCELLED'
                         ? 'bg-rose-100 text-rose-800'
                         : 'bg-emerald-100 text-emerald-800'
-                    }`}
+                      }`}
                   >
                     {inspectedBooking.bookingStatus || 'CONFIRMED'}
                   </span>
@@ -1622,23 +1650,37 @@ export const BookingsPage = () => {
             <div className="flex items-center gap-2 pt-2">
               <button
                 onClick={() => setInspectedBooking(null)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition-colors cursor-pointer"
+                className="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition-colors cursor-pointer"
               >
                 Close
               </button>
+
+              {inspectedBooking.bookingId && (
+                <button
+                  onClick={() => {
+                    const bkObj = rawBookings.find((b) => b.id === inspectedBooking.bookingId) || inspectedBooking;
+                    setActiveTicketBooking(bkObj);
+                    setInspectedBooking(null);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Ticket className="w-3.5 h-3.5" />
+                  <span>View Pass & QR Code</span>
+                </button>
+              )}
 
               {inspectedBooking.bookingStatus !== 'CANCELLED' && inspectedBooking.bookingId && (
                 <button
                   onClick={handleCancelBooking}
                   disabled={cancelBooking.isPending}
-                  className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {cancelBooking.isPending ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Trash2 className="w-3.5 h-3.5" />
                   )}
-                  <span>Cancel Booking</span>
+                  <span>Cancel</span>
                 </button>
               )}
             </div>
@@ -1792,22 +1834,20 @@ export const BookingsPage = () => {
                     <button
                       type="button"
                       onClick={() => setSocialJoinTab('member')}
-                      className={`py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                        socialJoinTab === 'member'
+                      className={`py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${socialJoinTab === 'member'
                           ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                           : 'text-slate-500 hover:text-slate-800'
-                      }`}
+                        }`}
                     >
                       Club Member
                     </button>
                     <button
                       type="button"
                       onClick={() => setSocialJoinTab('guest')}
-                      className={`py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                        socialJoinTab === 'guest'
+                      className={`py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${socialJoinTab === 'guest'
                           ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                           : 'text-slate-500 hover:text-slate-800'
-                      }`}
+                        }`}
                     >
                       Walk-in Guest
                     </button>

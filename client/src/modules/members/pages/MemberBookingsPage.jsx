@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useBookings, useCancelBooking } from '../../../hooks/useCourts';
 import { formatDate, formatCurrency } from '../../../shared/utils/formatters';
-import { Calendar, Clock, AlertCircle, XCircle, ArrowLeft, Loader2, Plus } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, XCircle, ArrowLeft, Loader2, Plus, QrCode, Ticket } from 'lucide-react';
+import { BookingPassModal } from '../../../components/booking/BookingPassModal';
 
 export const MemberBookingsPage = () => {
   const { user } = useAuth();
   const { data: bookingsData, isLoading } = useBookings();
   const cancelBooking = useCancelBooking();
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
+  const [selectedTicketBooking, setSelectedTicketBooking] = useState(null);
 
   const allBookings = bookingsData?.items || [];
   const filteredBookings = allBookings.filter((b) => {
@@ -33,7 +35,7 @@ export const MemberBookingsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">My Court Reservations</h1>
-          <p className="text-xs text-slate-500">Track upcoming match slots, history, and booking receipts</p>
+          <p className="text-xs text-slate-500">Track upcoming match slots, history, and digital booking pass receipts</p>
         </div>
         <Link
           to="/member/book"
@@ -50,7 +52,7 @@ export const MemberBookingsPage = () => {
           <button
             key={tab}
             onClick={() => setFilter(tab)}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
               filter === tab
                 ? 'bg-slate-900 text-white'
                 : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
@@ -138,11 +140,19 @@ export const MemberBookingsPage = () => {
               </div>
 
               {b.status === 'CONFIRMED' && (
-                <div className="flex items-center justify-end pt-1">
+                <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                  <button
+                    onClick={() => setSelectedTicketBooking(b)}
+                    className="text-xs font-extrabold text-[#2e7d32] hover:bg-emerald-50 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 border border-emerald-200 cursor-pointer"
+                  >
+                    <QrCode className="w-3.5 h-3.5 text-[#2e7d32]" />
+                    <span>View Pass & QR Code</span>
+                  </button>
+
                   <button
                     onClick={() => handleCancel(b.id)}
                     disabled={cancelBooking.isPending}
-                    className="text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-xl transition-colors border border-transparent hover:border-rose-200"
+                    className="text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-xl transition-colors border border-transparent hover:border-rose-200 cursor-pointer"
                   >
                     Cancel Booking
                   </button>
@@ -151,6 +161,14 @@ export const MemberBookingsPage = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Digital Booking Ticket Pass Modal */}
+      {selectedTicketBooking && (
+        <BookingPassModal
+          booking={selectedTicketBooking}
+          onClose={() => setSelectedTicketBooking(null)}
+        />
       )}
     </div>
   );

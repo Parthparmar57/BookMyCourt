@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Home, 
-  ArrowLeft, 
-  Compass, 
-  Calendar, 
-  ShoppingBag, 
+import {
+  Home,
+  ArrowLeft,
+  Compass,
+  Calendar,
+  ShoppingBag,
   HelpCircle,
   Sparkles
 } from 'lucide-react';
@@ -23,9 +23,9 @@ export const NotFoundPage = () => {
       {/* Light Gradient Accents */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-100/60 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-green-50/80 rounded-full blur-3xl pointer-events-none" />
-      
+
       {/* Decorative Light Grid */}
-      <div 
+      <div
         className="absolute inset-0 bg-[linear-gradient(to_right,#00000005_1px,transparent_1px),linear-gradient(to_bottom,#00000005_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none"
       />
 
@@ -33,7 +33,7 @@ export const NotFoundPage = () => {
       <header className="relative z-10 max-w-7xl w-full mx-auto px-6 py-6 flex items-center justify-between border-b border-gray-100">
         <Link to="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
           <img
-            src="/bookmycourt_logo.jpg"
+            src="/bookmycourt_logo.png"
             alt="BookMyCourt Logo"
             className="h-10 sm:h-12 w-auto object-contain"
           />
@@ -141,7 +141,7 @@ export const NotFoundPage = () => {
       {/* Footer Branding */}
       <footer className="relative z-10 max-w-7xl w-full mx-auto px-6 py-6 text-center text-xs text-slate-500 font-semibold border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
         <div className="flex items-center gap-2">
-          <img src="/bookmycourt_logo.jpg" alt="Logo" className="h-5 w-auto rounded object-contain" />
+          <img src="/bookmycourt_logo.png" alt="Logo" className="h-5 w-auto rounded object-contain" />
           <span>© {new Date().getFullYear()} BookMyCourt. All rights reserved.</span>
         </div>
         <div className="flex items-center gap-4 text-slate-600">

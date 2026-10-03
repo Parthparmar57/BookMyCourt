@@ -17,17 +17,17 @@ import {
   useCloseShift
 } from '../../../hooks/useBar';
 import { formatCurrency } from '../../../shared/utils/formatters';
-import { 
-  Coffee, 
-  Utensils, 
-  Receipt, 
-  Clock, 
-  CheckCircle2, 
-  X, 
-  Loader2, 
-  Plus, 
-  TrendingUp, 
-  AlertCircle, 
+import {
+  Coffee,
+  Utensils,
+  Receipt,
+  Clock,
+  CheckCircle2,
+  X,
+  Loader2,
+  Plus,
+  TrendingUp,
+  AlertCircle,
   DollarSign,
   Users,
   ShoppingBag,
@@ -145,7 +145,7 @@ export const BarPage = () => {
   // Member discount calculation
   const selectedMember = members.find((m) => m.id === selectedMemberId);
   const memberDiscountPct = selectedMember?.plan?.barDiscount ? Number(selectedMember.plan.barDiscount) : 0;
-  
+
   const cartSubtotal = cart.reduce((sum, item) => sum + Number(item.price) * item.qty, 0);
   const cartDiscount = (cartSubtotal * memberDiscountPct) / 100;
   const cartTotal = cartSubtotal - cartDiscount;
@@ -289,51 +289,46 @@ export const BarPage = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActiveTab('pos')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${
-              activeTab === 'pos'
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'pos'
                 ? 'bg-[#2e7d32] text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <Coffee className="w-4 h-4" /> Touch POS
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${
-              activeTab === 'orders'
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'orders'
                 ? 'bg-[#2e7d32] text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <Receipt className="w-4 h-4" /> Live Orders ({orders.length})
           </button>
           <button
             onClick={() => setActiveTab('tabs')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${
-              activeTab === 'tabs'
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'tabs'
                 ? 'bg-[#2e7d32] text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <Users className="w-4 h-4" /> Member Tabs ({tabs.length})
           </button>
           <button
             onClick={() => setActiveTab('menu')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${
-              activeTab === 'menu'
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'menu'
                 ? 'bg-[#2e7d32] text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <Utensils className="w-4 h-4" /> Menu Catalog
           </button>
           <button
             onClick={() => setActiveTab('shift')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${
-              activeTab === 'shift'
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'shift'
                 ? 'bg-[#2e7d32] text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <Wallet className="w-4 h-4" /> Cash Shift {activeShift ? '• OPEN' : ''}
           </button>
@@ -388,11 +383,10 @@ export const BarPage = () => {
       </div>
 
       {feedback && (
-        <div className={`p-4 rounded-2xl text-xs font-bold flex items-center justify-between ${
-          feedback.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'
-        }`}>
+        <div className={`p-4 rounded-2xl text-xs font-bold flex items-center justify-between ${feedback.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'
+          }`}>
           <span className="flex items-center gap-2">
-            {feedback.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-[#2e7d32]" /> : <AlertCircle className="w-4 h-4 text-rose-600" />} 
+            {feedback.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-[#2e7d32]" /> : <AlertCircle className="w-4 h-4 text-rose-600" />}
             {feedback.msg}
           </span>
           <button onClick={() => setFeedback(null)}><X className="w-4 h-4" /></button>
@@ -417,11 +411,10 @@ export const BarPage = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
                   onClick={() => setSelectedTable(null)}
-                  className={`p-3 rounded-2xl border text-left transition-all ${
-                    selectedTable === null
+                  className={`p-3 rounded-2xl border text-left transition-all ${selectedTable === null
                       ? 'bg-[#2e7d32] text-white border-[#2e7d32] shadow-sm font-bold'
                       : 'bg-white border-slate-200 text-slate-800 hover:border-emerald-500 font-semibold'
-                  }`}
+                    }`}
                 >
                   <div className="text-xs font-black">Direct Takeaway</div>
                   <div className="text-[10px] opacity-80 mt-0.5">Counter POS</div>
@@ -430,19 +423,17 @@ export const BarPage = () => {
                   <button
                     key={t.id}
                     onClick={() => setSelectedTable(selectedTable?.id === t.id ? null : t)}
-                    className={`p-3 rounded-2xl border text-left transition-all ${
-                      selectedTable?.id === t.id
+                    className={`p-3 rounded-2xl border text-left transition-all ${selectedTable?.id === t.id
                         ? 'bg-[#2e7d32] text-white border-[#2e7d32] shadow-sm font-bold'
                         : t.status === 'OCCUPIED'
-                        ? 'bg-amber-50 border-amber-200 text-amber-900'
-                        : 'bg-white border-slate-200 text-slate-800 hover:border-emerald-500'
-                    }`}
+                          ? 'bg-amber-50 border-amber-200 text-amber-900'
+                          : 'bg-white border-slate-200 text-slate-800 hover:border-emerald-500'
+                      }`}
                   >
                     <div className="flex items-center justify-between text-xs font-extrabold">
                       <span>Table {t.number}</span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                        t.status === 'OCCUPIED' ? 'bg-amber-200 text-amber-900' : 'bg-emerald-100 text-emerald-800'
-                      }`}>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${t.status === 'OCCUPIED' ? 'bg-amber-200 text-amber-900' : 'bg-emerald-100 text-emerald-800'
+                        }`}>
                         {t.status}
                       </span>
                     </div>
@@ -461,11 +452,10 @@ export const BarPage = () => {
                     <button
                       key={cat}
                       onClick={() => setActiveCategory(cat)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${
-                        activeCategory === cat
+                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${activeCategory === cat
                           ? 'bg-[#e8f5e9] text-[#2e7d32] border border-emerald-300'
                           : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       {cat}
                     </button>
@@ -526,7 +516,7 @@ export const BarPage = () => {
                     </span>
                   )}
                 </div>
-                
+
                 {/* Search Box */}
                 <div className="relative">
                   <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -591,11 +581,10 @@ export const BarPage = () => {
                   <button
                     key={mode}
                     onClick={() => setPaymentMode(mode)}
-                    className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
-                      paymentMode === mode
+                    className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all ${paymentMode === mode
                         ? 'bg-[#2e7d32] text-white shadow-2xs'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
+                      }`}
                   >
                     {mode}
                   </button>
@@ -675,11 +664,10 @@ export const BarPage = () => {
                     </td>
                     <td className="p-3.5 font-black text-slate-900">{formatCurrency(Number(o.totalAmount || o.total || 0))}</td>
                     <td className="p-3.5">
-                      <span className={`px-2.5 py-1 text-[10px] font-black rounded-md ${
-                        o.status === 'SERVED' || o.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
-                        o.status === 'PREPARING' ? 'bg-amber-100 text-amber-900' :
-                        o.status === 'CANCELLED' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-900'
-                      }`}>
+                      <span className={`px-2.5 py-1 text-[10px] font-black rounded-md ${o.status === 'SERVED' || o.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
+                          o.status === 'PREPARING' ? 'bg-amber-100 text-amber-900' :
+                            o.status === 'CANCELLED' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-900'
+                        }`}>
                         {o.status || 'PENDING'}
                       </span>
                     </td>
@@ -1127,7 +1115,7 @@ export const BarPage = () => {
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl font-mono">
             <div className="flex items-center justify-between border-b pb-3 border-slate-100">
               <div className="flex items-center gap-2">
-                <img src="/bookmycourt_logo.jpg" alt="Logo" className="h-6 w-auto rounded object-contain" />
+                <img src="/bookmycourt_logo.png" alt="Logo" className="h-6 w-auto rounded object-contain" />
                 <span className="font-black text-sm text-slate-900 font-sans">CHAMPIONS CLUB CAFETERIA</span>
               </div>
               <button onClick={() => setReceiptOrder(null)}><X className="w-5 h-5 text-slate-400" /></button>
