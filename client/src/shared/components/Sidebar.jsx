@@ -23,7 +23,8 @@ export const Sidebar = () => {
   const location = useLocation();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
-  const isStaff = ['FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'].includes(currentRole) || !!currentUser?.employee;
+  // Staff roles can apply for leave — explicitly excluded for OWNER/Admin
+  const isStaff = currentRole !== 'OWNER' && ['FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'].includes(currentRole);
 
   const getNavLinks = () => {
     const roleUpper = (currentRole || '').toUpperCase();

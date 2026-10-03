@@ -9,8 +9,8 @@ export const Topbar = () => {
 
   const roleTitle = currentRole === 'OWNER' ? 'Owner / Admin' : currentRole === 'FRONT_DESK' ? 'Front Desk' : currentRole === 'BAR_STAFF' ? 'Bar Staff' : currentRole === 'SHOP_STAFF' ? 'Shop Staff' : currentRole === 'KITCHEN' ? 'Kitchen Staff' : 'Member';
 
-  // Any staff role or user with employee record can apply for leave
-  const isStaff = ['FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'].includes(currentRole) || !!currentUser?.employee;
+  // Staff roles can apply for leave — explicitly excluded for OWNER/Admin
+  const isStaff = currentRole !== 'OWNER' && ['FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'].includes(currentRole);
 
   return (
     <>
