@@ -5,6 +5,28 @@ import { env } from '../../config/env.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ROLES } from '../../shared/index.js';
 
+const formatUserResponse = (user) => {
+  if (!user) return null;
+  const rawName = user.name || '';
+  // Clean name by removing any trailing parenthetical tags like (Owner), (Front Desk)
+  const cleanName = rawName.replace(/\s*\([^)]*\)\s*/g, ' ').trim() || rawName || 'User';
+  // Get first letter of the first name
+  const firstLetter = (cleanName.charAt(0) || 'U').toUpperCase();
+
+  return {
+    id: user.id,
+    name: cleanName,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    initial: firstLetter,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(firstLetter)}&background=1b4332&color=ffffff&bold=true&length=1&size=128`,
+    member: user.member || null,
+    employee: user.employee || null,
+    createdAt: user.createdAt,
+  };
+};
+
 export const registerUser = async ({ name, email, phone, password }) => {
   const existingUser = await prisma.user.findFirst({
     where: {
@@ -42,8 +64,9 @@ export const registerUser = async ({ name, email, phone, password }) => {
     },
   });
 
-  const tokens = generateTokens(user);
-  return { user, ...tokens };
+  const userPayload = formatUserResponse(user);
+  const tokens = generateTokens(userPayload);
+  return { user: userPayload, ...tokens };
 };
 
 export const loginUser = async ({ login, password }) => {
@@ -68,16 +91,7 @@ export const loginUser = async ({ login, password }) => {
     throw new ApiError(401, 'Invalid email/phone or password');
   }
 
-  const userPayload = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    member: user.member || null,
-    employee: user.employee || null,
-  };
-
+  const userPayload = formatUserResponse(user);
   const tokens = generateTokens(userPayload);
   return { user: userPayload, ...tokens };
 };
@@ -98,19 +112,15 @@ export const refreshAccessToken = async (token) => {
       throw new ApiError(401, 'User no longer exists');
     }
 
-    const userPayload = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-    };
+    const userPayload = formatUserResponse(user);
 
-    const accessToken = jwt.sign(userPayload, env.JWT_ACCESS_SECRET, {
-      expiresIn: '15m',
-    });
+    const accessToken = jwt.sign(
+      { id: userPayload.id, email: userPayload.email, role: userPayload.role },
+      env.JWT_ACCESS_SECRET,
+      { expiresIn: '15m' }
+    );
 
-    return { accessToken };
+    return { accessToken, user: userPayload };
   } catch (error) {
     throw new ApiError(401, 'Invalid or expired refresh token');
   }
@@ -137,7 +147,7 @@ export const getCurrentUser = async (userId) => {
     throw new ApiError(404, 'User not found');
   }
 
-  return user;
+  return formatUserResponse(user);
 };
 
 const generateTokens = (user) => {

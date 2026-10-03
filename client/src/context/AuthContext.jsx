@@ -6,16 +6,32 @@ const AuthContext = createContext(null);
 const TOKEN_KEY = 'accessToken';
 const REFRESH_KEY = 'refreshToken';
 
+// Clean name and derive first letter of the first name
+const getFirstLetter = (name) => {
+  if (!name) return 'U';
+  const clean = name.replace(/\s*\([^)]*\)\s*/g, ' ').trim();
+  return (clean.charAt(0) || 'U').toUpperCase();
+};
+
+const cleanDisplayName = (name) => {
+  if (!name) return 'User';
+  return name.replace(/\s*\([^)]*\)\s*/g, ' ').trim() || name;
+};
+
 // Server users have no avatar; generate a stable initials-based one for the UI.
-const withAvatar = (user) =>
-  user
-    ? {
-        ...user,
-        avatar:
-          user.avatar ||
-          `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(user.name || 'User')}`,
-      }
-    : null;
+const withAvatar = (user) => {
+  if (!user) return null;
+  const cleanName = cleanDisplayName(user.name);
+  const initial = user.initial || getFirstLetter(cleanName);
+  return {
+    ...user,
+    name: cleanName,
+    initial,
+    avatar:
+      user.avatar ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1b4332&color=ffffff&bold=true&length=1&size=128`,
+  };
+};
 
 const persistTokens = ({ accessToken, refreshToken }) => {
   if (accessToken) localStorage.setItem(TOKEN_KEY, accessToken);
