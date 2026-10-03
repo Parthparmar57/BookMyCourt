@@ -1,106 +1,129 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { Shield, UserCheck, Coffee, Utensils, ShoppingBag, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { roleHomePath } from '../../../shared/utils/roles';
+import { CheckCircle2, LogIn, AlertCircle, Loader2 } from 'lucide-react';
+
+// Seeded demo accounts (backend seed) — all share the same password.
+const DEMO_ACCOUNTS = [
+  { label: 'Owner / Admin', login: 'owner@championsclub.com' },
+  { label: 'Front Desk', login: 'frontdesk@championsclub.com' },
+  { label: 'Bar Staff', login: 'bar@championsclub.com' },
+  { label: 'Kitchen', login: 'kitchen@championsclub.com' },
+  { label: 'Shop Staff', login: 'shop@championsclub.com' },
+  { label: 'Member', login: 'member@championsclub.com' },
+];
+const DEMO_PASSWORD = 'Password@123';
 
 export const LoginPage = () => {
-  const { loginAsRole } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [form, setForm] = useState({ login: '', password: '' });
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSelectRole = (role, path) => {
-    loginAsRole(role);
-    navigate(path);
+  const redirectAfter = (user) => {
+    const from = location.state?.from;
+    navigate(from && from !== '/login' ? from : roleHomePath(user.role), { replace: true });
+  };
+
+  const doLogin = async (credentials) => {
+    setError('');
+    setSubmitting(true);
+    try {
+      const user = await login(credentials.login, credentials.password);
+      redirectAfter(user);
+    } catch (err) {
+      setError(err?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    doLogin(form);
   };
 
   return (
-    <div className="py-16 px-4 max-w-4xl mx-auto space-y-8">
+    <div className="py-16 px-4 max-w-md mx-auto space-y-8">
       <div className="text-center space-y-3">
         <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-lg">
           <CheckCircle2 className="w-7 h-7" />
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-900">Unified Multi-Role Login</h1>
-        <p className="text-sm text-slate-600 max-w-md mx-auto">
-          Select any role below to launch the role-specific workspace instantly (Senior Frontend PERN Demo).
-        </p>
+        <h1 className="text-3xl font-extrabold text-slate-900">Sign in to BookMyCourt</h1>
+        <p className="text-sm text-slate-600">Email or phone and your password.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Owner */}
-        <div
-          onClick={() => handleSelectRole('OWNER', '/admin')}
-          className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl hover:scale-105 transition-all cursor-pointer border border-slate-800 space-y-3"
-        >
-          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white">
-            <Shield className="w-6 h-6" />
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl shadow-lg p-6 space-y-4">
+        {error && (
+          <div className="flex items-start gap-2 bg-rose-50 text-rose-700 text-sm rounded-xl px-3 py-2">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{error}</span>
           </div>
-          <h3 className="font-bold text-lg">Owner / Admin</h3>
-          <p className="text-xs text-slate-400">Executive dashboard, revenue split charts, staff HR, full club config & reports.</p>
-          <button className="text-xs font-bold text-emerald-400">Login as Owner →</button>
+        )}
+
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-slate-600">Email or Phone</label>
+          <input
+            type="text"
+            autoComplete="username"
+            required
+            value={form.login}
+            onChange={(e) => setForm((f) => ({ ...f, login: e.target.value }))}
+            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 text-sm"
+            placeholder="you@example.com"
+          />
         </div>
 
-        {/* Front Desk */}
-        <div
-          onClick={() => handleSelectRole('FRONT_DESK', '/staff/frontdesk')}
-          className="bg-white text-slate-900 p-6 rounded-2xl shadow-lg border border-slate-200 hover:border-emerald-500 hover:scale-105 transition-all cursor-pointer space-y-3"
-        >
-          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-            <UserCheck className="w-6 h-6" />
-          </div>
-          <h3 className="font-bold text-lg">Front Desk Staff</h3>
-          <p className="text-xs text-slate-500">Fast member search (&lt; 1s), court booking grid, member 360° profile & renewal.</p>
-          <button className="text-xs font-bold text-blue-600">Login as Front Desk →</button>
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-slate-600">Password</label>
+          <input
+            type="password"
+            autoComplete="current-password"
+            required
+            value={form.password}
+            onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 text-sm"
+            placeholder="••••••••"
+          />
         </div>
 
-        {/* Bar Staff */}
-        <div
-          onClick={() => handleSelectRole('BAR_STAFF', '/staff/bar')}
-          className="bg-white text-slate-900 p-6 rounded-2xl shadow-lg border border-slate-200 hover:border-emerald-500 hover:scale-105 transition-all cursor-pointer space-y-3"
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-bold text-sm px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors"
         >
-          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
-            <Coffee className="w-6 h-6" />
-          </div>
-          <h3 className="font-bold text-lg">Bar Staff POS</h3>
-          <p className="text-xs text-slate-500">Touchscreen table layout, running member tabs, split UPI payments.</p>
-          <button className="text-xs font-bold text-amber-600">Login as Bar Staff →</button>
-        </div>
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+          {submitting ? 'Signing in…' : 'Sign In'}
+        </button>
 
-        {/* Kitchen */}
-        <div
-          onClick={() => handleSelectRole('KITCHEN', '/staff/kitchen')}
-          className="bg-white text-slate-900 p-6 rounded-2xl shadow-lg border border-slate-200 hover:border-emerald-500 hover:scale-105 transition-all cursor-pointer space-y-3"
-        >
-          <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
-            <Utensils className="w-6 h-6" />
-          </div>
-          <h3 className="font-bold text-lg">Kitchen Display (KDS)</h3>
-          <p className="text-xs text-slate-500">High-contrast 3-column ticket screen (NEW ➔ PREPARING ➔ SERVED).</p>
-          <button className="text-xs font-bold text-rose-600">Open Kitchen Feed →</button>
-        </div>
+        <p className="text-center text-xs text-slate-500">
+          New here?{' '}
+          <Link to="/register" className="font-bold text-emerald-600 hover:underline">
+            Create a member account
+          </Link>
+        </p>
+      </form>
 
-        {/* Shop Staff */}
-        <div
-          onClick={() => handleSelectRole('SHOP_STAFF', '/staff/shop')}
-          className="bg-white text-slate-900 p-6 rounded-2xl shadow-lg border border-slate-200 hover:border-emerald-500 hover:scale-105 transition-all cursor-pointer space-y-3"
-        >
-          <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
-            <ShoppingBag className="w-6 h-6" />
-          </div>
-          <h3 className="font-bold text-lg">Shop Staff POS</h3>
-          <p className="text-xs text-slate-500">Omnichannel stock management, low-stock warnings, counter retail sales.</p>
-          <button className="text-xs font-bold text-purple-600">Login as Shop Staff →</button>
-        </div>
-
-        {/* Member */}
-        <div
-          onClick={() => handleSelectRole('MEMBER', '/member')}
-          className="bg-emerald-900 text-white p-6 rounded-2xl shadow-xl hover:scale-105 transition-all cursor-pointer border border-emerald-800 space-y-3"
-        >
-          <div className="w-10 h-10 rounded-xl bg-emerald-400 text-slate-950 flex items-center justify-center font-bold">
-            QR
-          </div>
-          <h3 className="font-bold text-lg">Member Portal</h3>
-          <p className="text-xs text-slate-300">Self-serve court booking with plan discounts, active bar tab, digital QR ID card.</p>
-          <button className="text-xs font-bold text-emerald-300">Login as Member →</button>
+      {/* Demo quick-login — uses the real auth flow with seeded accounts. */}
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+        <p className="text-xs font-bold text-slate-500 text-center uppercase tracking-wide">
+          Demo accounts (password: {DEMO_PASSWORD})
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {DEMO_ACCOUNTS.map((acc) => (
+            <button
+              key={acc.login}
+              type="button"
+              disabled={submitting}
+              onClick={() => doLogin({ login: acc.login, password: DEMO_PASSWORD })}
+              className="text-xs font-semibold text-slate-700 bg-white hover:border-emerald-500 border border-slate-200 rounded-xl px-3 py-2 transition-colors disabled:opacity-60"
+            >
+              {acc.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>

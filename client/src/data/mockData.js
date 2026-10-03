@@ -1,15 +1,5 @@
 // Realistic seed mock dataset for BookMyCourt (Indian Context: ₹ INR, UPI, GST, +91 phones)
 
-export const MOCK_CLUBS = [
-  {
-    id: 'club-1',
-    name: 'BookMyCourt Sports Arena',
-    city: 'Mumbai',
-    facilities: ['Tennis', 'Badminton', 'Padel', 'Squash'],
-    totalCourts: 8
-  }
-];
-
 export const MOCK_USERS = [
   { id: 'usr-1', name: 'Vikramaditya Sharma', role: 'OWNER', email: 'owner@bookmycourt.com', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
   { id: 'usr-2', name: 'Ananya Verma', role: 'FRONT_DESK', email: 'frontdesk@bookmycourt.com', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150' },

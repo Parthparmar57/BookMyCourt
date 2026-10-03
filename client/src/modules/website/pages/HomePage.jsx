@@ -12,11 +12,9 @@ import {
   Video, 
   X 
 } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext';
 
 export const HomePage = () => {
   const [showVideoModal, setShowVideoModal] = useState(false);
-  const { loginAsRole } = useAuth();
   const navigate = useNavigate();
 
   return (
