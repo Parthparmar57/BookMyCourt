@@ -37,12 +37,12 @@ import {
   HelpCircle,
   Lightbulb
 } from 'lucide-react';
-import { 
-  usePublicPlans, 
-  usePublicShop, 
-  usePublicAvailability, 
-  useBookTrial, 
-  useSubmitEnquiry 
+import {
+  usePublicPlans,
+  usePublicShop,
+  usePublicAvailability,
+  useBookTrial,
+  useSubmitEnquiry
 } from '../../../hooks/useCrm';
 import { formatCurrency } from '../../../shared/utils/formatters';
 
@@ -131,37 +131,64 @@ export const HomePage = () => {
       price: 18499,
       stock: 12,
       sku: 'WIL-PS14-PRO',
-      imageUrl: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&q=80&w=400'
+      imageUrl: '/photo-1622279457486-62dcc4a431d6.avif'
     },
     {
       id: 'p2',
-      name: 'Babolat Team Tennis Balls (3-Pack)',
+      name: 'Babolat Team Championship Tennis Balls (3-Pack)',
       category: 'Balls',
       price: 649,
       stock: 48,
       sku: 'BAB-BALL-3P',
-      imageUrl: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&q=80&w=400'
+      imageUrl: '/photo-1595435934249-5df7ed86e1c0.avif'
     },
     {
       id: 'p3',
       name: 'Bullpadel Hack 03 Pro Padel Racket',
-      category: 'Rackets',
+      category: 'Padel',
       price: 22999,
       stock: 6,
       sku: 'BULL-HACK-03',
-      imageUrl: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=400'
+      imageUrl: '/photo-1554068865-24cecd4e34b8.avif'
     },
     {
       id: 'p4',
-      name: 'Asics Gel-Resolution 9 Court Shoes',
-      category: 'Shoes',
-      price: 12999,
-      stock: 15,
-      sku: 'ASICS-GEL-R9',
-      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400'
+      name: 'Yonex Astrox 99 Pro Badminton Racket',
+      category: 'Badminton',
+      price: 15999,
+      stock: 8,
+      sku: 'YON-AST99-PRO',
+      imageUrl: '/photo-1626248801379-51a0748a5f96.avif'
+    },
+    {
+      id: 'p6',
+      name: 'NikeCourt Dri-FIT Advantage Tennis Apparel',
+      category: 'Apparel',
+      price: 3499,
+      stock: 25,
+      sku: 'NIKE-POLO-DF',
+      imageUrl: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600'
+    },
+    {
+      id: 'p7',
+      name: 'Head Tour Team 12R Monstercombi Bag',
+      category: 'Bags',
+      price: 7499,
+      stock: 9,
+      sku: 'HEAD-BAG-12R',
+      imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600'
+    },
+    {
+      id: 'p8',
+      name: 'Luxilon ALU Power 125 Tennis String Reel',
+      category: 'Accessories',
+      price: 14999,
+      stock: 14,
+      sku: 'LUX-ALU-125',
+      imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&q=80&w=600'
     }
   ];
-  const products = shopQuery.data?.length ? shopQuery.data : fallbackProducts;
+  const products = (shopQuery.data && shopQuery.data.length > 0) ? shopQuery.data : fallbackProducts;
 
   // Section 7 & 8: Trial & Enquiry Form State
   const [formType, setFormType] = useState('TRIAL'); // 'TRIAL' | 'ENQUIRY'
@@ -211,6 +238,25 @@ export const HomePage = () => {
     }
   };
 
+  const getProductImage = (prod) => {
+    if (prod?.imageUrl && typeof prod.imageUrl === 'string' && prod.imageUrl.trim().length > 0) {
+      return prod.imageUrl;
+    }
+    const name = (prod?.name || '').toLowerCase();
+    const cat = (prod?.category || '').toLowerCase();
+
+    if (name.includes('racket') || cat.includes('racket')) {
+      return '/photo-1622279457486-62dcc4a431d6.avif';
+    }
+    if (name.includes('ball') || cat.includes('ball')) {
+      return '/photo-1595435934249-5df7ed86e1c0.avif';
+    }
+    if (name.includes('shoe') || cat.includes('shoe')) {
+      return '/photo-1554068865-24cecd4e34b8.avif';
+    }
+    return '/photo-1626248801379-51a0748a5f96.avif';
+  };
+
   return (
     <div className="bg-white overflow-hidden font-sans text-slate-900 selection:bg-[#4A812F] selection:text-white">
       {/* 2. HERO SECTION */}
@@ -218,35 +264,34 @@ export const HomePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           {/* Left Column (60%) */}
           <div className="lg:col-span-6 space-y-6">
-            <div className="text-xs font-black tracking-widest uppercase text-[#4A812F] font-mono flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-[#4A812F]" />
-              <span>THE CHAMPIONS CLUB • TENNIS • PADEL • BADMINTON</span>
+            <div className="text-xs sm:text-sm font-extrabold tracking-[0.16em] uppercase text-[#1f2125] font-mono flex items-center gap-2">
+              <span>BOOKINGS • PAYMENTS • MEMBERSHIPS • EVENTS • MOBILE APP</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[60px] font-black text-[#121212] tracking-tight leading-[1.06]">
-              The future of club growth starts here
+            <h1 className="text-4xl sm:text-5xl lg:text-[62px] font-black text-[#1f2125] tracking-tight leading-[1.08]">
+              The future of <br className="hidden sm:inline" />club growth starts here
             </h1>
 
-            <p className="text-base sm:text-lg text-gray-600 font-normal leading-relaxed max-w-xl">
-              Welcome to The Champions Club — your destination for world-class sports facilities, pro gear shop, and vibrant social lounge. Book your trial session on the spot!
+            <p className="text-base sm:text-lg text-gray-700 font-normal leading-relaxed max-w-xl">
+              Join the industry's top club management platform reshaping the way you connect with players and grow your business.
             </p>
 
-            {/* CTAs - strictly internal links */}
+            {/* CTAs matching Image 2 reference */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <a
                 href="#trial"
-                className="px-7 py-3.5 bg-[#4A812F] text-white text-sm font-extrabold rounded-xl hover:bg-[#3d6b27] transition-all flex items-center gap-2 shadow-md active:scale-95"
+                className="px-7 py-3.5 bg-[#1f2125] text-white text-base font-extrabold rounded-lg hover:bg-black transition-all inline-flex items-center gap-2 shadow-md active:scale-95"
               >
                 <span>Book a Trial</span>
-                <ChevronRight className="w-4 h-4 text-white" />
+                <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
               </a>
 
               <a
                 href="#plans"
-                className="px-7 py-3.5 bg-white text-[#121212] border border-gray-300 text-sm font-extrabold rounded-xl hover:bg-gray-50 transition-all flex items-center gap-2 active:scale-95 shadow-2xs"
+                className="px-7 py-3.5 bg-white text-[#1f2125] border border-[#1f2125] text-base font-extrabold rounded-lg hover:bg-gray-50 transition-all inline-flex items-center gap-2 active:scale-95 shadow-2xs"
               >
                 <span>View Plans</span>
-                <ChevronRight className="w-4 h-4 text-gray-500" />
+                <ChevronRight className="w-4 h-4 text-gray-700 stroke-[2.5]" />
               </a>
             </div>
           </div>
@@ -399,11 +444,10 @@ export const HomePage = () => {
               return (
                 <div
                   key={plan.id}
-                  className={`rounded-3xl p-8 flex flex-col justify-between transition-all relative ${
-                    isGold
+                  className={`rounded-3xl p-8 flex flex-col justify-between transition-all relative ${isGold
                       ? 'bg-[#121212] text-white shadow-2xl border-2 border-[#4A812F] transform md:-translate-y-2'
                       : 'bg-white text-gray-900 border border-gray-200 shadow-lg hover:shadow-xl'
-                  }`}
+                    }`}
                 >
                   {isGold && (
                     <div className="absolute -top-4 right-8 bg-[#4A812F] text-white text-xs font-black px-4 py-1.5 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider">
@@ -472,14 +516,13 @@ export const HomePage = () => {
                   <div className="pt-8">
                     <a
                       href="#trial"
-                      className={`w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 ${
-                        isGold
-                          ? 'bg-[#4A812F] text-white hover:bg-[#3d6b27]'
-                          : 'bg-[#121212] text-white hover:bg-black'
-                      }`}
+                      className={`w-full py-3.5 rounded-lg font-extrabold text-base flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 ${isGold
+                          ? 'bg-[#1f2125] text-white hover:bg-black'
+                          : 'bg-white text-[#1f2125] border border-[#1f2125] hover:bg-gray-50'
+                        }`}
                     >
                       <span>Choose {plan.name}</span>
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className={`w-4 h-4 stroke-[2.5] ${isGold ? 'text-emerald-400' : 'text-gray-700'}`} />
                     </a>
                   </div>
                 </div>
@@ -487,24 +530,25 @@ export const HomePage = () => {
             })}
           </div>
 
-          {/* Walk-in Rate Comparison Banner (Replaced Emoji with Lucide Lightbulb Icon) */}
-          <div className="max-w-4xl mx-auto bg-amber-50 border border-amber-200 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-900 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center font-bold text-lg shrink-0">
-                <Lightbulb className="w-5 h-5 text-amber-800" />
+          {/* Walk-in Rate Comparison Banner (Site theme: white, black, secondary green borders) */}
+          <div className="max-w-4xl mx-auto bg-white border-2 border-[#4A812F]/40 hover:border-[#4A812F] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md transition-all">
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-[#EBF7E7] text-[#4A812F] flex items-center justify-center font-extrabold shrink-0 shadow-2xs">
+                <Lightbulb className="w-5 h-5 text-[#4A812F]" />
               </div>
               <div>
-                <h4 className="font-extrabold text-base">Walk-in Guest Rate</h4>
-                <p className="text-xs font-medium text-amber-800">
-                  Non-members pay full walk-in rate of <strong>₹800 / hour</strong> per court session.
+                <h4 className="font-black text-base text-[#1f2125] tracking-tight">Walk-in Guest Rate</h4>
+                <p className="text-xs font-semibold text-gray-600 mt-0.5">
+                  Non-members pay full walk-in rate of <strong className="text-[#4A812F] font-extrabold">₹800 / hour</strong> per court session.
                 </p>
               </div>
             </div>
             <a
               href="#trial"
-              className="px-5 py-2.5 bg-amber-900 text-white font-extrabold text-xs rounded-xl hover:bg-amber-950 shrink-0 transition-colors"
+              className="px-6 py-3 bg-[#1f2125] hover:bg-black text-white font-extrabold text-xs rounded-lg flex items-center gap-2 shadow-sm transition-all active:scale-95 shrink-0"
             >
-              Get Member Discounts →
+              <span>Get Member Discounts</span>
+              <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
             </a>
           </div>
         </div>
@@ -635,10 +679,10 @@ export const HomePage = () => {
 
             <Link
               to="/shop"
-              className="px-6 py-3.5 bg-[#121212] hover:bg-black text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-md transition-all shrink-0"
+              className="px-6 py-3.5 bg-[#1f2125] hover:bg-black text-white font-extrabold text-sm rounded-lg flex items-center gap-2 shadow-md transition-all shrink-0 active:scale-95"
             >
               <span>Visit Gear Shop</span>
-              <ChevronRight className="w-4 h-4 text-emerald-400" />
+              <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
             </Link>
           </div>
 
@@ -651,7 +695,7 @@ export const HomePage = () => {
               >
                 <div className="relative aspect-square bg-gray-100 overflow-hidden">
                   <img
-                    src={prod.imageUrl}
+                    src={getProductImage(prod)}
                     alt={prod.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -713,11 +757,10 @@ export const HomePage = () => {
               <button
                 type="button"
                 onClick={() => setFormType('TRIAL')}
-                className={`px-6 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 ${
-                  formType === 'TRIAL'
+                className={`px-6 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 ${formType === 'TRIAL'
                     ? 'bg-[#4A812F] text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 <Calendar className="w-4 h-4" />
                 <span>Book a Trial Session</span>
@@ -725,11 +768,10 @@ export const HomePage = () => {
               <button
                 type="button"
                 onClick={() => setFormType('ENQUIRY')}
-                className={`px-6 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 ${
-                  formType === 'ENQUIRY'
+                className={`px-6 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 ${formType === 'ENQUIRY'
                     ? 'bg-[#4A812F] text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 <Mail className="w-4 h-4" />
                 <span>General Enquiry</span>
@@ -875,16 +917,17 @@ export const HomePage = () => {
               <button
                 type="submit"
                 disabled={bookTrial.isPending || submitEnquiry.isPending}
-                className="w-full py-4 bg-[#4A812F] hover:bg-[#3d6b27] text-white font-extrabold text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                className="w-full py-4 bg-[#1f2125] hover:bg-black text-white font-extrabold text-base rounded-lg flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50"
               >
                 {bookTrial.isPending || submitEnquiry.isPending ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4 h-4 text-emerald-400" />
                 )}
                 <span>
                   {formType === 'TRIAL' ? 'Submit Trial Session Request' : 'Send General Enquiry'}
                 </span>
+                <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
               </button>
             </form>
           )}
@@ -933,45 +976,20 @@ export const HomePage = () => {
             })}
           </div>
 
-          {/* Video Container */}
+          {/* Video Container with Autoplay & Mouse Hover Effect */}
           <div className="pt-4">
-            <div className="relative rounded-3xl border-2 border-white/90 bg-[#0c0d0f] overflow-hidden shadow-2xl aspect-video max-w-4xl mx-auto group">
+            <div className="relative rounded-3xl border-2 border-white/90 hover:border-[#4A812F] bg-[#0c0d0f] overflow-hidden shadow-2xl hover:shadow-[0_20px_50px_rgba(74,129,47,0.3)] aspect-video max-w-4xl mx-auto transition-all duration-500 transform hover:scale-[1.02] group">
               <video
-                ref={videoRef}
                 src="/gemini_generated_video_8dec1fae.mp4"
+                autoPlay
+                muted
                 loop
                 playsInline
                 controls
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                className="w-full h-full object-cover rounded-2xl cursor-pointer"
-                onClick={togglePlay}
+                className="w-full h-full object-cover rounded-2xl"
               >
                 Your browser does not support HTML5 video player.
               </video>
-
-              <div
-                onClick={togglePlay}
-                className={`absolute inset-0 flex items-center justify-center transition-all cursor-pointer z-20 pointer-events-auto ${
-                  isPlaying
-                    ? 'bg-black/0 hover:bg-black/40 opacity-0 hover:opacity-100'
-                    : 'bg-black/50 hover:bg-black/60 opacity-100'
-                }`}
-              >
-                <button
-                  type="button"
-                  className="bg-[#1c1d1f]/95 backdrop-blur-md border border-white/40 text-white font-extrabold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform active:scale-95"
-                >
-                  <div className="w-8 h-8 rounded-full bg-[#4A812F] text-white flex items-center justify-center font-bold text-xs shadow-md">
-                    {isPlaying ? (
-                      <Pause className="w-4 h-4 fill-white text-white" />
-                    ) : (
-                      <Play className="w-4 h-4 fill-white text-white ml-0.5" />
-                    )}
-                  </div>
-                  <span>{isPlaying ? 'Pause Video' : 'Play BookMyCourt Trailer (0:53)'}</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -1035,21 +1053,21 @@ export const HomePage = () => {
           <div className="flex flex-col sm:flex-row items-center gap-5 w-full lg:w-auto shrink-0 justify-center lg:justify-end">
             <a
               href="#trial"
-              className="bg-[#9be65c] hover:bg-[#8ee048] text-[#121212] rounded-2xl p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-[#8ce04a]"
+              className="bg-[#1f2125] hover:bg-black text-white rounded-2xl p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-800"
             >
-              <div className="flex items-center justify-between text-xl font-black text-[#121212]">
+              <div className="flex items-center justify-between text-xl font-black text-white">
                 <span>Book a Trial</span>
-                <ChevronRight className="w-6 h-6 stroke-[3] group-hover:translate-x-1.5 transition-transform" />
+                <ChevronRight className="w-6 h-6 stroke-[3] text-emerald-400 group-hover:translate-x-1.5 transition-transform" />
               </div>
             </a>
 
             <a
               href="#plans"
-              className="bg-white hover:bg-gray-100 text-[#121212] rounded-2xl p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-200"
+              className="bg-white hover:bg-gray-100 text-[#1f2125] rounded-2xl p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-200"
             >
-              <div className="flex items-center justify-between text-xl font-black text-[#121212]">
+              <div className="flex items-center justify-between text-xl font-black text-[#1f2125]">
                 <span>See Plans</span>
-                <ChevronRight className="w-6 h-6 stroke-[3] group-hover:translate-x-1.5 transition-transform" />
+                <ChevronRight className="w-6 h-6 stroke-[3] text-gray-700 group-hover:translate-x-1.5 transition-transform" />
               </div>
             </a>
           </div>

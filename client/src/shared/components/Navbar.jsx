@@ -69,36 +69,7 @@ export const Navbar = () => {
       className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-2xs relative"
       onMouseLeave={handleMouseLeave}
     >
-      {/* 1. TOP BLACK SEGMENTED SWITCHER HEADER */}
-      <div className="bg-[#121212] text-white text-xs px-4 sm:px-8 lg:px-16 flex items-center h-10 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setActiveSegment('clubs')}
-              className={`px-5 py-2 rounded-t-lg font-bold text-xs transition-all ${
-                activeSegment === 'clubs' ? 'bg-white text-[#121212] shadow-sm' : 'text-gray-300 hover:text-white bg-transparent'
-              }`}
-            >
-              For Clubs
-            </button>
-            <button
-              onClick={() => setActiveSegment('players')}
-              className={`px-5 py-2 rounded-t-lg font-bold text-xs transition-all ${
-                activeSegment === 'players' ? 'bg-white text-[#121212] shadow-sm' : 'text-gray-300 hover:text-white bg-transparent'
-              }`}
-            >
-              For Players
-            </button>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-6 text-[11px] text-gray-300 font-medium">
-            <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-[#4A812F]" /> +91 98200 11223</span>
-            <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-[#4A812F]" /> sales@bookmycourt.in</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. MAIN NAVBAR WITH LOGO */}
+      {/* MAIN NAVBAR WITH LOGO */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-16 py-3.5 flex items-center justify-between">
         {/* Main Brand Logo */}
         <Link to="/" className="flex items-center gap-3 group" onClick={() => setActiveDropdown(null)}>
@@ -236,10 +207,10 @@ export const Navbar = () => {
 
           <a
             href="#trial"
-            className="px-5 py-2.5 bg-[#4A812F] hover:bg-[#3d6b27] text-white text-sm font-extrabold rounded-lg transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+            className="px-6 py-2.5 bg-[#1f2125] hover:bg-black text-white text-sm font-extrabold rounded-lg transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
           >
             <span>Book a Trial</span>
-            <ChevronRight className="w-4 h-4 text-white" />
+            <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
           </a>
         </div>
       </div>
