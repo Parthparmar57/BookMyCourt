@@ -3,7 +3,7 @@ import { success } from '../../utils/response.js';
 import * as dashboardService from './dashboard.service.js';
 
 export const getDashboardSummary = asyncHandler(async (req, res) => {
-  const data = await dashboardService.getDashboardSummary();
+  const data = await dashboardService.getDashboardSummary(req.query);
   return success(res, data);
 });
 

@@ -122,7 +122,24 @@ export const createShopOrder = async (data, user) => {
   });
 };
 
+const ALLOWED_ORDER_TRANSITIONS = {
+  PLACED: ['PACKED', 'CANCELLED'],
+  PACKED: ['SHIPPED', 'CANCELLED'],
+  SHIPPED: ['DELIVERED', 'CANCELLED'],
+  DELIVERED: [],
+  CANCELLED: [],
+};
+
 export const updateOrderStatus = async (id, status) => {
+  const existingOrder = await prisma.order.findUnique({ where: { id } });
+  if (!existingOrder) throw new ApiError(404, 'Order not found');
+
+  const currentStatus = existingOrder.status;
+  const allowedNext = ALLOWED_ORDER_TRANSITIONS[currentStatus] || [];
+  if (currentStatus !== status && !allowedNext.includes(status)) {
+    throw new ApiError(400, `Cannot transition order status from ${currentStatus} to ${status}`);
+  }
+
   const order = await prisma.order.update({
     where: { id },
     data: { status },

@@ -4,6 +4,7 @@ import { getMemberDiscounts } from '../../../utils/pricing.js';
 import { emitNewKitchenOrder } from '../../../sockets/kitchen.socket.js';
 import { genDocNo } from '../../../utils/ids.js';
 import { round2 } from '../../../utils/money.js';
+import { writeAudit } from '../../../utils/audit.js';
 import { findOpenShiftId } from '../shifts/shift.service.js';
 import {
   ORDER_CHANNEL,
@@ -309,6 +310,9 @@ export const voidOrder = async (orderId, { reason }, user) => {
     const order = await tx.order.findUnique({ where: { id: orderId } });
     if (!order) throw new ApiError(404, 'Order not found');
 
+    const wasPaid = order.paymentStatus === PAYMENT_STATUS.PAID || order.paymentStatus === 'PAID';
+    const amountToRefund = Number(order.totalAmount || order.total || 0);
+
     const updated = await tx.order.update({
       where: { id: orderId },
       data: {
@@ -329,6 +333,28 @@ export const voidOrder = async (orderId, { reason }, user) => {
         data: { status: TABLE_STATUS.AVAILABLE },
       });
     }
+
+    if (wasPaid && amountToRefund > 0) {
+      await tx.transaction.create({
+        data: {
+          transactionNo: genDocNo('TXN-REF'),
+          source: TRANSACTION_SOURCE.BAR,
+          amount: -Math.abs(amountToRefund),
+          paymentMode: order.paymentMode || PAYMENT_MODE.CASH,
+          reference: `VOID-${order.orderNo}`,
+          memberId: order.memberId || null,
+          notes: `Ledger refund for voided bar order #${order.orderNo}: ${reason}`,
+        },
+      });
+    }
+
+    await writeAudit(tx, {
+      actorId: user.id,
+      action: 'BAR_ORDER_VOID',
+      entity: 'Order',
+      entityId: orderId,
+      meta: { reason, total: order.totalAmount || order.total },
+    });
 
     return updated;
   });

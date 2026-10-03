@@ -4,12 +4,19 @@ import { emitKitchenStatusUpdate } from '../../../sockets/kitchen.socket.js';
 import { ORDER_STATUS } from '../../../shared/index.js';
 
 export const getKitchenQueue = async () => {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
   return prisma.order.findMany({
     where: {
-      status: { in: [ORDER_STATUS.PLACED, ORDER_STATUS.PREPARING] },
       channel: 'BAR',
+      OR: [
+        { status: { in: [ORDER_STATUS.PLACED, ORDER_STATUS.PREPARING] } },
+        { status: { in: [ORDER_STATUS.SERVED, ORDER_STATUS.COMPLETED] }, updatedAt: { gte: todayStart } },
+      ],
     },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: 'desc' },
+    take: 60,
     include: {
       items: { include: { menuItem: true } },
       barTable: true,

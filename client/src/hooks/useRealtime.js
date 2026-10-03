@@ -72,3 +72,32 @@ export const useLeaveRealtime = (onStatusChange) => {
   }, [qc, onStatusChange]);
 };
 
+/**
+ * Live bar / cafeteria orders — the kitchen display emits room-scoped events,
+ * but the server also broadcasts `bar_order_updated` (new order) and
+ * `order_status_updated` (preparation status changed) to everyone. Members
+ * tracking their own orders listen here so the "Live Kitchen & Cafeteria
+ * Orders" feed refreshes the moment the kitchen advances a ticket — no manual
+ * page refresh needed.
+ */
+export const useBarOrderRealtime = (onChange) => {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const socket = getSocket();
+    const invalidate = (data) => {
+      qc.invalidateQueries({ queryKey: qk.barOrders.all });
+      qc.invalidateQueries({ queryKey: qk.tabs.all });
+      qc.invalidateQueries({ queryKey: qk.kitchen.queue });
+      if (onChange) onChange(data);
+    };
+
+    socket.on('bar_order_updated', invalidate);
+    socket.on('order_status_updated', invalidate);
+
+    return () => {
+      socket.off('bar_order_updated', invalidate);
+      socket.off('order_status_updated', invalidate);
+    };
+  }, [qc, onChange]);
+};
+

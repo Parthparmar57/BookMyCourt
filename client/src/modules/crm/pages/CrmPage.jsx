@@ -29,7 +29,12 @@ import {
   Users,
   Send,
   FileText,
-  IndianRupee
+  IndianRupee,
+  GripVertical,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const STAGES = [
@@ -40,6 +45,22 @@ const STAGES = [
   { id: 'LOST', label: 'Lost / Closed', color: 'border-slate-300 bg-slate-100/60 text-slate-600' },
 ];
 
+const STAGE_ORDER = {
+  NEW: 0,
+  CONTACTED: 1,
+  QUOTED: 2,
+  WON: 3,
+  LOST: 4,
+};
+
+const isForwardMove = (currentStage, targetStage) => {
+  if (!currentStage || !targetStage || currentStage === targetStage) return false;
+  if (currentStage === 'WON' || currentStage === 'LOST') return false;
+  const currIdx = STAGE_ORDER[currentStage] ?? -1;
+  const targetIdx = STAGE_ORDER[targetStage] ?? -1;
+  return targetIdx > currIdx;
+};
+
 export const CrmPage = () => {
   const [activeTab, setActiveTab] = useState('pipeline'); // 'pipeline' | 'enquiries'
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
@@ -48,6 +69,20 @@ export const CrmPage = () => {
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [feedback, setFeedback] = useState(null);
+
+  // Drag and Drop state
+  const [draggedLead, setDraggedLead] = useState(null);
+  const [dragOverStage, setDragOverStage] = useState(null);
+
+  // Column expansion state (max 5 cards shown by default per column)
+  const [expandedStages, setExpandedStages] = useState({});
+
+  const toggleExpandStage = (stageId) => {
+    setExpandedStages((prev) => ({
+      ...prev,
+      [stageId]: !prev[stageId],
+    }));
+  };
 
   // Queries
   const { data: leadsData, isLoading: leadsLoading } = useLeads();
@@ -81,7 +116,7 @@ export const CrmPage = () => {
     name: '',
     phone: '',
     email: '',
-    sportInterest: 'Badminton',
+    interest: 'Badminton',
     notes: '',
     source: 'WEBSITE',
   });
@@ -100,23 +135,49 @@ export const CrmPage = () => {
     startDate: new Date().toISOString().split('T')[0],
     password: 'Password@123',
     emergencyContact: '',
+    sendConfirmationEmail: true,
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [convertError, setConvertError] = useState('');
+  const [addLeadError, setAddLeadError] = useState('');
+  const [quoteError, setQuoteError] = useState('');
+  const [followUpError, setFollowUpError] = useState('');
 
   const handleCreateLead = async (e) => {
     e.preventDefault();
+    setAddLeadError('');
     if (!newLead.name.trim() || !newLead.phone.trim()) return;
     try {
       await createLead.mutateAsync(newLead);
       setShowAddLeadModal(false);
-      setNewLead({ name: '', phone: '', email: '', sportInterest: 'Badminton', notes: '', source: 'WALK_IN' });
+      setNewLead({ name: '', phone: '', email: '', interest: 'Badminton', notes: '', source: 'WALK_IN' });
       setFeedback({ type: 'success', message: 'New sales lead added to pipeline.' });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Failed to create lead.' });
+      setAddLeadError(err?.response?.data?.message || err?.message || 'Failed to create lead.');
     }
   };
 
   const handleStageMove = async (leadId, newStage) => {
     try {
+      const targetLead = leads.find((l) => l.id === leadId);
+
+      if (newStage === 'WON' && targetLead) {
+        setSelectedLead(targetLead);
+        const selectedPlan = plans[0];
+        setConvertForm({
+          planId: selectedPlan?.id || '',
+          dob: '1995-05-15',
+          startDate: new Date().toISOString().split('T')[0],
+          password: 'Password@123',
+          emergencyContact: targetLead.phone || '',
+          sendConfirmationEmail: true,
+        });
+        setShowPassword(false);
+        setConvertError('');
+        setShowConvertModal(true);
+        return;
+      }
+
       await updateLead.mutateAsync({ id: leadId, stage: newStage });
       setFeedback({ type: 'success', message: `Lead moved to ${newStage}.` });
     } catch (err) {
@@ -124,8 +185,69 @@ export const CrmPage = () => {
     }
   };
 
+  const handleDragStart = (e, lead) => {
+    setDraggedLead(lead);
+    e.dataTransfer.setData('application/json', JSON.stringify({ leadId: lead.id, stage: lead.stage }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, stageId) => {
+    e.preventDefault();
+    if (draggedLead && isForwardMove(draggedLead.stage, stageId)) {
+      e.dataTransfer.dropEffect = 'move';
+      if (dragOverStage !== stageId) {
+        setDragOverStage(stageId);
+      }
+    } else {
+      e.dataTransfer.dropEffect = 'none';
+    }
+  };
+
+  const handleDragLeave = (e, stageId) => {
+    e.preventDefault();
+    if (dragOverStage === stageId) {
+      setDragOverStage(null);
+    }
+  };
+
+  const handleDrop = (e, targetStage) => {
+    e.preventDefault();
+    setDragOverStage(null);
+
+    let leadToMove = draggedLead;
+    if (!leadToMove) {
+      const rawData = e.dataTransfer.getData('application/json');
+      if (rawData) {
+        try {
+          const parsed = JSON.parse(rawData);
+          leadToMove = leads.find((l) => l.id === parsed.leadId);
+        } catch (err) {}
+      }
+    }
+
+    if (!leadToMove) return;
+
+    if (!isForwardMove(leadToMove.stage, targetStage)) {
+      setFeedback({
+        type: 'error',
+        message: 'Reverse stage movement is not allowed. Leads can only move forward in the sales pipeline.',
+      });
+      setDraggedLead(null);
+      return;
+    }
+
+    setDraggedLead(null);
+    handleStageMove(leadToMove.id, targetStage);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedLead(null);
+    setDragOverStage(null);
+  };
+
   const handleAddFollowUp = async (e) => {
     e.preventDefault();
+    setFollowUpError('');
     if (!selectedLead || !followUp.notes.trim()) return;
     try {
       await addFollowUp.mutateAsync({
@@ -138,13 +260,14 @@ export const CrmPage = () => {
       setFollowUp({ type: 'CALL', notes: '', date: new Date().toISOString().split('T')[0] });
       setFeedback({ type: 'success', message: 'Follow-up interaction logged.' });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Failed to log follow-up.' });
+      setFollowUpError(err?.response?.data?.message || err?.message || 'Failed to log follow-up.');
     }
   };
 
   // Open the quote builder for a lead
   const openQuoteModal = (lead) => {
     setSelectedLead(lead);
+    setQuoteError('');
     const selectedPlan = plans[0];
     setQuoteForm({
       email: lead.email || '',
@@ -160,6 +283,7 @@ export const CrmPage = () => {
 
   const handleSendQuoteSubmit = async (e) => {
     e.preventDefault();
+    setQuoteError('');
     if (!selectedLead || !quoteForm.email.trim()) return;
 
     try {
@@ -180,10 +304,7 @@ export const CrmPage = () => {
         message: `Official Quotation email successfully dispatched to ${quoteForm.email}. Lead stage moved to Quotation Sent.`,
       });
     } catch (err) {
-      setFeedback({
-        type: 'error',
-        message: err?.response?.data?.message || err?.message || 'Failed to send quotation email.',
-      });
+      setQuoteError(err?.response?.data?.message || err?.message || 'Failed to send quotation email.');
     }
   };
 
@@ -191,6 +312,26 @@ export const CrmPage = () => {
     try {
       await updateQuotationStatus.mutateAsync({ quotationId, status });
       setFeedback({ type: 'success', message: `Quotation marked ${status}.` });
+
+      if (status === 'ACCEPTED') {
+        const targetLead = leads.find((l) => l.quotations?.some((q) => q.id === quotationId));
+        if (targetLead) {
+          const quoteObj = targetLead.quotations?.find((q) => q.id === quotationId);
+          const matchedPlanId = quoteObj?.planId || plans[0]?.id || '';
+          setSelectedLead(targetLead);
+          setConvertForm({
+            planId: matchedPlanId,
+            dob: '1995-05-15',
+            startDate: new Date().toISOString().split('T')[0],
+            password: 'Password@123',
+            emergencyContact: targetLead.phone || '',
+            sendConfirmationEmail: true,
+          });
+          setShowPassword(false);
+          setConvertError('');
+          setShowConvertModal(true);
+        }
+      }
     } catch (err) {
       setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Could not update quotation.' });
     }
@@ -199,19 +340,37 @@ export const CrmPage = () => {
   const handleConvertLead = async (e) => {
     e.preventDefault();
     if (!selectedLead) return;
+    setConvertError('');
+
+    const targetPlanId = convertForm.planId || plans[0]?.id;
+    const plan = plans.find((p) => p.id === targetPlanId);
+    if (plan?.maxAge && convertForm.dob) {
+      const age = Math.floor((Date.now() - new Date(convertForm.dob).getTime()) / (365.25 * 24 * 3600 * 1000));
+      if (age >= plan.maxAge) {
+        setConvertError(`Member age is ${age}. ${plan.name} plan requires age under ${plan.maxAge}.`);
+        return;
+      }
+    }
+
     try {
       await convertLead.mutateAsync({
         id: selectedLead.id,
-        planId: convertForm.planId || plans[0]?.id,
+        planId: targetPlanId,
         dob: convertForm.dob,
         startDate: convertForm.startDate,
         password: convertForm.password,
         emergencyContact: convertForm.emergencyContact,
+        sendConfirmationEmail: convertForm.sendConfirmationEmail !== false,
       });
       setShowConvertModal(false);
-      setFeedback({ type: 'success', message: `Successfully converted ${selectedLead.name} to active Member!` });
+      setFeedback({
+        type: 'success',
+        message: `Successfully converted ${selectedLead.name} to active Member! ${
+          convertForm.sendConfirmationEmail !== false ? 'Welcome & login credentials email dispatched.' : ''
+        }`,
+      });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Lead conversion failed.' });
+      setConvertError(err?.response?.data?.message || err?.message || 'Lead conversion failed.');
     }
   };
 
@@ -296,28 +455,51 @@ export const CrmPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4">
           {STAGES.map((stage) => {
             const stageLeads = leads.filter((l) => l.stage === stage.id);
+            const isTargeted = dragOverStage === stage.id && draggedLead && isForwardMove(draggedLead.stage, stage.id);
+            const isExpanded = !!expandedStages[stage.id];
+            const visibleLeads = isExpanded ? stageLeads : stageLeads.slice(0, 5);
+            const hiddenCount = stageLeads.length - 5;
             return (
-              <div key={stage.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col min-h-[500px]">
+              <div
+                key={stage.id}
+                onDragOver={(e) => handleDragOver(e, stage.id)}
+                onDragLeave={(e) => handleDragLeave(e, stage.id)}
+                onDrop={(e) => handleDrop(e, stage.id)}
+                className={`bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col min-h-[500px] transition-all ${
+                  isTargeted ? 'ring-2 ring-emerald-500 bg-emerald-50/50 border-emerald-400 shadow-md' : ''
+                }`}
+              >
                 <div className={`flex items-center justify-between pb-2 mb-3 border-b ${stage.color} font-extrabold text-xs px-2.5 py-1.5 rounded-xl`}>
                   <span>{stage.label}</span>
                   <span className="bg-white/90 px-2 py-0.5 rounded-full text-[10px] font-black">{stageLeads.length}</span>
                 </div>
 
                 <div className="space-y-3 flex-1 overflow-y-auto">
-                  {stageLeads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs hover:shadow-md transition-all space-y-2.5"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-extrabold text-slate-900 text-xs">{lead.name}</h4>
-                          <span className="text-[10px] text-slate-500 font-medium">{formatPhone(lead.phone)}</span>
+                  {visibleLeads.map((lead) => {
+                    const isBeingDragged = draggedLead?.id === lead.id;
+                    const canDrag = lead.stage !== 'WON' && lead.stage !== 'LOST';
+                    return (
+                      <div
+                        key={lead.id}
+                        draggable={canDrag}
+                        onDragStart={(e) => handleDragStart(e, lead)}
+                        onDragEnd={handleDragEnd}
+                        className={`bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs hover:shadow-md transition-all space-y-2.5 ${
+                          canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+                        } ${isBeingDragged ? 'opacity-40 border-dashed border-emerald-400 ring-2 ring-emerald-300' : ''}`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-1.5">
+                            {canDrag && <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />}
+                            <div>
+                              <h4 className="font-extrabold text-slate-900 text-xs">{lead.name}</h4>
+                              <span className="text-[10px] text-slate-500 font-medium">{formatPhone(lead.phone)}</span>
+                            </div>
+                          </div>
+                          <span className="text-[9px] uppercase px-2 py-0.5 bg-slate-100 font-bold text-slate-600 rounded">
+                            {lead.interest || lead.sportInterest || 'All Sports'}
+                          </span>
                         </div>
-                        <span className="text-[9px] uppercase px-2 py-0.5 bg-slate-100 font-bold text-slate-600 rounded">
-                          {lead.sportInterest || 'All Sports'}
-                        </span>
-                      </div>
 
                       {lead.email && (
                         <div className="text-[10px] text-slate-500 flex items-center gap-1 truncate">
@@ -403,7 +585,7 @@ export const CrmPage = () => {
                               <span>Send Quote</span>
                             </button>
                             <button
-                              onClick={() => { setSelectedLead(lead); setShowConvertModal(true); }}
+                              onClick={() => { setSelectedLead(lead); setConvertError(''); setShowConvertModal(true); }}
                               className="text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer font-bold border border-emerald-200"
                             >
                               <UserCheck className="w-3 h-3 text-emerald-600" />
@@ -444,7 +626,27 @@ export const CrmPage = () => {
                         </>
                       )}
                     </div>
-                  ))}
+                  );
+                })}
+
+                  {stageLeads.length > 5 && (
+                    <button
+                      onClick={() => toggleExpandStage(stage.id)}
+                      className="w-full mt-2 py-2 px-3 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Show Less</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Show More ({hiddenCount} more)</span>
+                        </>
+                      )}
+                    </button>
+                  )}
 
                   {stageLeads.length === 0 && (
                     <div className="h-32 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-[11px] text-slate-400 font-medium">
@@ -533,8 +735,15 @@ export const CrmPage = () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3 border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900">Add Sales Lead</h3>
-              <button onClick={() => setShowAddLeadModal(false)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowAddLeadModal(false); setAddLeadError(''); }} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
             </div>
+
+            {addLeadError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{addLeadError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleCreateLead} className="space-y-3 text-xs font-semibold">
               <div>
@@ -578,8 +787,8 @@ export const CrmPage = () => {
                 <div>
                   <label className="text-slate-700 block mb-1">Sport Interest</label>
                   <select
-                    value={newLead.sportInterest}
-                    onChange={(e) => setNewLead({ ...newLead, sportInterest: e.target.value })}
+                    value={newLead.interest}
+                    onChange={(e) => setNewLead({ ...newLead, interest: e.target.value })}
                     className="w-full border border-slate-200 rounded-xl p-2.5 bg-white"
                   >
                     <option value="Tennis">Tennis</option>
@@ -630,19 +839,35 @@ export const CrmPage = () => {
       {/* CONVERT TO MEMBER MODAL */}
       {showConvertModal && selectedLead && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b pb-3 border-slate-100">
               <div>
-                <h3 className="font-extrabold text-base text-slate-900">Convert to Member</h3>
-                <p className="text-xs text-slate-500">Assign membership plan and issue credentials</p>
+                <h3 className="font-extrabold text-base text-slate-900">Convert Lead to Active Member</h3>
+                <p className="text-xs text-slate-500">Confirm details & issue member account credentials</p>
               </div>
-              <button onClick={() => setShowConvertModal(false)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => setShowConvertModal(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-1">
-              <div className="font-bold text-emerald-900">{selectedLead.name}</div>
-              <div className="text-emerald-700">{formatPhone(selectedLead.phone)} · {selectedLead.email || 'No email provided'}</div>
+              <div className="font-bold text-emerald-900 flex items-center justify-between">
+                <span>{selectedLead.name}</span>
+                <span className="text-[10px] bg-emerald-200/80 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold uppercase">
+                  Lead #{selectedLead.id?.slice(0, 6)}
+                </span>
+              </div>
+              <div className="text-emerald-700 font-medium">
+                {formatPhone(selectedLead.phone)} · {selectedLead.email || 'No email provided'}
+              </div>
             </div>
+
+            {convertError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{convertError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleConvertLead} className="space-y-3 text-xs font-semibold">
               <div>
@@ -650,7 +875,7 @@ export const CrmPage = () => {
                 <select
                   value={convertForm.planId}
                   onChange={(e) => setConvertForm({ ...convertForm, planId: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white font-bold"
+                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white font-bold text-slate-800 focus:border-emerald-600 focus:outline-none"
                 >
                   <option value="">-- Choose Plan --</option>
                   {plans.map((p) => (
@@ -669,7 +894,7 @@ export const CrmPage = () => {
                     required
                     value={convertForm.dob}
                     onChange={(e) => setConvertForm({ ...convertForm, dob: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none font-medium text-slate-800"
                   />
                 </div>
                 <div>
@@ -679,28 +904,43 @@ export const CrmPage = () => {
                     required
                     value={convertForm.startDate}
                     onChange={(e) => setConvertForm({ ...convertForm, startDate: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none font-medium text-slate-800"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-slate-700 block mb-1">Portal Password</label>
+                <label className="text-slate-700 block mb-1">Portal Account Password *</label>
                 <input
+                  type="text"
                   required
                   value={convertForm.password}
                   onChange={(e) => setConvertForm({ ...convertForm, password: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none"
+                  placeholder="Set initial password"
+                  className="w-full border border-slate-200 rounded-xl p-2.5 font-mono text-slate-800 focus:border-emerald-600 focus:outline-none"
+                />
+                <span className="text-[10px] text-slate-400 font-normal mt-0.5 block">Credentials created for member login portal</span>
+              </div>
+
+              <div>
+                <label className="text-slate-700 block mb-1">Emergency Contact Phone</label>
+                <input
+                  type="tel"
+                  required
+                  value={convertForm.emergencyContact}
+                  onChange={(e) => setConvertForm({ ...convertForm, emergencyContact: e.target.value })}
+                  placeholder="Emergency contact phone number"
+                  className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none font-medium text-slate-800"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={convertLead.isPending}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 mt-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 mt-2 cursor-pointer disabled:opacity-60"
               >
                 {convertLead.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Confirm & Issue Membership
+                <span>Confirm & Issue Membership</span>
               </button>
             </form>
           </div>
@@ -713,8 +953,15 @@ export const CrmPage = () => {
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3 border-slate-100">
               <h3 className="font-extrabold text-sm text-slate-900">Log Follow-up: {selectedLead.name}</h3>
-              <button onClick={() => setShowFollowUpModal(false)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowFollowUpModal(false); setFollowUpError(''); }} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
             </div>
+
+            {followUpError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{followUpError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleAddFollowUp} className="space-y-3 text-xs font-semibold">
               <div className="grid grid-cols-2 gap-2">
@@ -727,7 +974,7 @@ export const CrmPage = () => {
                   >
                     <option value="CALL">Phone Call</option>
                     <option value="WHATSAPP">WhatsApp</option>
-                    <option value="MEETING">Club Visit</option>
+                    <option value="VISIT">Club Visit</option>
                     <option value="EMAIL">Email</option>
                   </select>
                 </div>
@@ -781,12 +1028,19 @@ export const CrmPage = () => {
                 </h3>
               </div>
               <button
-                onClick={() => setShowQuoteModal(false)}
+                onClick={() => { setShowQuoteModal(false); setQuoteError(''); }}
                 className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {quoteError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{quoteError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSendQuoteSubmit} className="space-y-3.5 text-xs font-semibold">
               <div className="space-y-1">

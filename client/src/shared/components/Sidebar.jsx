@@ -51,6 +51,10 @@ export const Sidebar = () => {
           { label: 'Bar POS', path: '/staff/bar', icon: Coffee },
           { label: 'Kitchen Feed', path: '/staff/kitchen', icon: Utensils }
         ];
+      case 'KITCHEN':
+        return [
+          { label: 'Kitchen Orders (KDS)', path: '/staff/kitchen', icon: Utensils }
+        ];
       case 'SHOP_STAFF':
         return [
           { label: 'Shop POS', path: '/staff/shop', icon: ShoppingBag },

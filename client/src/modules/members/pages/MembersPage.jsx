@@ -3,13 +3,13 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMembers, usePlans, useCreateMember } from '../../../hooks/useMembership';
+import { useMembers, usePlans, useCreateMember, useUpdateMember, useDeactivateMember } from '../../../hooks/useMembership';
 import { membersApi } from '../../../services/membership.service';
 import { useDebounce } from '../../../shared/hooks/useDebounce';
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
 import { memberSchema, applyServerErrors } from '../../../shared/validation/schemas';
-import { Search, UserPlus, AlertCircle, X, Loader2, QrCode, Phone, Mail, ShieldCheck, Sparkles, CheckCircle2, Clock } from 'lucide-react';
+import { Search, UserPlus, AlertCircle, X, Loader2, QrCode, Phone, Mail, ShieldCheck, Sparkles, CheckCircle2, Clock, Edit3, UserX } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QRScannerModal } from '../../../components/member/QRScannerModal';
 
@@ -39,7 +39,7 @@ const MemberAvatar = ({ name, photoUrl, size = "w-16 h-16 text-2xl" }) => {
 // Safe QR Display Helper (Prevents RangeError: Data too long on base64 QR strings)
 const SafeQRCodeDisplay = ({ member }) => {
   const qrCodeStr = member?.qrCode || '';
-  
+
   if (typeof qrCodeStr === 'string' && (qrCodeStr.startsWith('data:') || qrCodeStr.startsWith('http'))) {
     return (
       <img
@@ -69,8 +69,9 @@ const toView = (m) => ({
   name: m.user?.name || m.name || '—',
   phone: m.user?.phone || m.phone || '',
   email: m.user?.email || m.email || '',
+  emergencyContact: m.emergencyContact || '',
   planName: m.plan?.name || m.planName || '—',
-  status: m.status || 'active',
+  status: m.status || 'ACTIVE',
   qrCode: m.qrCode,
   tabBalance: m.activeTabBalance ?? 0,
 });
@@ -83,6 +84,7 @@ export const MembersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 350);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [syncVersion, setSyncVersion] = useState(0);
@@ -105,8 +107,8 @@ export const MembersPage = () => {
     const targetPlan = plans.find(p => p.name.toLowerCase().includes(targetPlanName.toLowerCase())) || plans[0];
 
     const rawItems = membersQuery?.data?.items || [];
-    const match = rawItems.find(m => 
-      m.memberNo === req.memberNo || 
+    const match = rawItems.find(m =>
+      m.memberNo === req.memberNo ||
       (m.user?.email && req.email && m.user.email.toLowerCase() === req.email.toLowerCase()) ||
       (m.user?.phone && req.phone && m.user.phone === req.phone)
     );
@@ -196,6 +198,8 @@ export const MembersPage = () => {
   const membersQuery = useMembers(debouncedQuery.trim() ? { q: debouncedQuery.trim() } : {});
   const { data: plans = [] } = usePlans();
   const createMember = useCreateMember();
+  const updateMember = useUpdateMember();
+  const deactivateMember = useDeactivateMember();
 
   const {
     register,
@@ -234,6 +238,52 @@ export const MembersPage = () => {
       setSelectedMember(toView(created));
     } catch (err) {
       applyServerErrors(err, setError);
+    }
+  };
+
+  const [editFormData, setEditFormData] = useState({ name: '', phone: '', email: '', emergencyContact: '', status: 'ACTIVE' });
+  const [editError, setEditError] = useState('');
+
+  const handleOpenEdit = (m) => {
+    setSelectedMember(null);
+    setEditingMember(m);
+    setEditFormData({
+      name: m.name || '',
+      phone: m.phone || '',
+      email: m.email || '',
+      emergencyContact: m.emergencyContact || '',
+      status: m.status || 'ACTIVE',
+    });
+    setEditError('');
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    setEditError('');
+    try {
+      const updated = await updateMember.mutateAsync({
+        id: editingMember.id,
+        ...editFormData,
+      });
+      setEditingMember(null);
+      if (selectedMember?.id === editingMember.id) {
+        setSelectedMember(toView(updated));
+      }
+    } catch (err) {
+      setEditError(err.response?.data?.error?.message || err.message || 'Failed to update member');
+    }
+  };
+
+  const handleDeactivate = async (memberId) => {
+    if (window.confirm('Are you sure you want to deactivate/suspend this member account?')) {
+      try {
+        const updated = await deactivateMember.mutateAsync(memberId);
+        if (selectedMember?.id === memberId) {
+          setSelectedMember(toView(updated));
+        }
+      } catch (err) {
+        alert(err.response?.data?.error?.message || err.message || 'Failed to deactivate member');
+      }
     }
   };
 
@@ -333,13 +383,14 @@ export const MembersPage = () => {
                 <th className="p-4">Plan Tier</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Bar Tab Balance</th>
+                <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
               <QueryState
                 query={membersQuery}
-                loading={<tr><td colSpan={6} className="p-6 text-center text-slate-400"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading members…</td></tr>}
-                empty={<tr><td colSpan={6} className="p-6 text-center text-slate-400">No members found.</td></tr>}
+                loading={<tr><td colSpan={7} className="p-6 text-center text-slate-400"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading members…</td></tr>}
+                empty={<tr><td colSpan={7} className="p-6 text-center text-slate-400">No members found.</td></tr>}
                 emptyWhen={(d) => !d?.items?.length}
               >
                 {(data) => data.items.map(toView).map((m) => {
@@ -370,7 +421,7 @@ export const MembersPage = () => {
                             ? 'bg-sky-100 text-sky-950 border-sky-400'
                             : 'bg-slate-100 text-slate-800 border-slate-300'
                         }`}>
-                          {currentTier}
+                          {isGold ? '👑 Gold VIP' : currentTier}
                         </span>
                       </td>
                       <td className="p-4">
@@ -379,6 +430,30 @@ export const MembersPage = () => {
                         </span>
                       </td>
                       <td className="p-4 font-extrabold text-slate-900">{formatCurrency(m.tabBalance || 0)}</td>
+                      <td className="p-4 text-right space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDirectUpgradeMember(m);
+                          }}
+                          className={`text-[11px] font-extrabold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                            isGold
+                              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                              : 'bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-800 shadow-2xs'
+                          }`}
+                        >
+                          {isGold ? 'Set Silver' : '⚡ Upgrade Gold'}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedMember(m);
+                          }}
+                          className="text-xs font-bold text-[#2e7d32] hover:underline cursor-pointer"
+                        >
+                          View Profile →
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -435,6 +510,103 @@ export const MembersPage = () => {
         </div>
       )}
 
+      {/* Edit Member Modal */}
+      {editingMember && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 font-sans">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+              <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-blue-600" />
+                <span>Edit Member Details</span>
+              </h3>
+              <button onClick={() => setEditingMember(null)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            {editError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{editError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs font-semibold text-slate-700">
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Full Name</label>
+                <input
+                  type="text"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2e7d32]"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Phone Number</label>
+                <input
+                  type="text"
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2e7d32]"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Email Address</label>
+                <input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2e7d32]"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Emergency Contact</label>
+                <input
+                  type="text"
+                  value={editFormData.emergencyContact}
+                  onChange={(e) => setEditFormData({ ...editFormData, emergencyContact: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2e7d32]"
+                  placeholder="e.g. Guardian / Relative phone"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Account Status</label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2e7d32] bg-white font-bold"
+                >
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="EXPIRED">EXPIRED</option>
+                  <option value="SUSPENDED">SUSPENDED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingMember(null)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateMember.isLoading}
+                  className="px-5 py-2.5 rounded-xl bg-[#2e7d32] hover:bg-[#236327] text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  {updateMember.isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Member 360° Profile & Digital QR Card Modal (Light Executive Theme) */}
       {selectedMember && (
         <div className="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
@@ -460,7 +632,7 @@ export const MembersPage = () => {
 
             {/* Executive Pass Theme Card (White, Black & Emerald Green) */}
             <div className="bg-white border-2 border-[#2e7d32] rounded-3xl p-6 shadow-xl relative overflow-hidden space-y-5">
-              
+
               {/* Card Top Bar */}
               <div className="flex items-center justify-between border-b border-emerald-100 pb-3.5">
                 <div className="flex items-center gap-1.5">
@@ -469,13 +641,12 @@ export const MembersPage = () => {
                     {selectedMember.planName} TIER
                   </span>
                 </div>
-                <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
-                  /active/i.test(selectedMember.status || 'ACTIVE')
+                <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border shadow-2xs ${/active/i.test(selectedMember.status || 'ACTIVE')
                     ? 'bg-[#e8f5e9] text-[#2e7d32] border-emerald-300'
                     : /suspended/i.test(selectedMember.status)
-                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                    : 'bg-amber-50 text-amber-800 border-amber-200'
-                }`}>
+                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                      : 'bg-amber-50 text-amber-800 border-amber-200'
+                  }`}>
                   {selectedMember.status || 'ACTIVE'}
                 </span>
               </div>
@@ -535,10 +706,28 @@ export const MembersPage = () => {
             </div>
 
             {/* Modal Actions */}
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleOpenEdit(selectedMember)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Edit Profile</span>
+                </button>
+                {selectedMember.status === 'ACTIVE' && (
+                  <button
+                    onClick={() => handleDeactivate(selectedMember.id)}
+                    className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <UserX className="w-3.5 h-3.5" />
+                    <span>Deactivate</span>
+                  </button>
+                )}
+              </div>
               <button
                 onClick={() => setSelectedMember(null)}
-                className="w-full bg-[#1f2125] hover:bg-black text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer"
+                className="bg-[#1f2125] hover:bg-black text-white font-extrabold text-xs px-5 py-2 rounded-xl shadow-md transition-all cursor-pointer"
               >
                 Done
               </button>
@@ -562,8 +751,7 @@ export const MembersPage = () => {
 };
 
 const selectCls = (error) =>
-  `w-full border rounded-xl px-3 py-2 text-xs focus:outline-none bg-white ${
-    error ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2e7d32]'
+  `w-full border rounded-xl px-3 py-2 text-xs focus:outline-none bg-white ${error ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2e7d32]'
   }`;
 
 const Field = React.forwardRef(({ label, type = 'text', placeholder, error, ...rest }, ref) => (
@@ -574,9 +762,8 @@ const Field = React.forwardRef(({ label, type = 'text', placeholder, error, ...r
       type={type}
       placeholder={placeholder}
       {...rest}
-      className={`w-full border rounded-xl px-3 py-2 text-xs focus:outline-none ${
-        error ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2e7d32]'
-      }`}
+      className={`w-full border rounded-xl px-3 py-2 text-xs focus:outline-none ${error ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2e7d32]'
+        }`}
     />
     {error && <p className="text-[11px] text-rose-600 mt-1">{error}</p>}
   </div>

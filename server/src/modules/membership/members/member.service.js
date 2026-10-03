@@ -135,7 +135,7 @@ export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 })
     }),
   };
 
-  const [total, members] = await Promise.all([
+  const [total, rawMembers] = await Promise.all([
     prisma.member.count({ where }),
     prisma.member.findMany({
       where,
@@ -145,9 +145,25 @@ export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 })
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },
         plan: true,
+        tabs: {
+          where: { status: 'OPEN' },
+          select: { totalAmount: true },
+        },
       },
     }),
   ]);
+
+  const members = rawMembers.map((m) => {
+    const activeTabBalance = (m.tabs || []).reduce(
+      (sum, tab) => sum + Number(tab.totalAmount || 0),
+      0
+    );
+    const { tabs, ...rest } = m;
+    return {
+      ...rest,
+      activeTabBalance,
+    };
+  });
 
   return { members, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -200,7 +216,15 @@ export const getMemberProfile = async (idOrMemberNo, actor) => {
     throw new ApiError(403, 'You can only view your own profile');
   }
 
-  return member;
+  const activeTabBalance = (member.tabs || []).reduce(
+    (sum, tab) => sum + Number(tab.totalAmount || 0),
+    0
+  );
+
+  return {
+    ...member,
+    activeTabBalance,
+  };
 };
 
 export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_MODE.UPI }, actor) => {
@@ -336,5 +360,83 @@ export const scanMember = async (payload) => {
   });
 
   if (!member) throw new ApiError(404, 'No member found for this QR code');
-  return member;
+  const activeTabBalance = (member.tabs || []).reduce(
+    (sum, tab) => sum + Number(tab.totalAmount || 0),
+    0
+  );
+  return {
+    ...member,
+    activeTabBalance,
+  };
+};
+
+export const updateMember = async (id, data, actorId) => {
+  const member = await prisma.member.findUnique({ where: { id }, include: { user: true } });
+  if (!member) throw new ApiError(404, 'Member not found');
+
+  const { name, email, phone, emergencyContact, photoUrl, status } = data;
+
+  return prisma.$transaction(async (tx) => {
+    if (name || email || phone) {
+      await tx.user.update({
+        where: { id: member.userId },
+        data: {
+          ...(name && { name }),
+          ...(email && { email }),
+          ...(phone && { phone }),
+        },
+      });
+    }
+
+    const updatedMember = await tx.member.update({
+      where: { id },
+      data: {
+        ...(emergencyContact !== undefined && { emergencyContact }),
+        ...(photoUrl !== undefined && { photoUrl }),
+        ...(status && { status }),
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true, phone: true } },
+        plan: true,
+      },
+    });
+
+    await writeAudit(tx, {
+      actorId: actorId || null,
+      action: 'MEMBER_UPDATE',
+      entity: 'Member',
+      entityId: id,
+      meta: { changes: data },
+    });
+
+    return updatedMember;
+  });
+};
+
+export const deactivateMember = async (id, actorId) => {
+  const member = await prisma.member.findUnique({ where: { id } });
+  if (!member) throw new ApiError(404, 'Member not found');
+
+  const updatedMember = await prisma.$transaction(async (tx) => {
+    const updated = await tx.member.update({
+      where: { id },
+      data: { status: MEMBER_STATUS.SUSPENDED },
+      include: {
+        user: { select: { id: true, name: true, email: true, phone: true } },
+        plan: true,
+      },
+    });
+
+    await writeAudit(tx, {
+      actorId: actorId || null,
+      action: 'MEMBER_DEACTIVATE',
+      entity: 'Member',
+      entityId: id,
+      meta: { previousStatus: member.status, newStatus: MEMBER_STATUS.SUSPENDED },
+    });
+
+    return updated;
+  });
+
+  return updatedMember;
 };

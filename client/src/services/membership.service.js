@@ -15,6 +15,8 @@ export const membersApi = {
   list: (params = {}) => apiClient.get('/members', { params }),
   get: (id) => apiClient.get(`/members/${id}`),
   create: (payload) => apiClient.post('/members', payload),
+  update: (id, payload) => apiClient.patch(`/members/${id}`, payload),
+  deactivate: (id) => apiClient.post(`/members/${id}/deactivate`),
   renew: (id, payload) => apiClient.post(`/members/${id}/renew`, payload),
   // Front-desk QR scan lookup. `payload` is the raw string decoded from the
   // member's QR card (a JSON string like {"memberNo","email","plan"}); the

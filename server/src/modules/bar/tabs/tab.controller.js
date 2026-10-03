@@ -17,14 +17,17 @@ export const openTab = asyncHandler(async (req, res) => {
 });
 
 export const listTabs = asyncHandler(async (req, res) => {
-  const filter = {};
-  // A MEMBER may only see their own open tab, not every member's.
+  const filter = { ...req.query };
+  // A MEMBER may see all their own tabs (both active open and past settled).
   if (req.user?.role === ROLES.MEMBER) {
     const me = await getMemberByUserId(req.user.id);
     if (!me) throw new ApiError(403, 'No member profile linked to this account');
     filter.memberId = me.id;
+  } else if (!filter.status) {
+    // For staff POS view by default show OPEN tabs
+    filter.status = 'OPEN';
   }
-  const tabs = await tabService.listOpenTabs(filter);
+  const tabs = await tabService.listTabs(filter);
   return success(res, tabs);
 });
 
@@ -41,6 +44,13 @@ export const getTab = asyncHandler(async (req, res) => {
 });
 
 export const settleTab = asyncHandler(async (req, res) => {
+  if (req.user?.role === ROLES.MEMBER) {
+    const me = await getMemberByUserId(req.user.id);
+    const tab = await tabService.getTabById(req.params.id);
+    if (!me || tab?.memberId !== me.id) {
+      throw new ApiError(403, 'You can only settle your own tab');
+    }
+  }
   const tab = await tabService.settleTab(req.params.id, req.body);
   return success(res, tab, 'Bar tab settled successfully');
 });

@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useBookings, useCancelBooking, useSocialSessions, useJoinSocial } from '../../../hooks/useCourts';
 import { useMembers } from '../../../hooks/useMembership';
 import { formatCurrency, formatDate } from '../../../shared/utils/formatters';
+import { useTabs } from '../../../hooks/useBar';
 import { 
   Calendar, 
   Sparkles, 
@@ -24,6 +25,7 @@ export const MemberDashboardPage = () => {
   const { user } = useAuth();
   const { data: bookingsData, isLoading: loadingBookings } = useBookings();
   const { data: socialSessions = [] } = useSocialSessions();
+  const { data: tabsData } = useTabs();
   const cancelBooking = useCancelBooking();
   const joinSocial = useJoinSocial();
 
@@ -31,6 +33,10 @@ export const MemberDashboardPage = () => {
   // Filter bookings belonging to this member (or all in demo member account)
   const myBookings = allBookings.slice(0, 5);
   const upcomingBookings = myBookings.filter(b => b.status === 'CONFIRMED');
+
+  const allTabs = Array.isArray(tabsData) ? tabsData : (tabsData?.items || []);
+  const activeTab = allTabs.find((t) => t.status === 'OPEN');
+  const activeTabBalance = activeTab ? Number(activeTab.totalAmount || 0) : 0;
 
   const memberPlan = user?.member?.plan || { name: 'Gold Annual', courtRate: 0, shopDiscountPct: 20, barDiscountPct: 15 };
   const memberNo = user?.member?.memberNo || 'MEM-001001';
@@ -134,9 +140,11 @@ export const MemberDashboardPage = () => {
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Cafeteria & Bar</p>
-            <h3 className="text-lg font-black text-slate-900">{memberPlan.barDiscountPct}% Off Menu</h3>
+            <h3 className="text-lg font-black text-slate-900">
+              {activeTabBalance > 0 ? `₹${activeTabBalance.toFixed(2)} Tab` : `${memberPlan.barDiscountPct}% Off Menu`}
+            </h3>
             <Link to="/member/tab" className="text-[11px] text-emerald-600 hover:underline font-bold">
-              Order food & drinks ➔
+              {activeTabBalance > 0 ? 'View active tab ➔' : 'Order food & drinks ➔'}
             </Link>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">

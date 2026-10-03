@@ -60,6 +60,25 @@ export const useCreateMember = () => {
   });
 };
 
+export const useUpdateMember = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }) => membersApi.update(id, payload),
+    onSuccess: (_d, { id }) => {
+      qc.invalidateQueries({ queryKey: qk.members.all });
+      qc.invalidateQueries({ queryKey: qk.members.detail(id) });
+    },
+  });
+};
+
+export const useDeactivateMember = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => membersApi.deactivate(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.members.all }),
+  });
+};
+
 export const useRenewMember = () => {
   const qc = useQueryClient();
   return useMutation({

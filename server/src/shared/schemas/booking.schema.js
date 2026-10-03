@@ -18,6 +18,7 @@ export const createBookingSchema = z
       .optional()
       .nullable(),
     paymentMode: z.nativeEnum(PAYMENT_MODE).default(PAYMENT_MODE.UPI),
+    overrideLimit: z.boolean().optional(),
   });
 // Note: whether a member or walk-in is required is enforced in the service, because
 // a logged-in MEMBER books for themselves and sends neither field.
