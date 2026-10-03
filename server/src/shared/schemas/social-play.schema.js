@@ -14,8 +14,6 @@ export const joinSocialPlaySchema = z.object({
   guestName: z.string().min(2).optional().nullable(),
   guestPhone: z.string().regex(/^[6-9]\d{9}$/).optional().nullable(),
   paymentMode: z.nativeEnum(PAYMENT_MODE).default(PAYMENT_MODE.UPI),
-}).refine((d) => d.memberId || (d.guestName && d.guestPhone), {
-  message: 'Either memberId or guest details are required',
 });
 
 export const socialSessionIdParamSchema = z.object({

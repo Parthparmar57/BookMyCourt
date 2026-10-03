@@ -34,8 +34,7 @@ export const LoginPage = () => {
   const [forgotSuccess, setForgotSuccess] = useState(null);
 
   const redirectAfter = (user) => {
-    const from = location.state?.from;
-    navigate(from && from !== '/login' ? from : roleHomePath(user.role), { replace: true });
+    navigate(roleHomePath(user.role), { replace: true });
   };
 
   const doLogin = async (credentials, roleTag = null) => {

@@ -9,7 +9,7 @@ const router = Router();
 
 router.use(auth);
 
-router.get('/', authorize('OWNER', 'BAR_STAFF', 'KITCHEN'), controller.listTables);
+router.get('/', authorize('OWNER', 'BAR_STAFF', 'KITCHEN', 'MEMBER'), controller.listTables);
 router.post('/', authorize('OWNER', 'BAR_STAFF'), validate({ body: createBarTableSchema }), controller.createTable);
 router.patch('/:id', authorize('OWNER', 'BAR_STAFF'), validate({ params: tableIdParamSchema, body: updateBarTableSchema }), controller.updateTable);
 router.delete('/:id', authorize('OWNER'), validate({ params: tableIdParamSchema }), controller.deleteTable);

@@ -24,7 +24,9 @@ const formatUserResponse = (user) => {
     initial: firstLetter,
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(firstLetter)}&background=1b4332&color=ffffff&bold=true&length=1&size=128`,
     member: user.member || null,
+    memberId: user.member?.id || null,
     employee: user.employee || null,
+    employeeId: user.employee?.id || null,
     createdAt: user.createdAt,
   };
 };

@@ -11,14 +11,14 @@ router.use(auth);
 
 router.post(
   '/',
-  authorize('OWNER', 'BAR_STAFF'),
+  authorize('OWNER', 'BAR_STAFF', 'MEMBER'),
   validate({ body: createBarOrderSchema }),
   controller.createOrder
 );
 
 router.get(
   '/',
-  authorize('OWNER', 'BAR_STAFF', 'KITCHEN'),
+  authorize('OWNER', 'BAR_STAFF', 'KITCHEN', 'MEMBER'),
   controller.listOrders
 );
 

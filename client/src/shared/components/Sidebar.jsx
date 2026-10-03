@@ -64,7 +64,7 @@ export const Sidebar = () => {
           { label: 'My Bookings', path: '/member/bookings', icon: Calendar },
           { label: 'Member Shop', path: '/member/shop', icon: ShoppingBag },
           { label: 'My Orders', path: '/member/orders', icon: Package },
-          { label: 'Bar Tab', path: '/member/tab', icon: Coffee },
+          { label: 'Bar & Cafeteria', path: '/member/tab', icon: Coffee },
           { label: 'Digital Card', path: '/member/card', icon: QrCode }
         ];
       default:

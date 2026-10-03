@@ -134,9 +134,13 @@ export const updateOrderStatus = async (id, status) => {
 };
 
 export const listShopOrders = async ({ status, channel, memberId, page = 1, limit = 20 }) => {
+  const channelFilter = channel
+    ? { channel }
+    : { channel: { in: [ORDER_CHANNEL.ONLINE, ORDER_CHANNEL.COUNTER] } };
+
   const where = {
+    ...channelFilter,
     ...(status && { status }),
-    ...(channel && { channel }),
     ...(memberId && { memberId }),
   };
 

@@ -7,7 +7,11 @@ import { Link } from 'react-router-dom';
 
 export const MemberOrdersPage = () => {
   const shopOrdersQuery = useShopOrders();
-  const orders = shopOrdersQuery.data?.items || shopOrdersQuery.data?.orders || [];
+  const rawOrders = shopOrdersQuery.data?.items || shopOrdersQuery.data?.orders || [];
+  // Strictly only show Gear Shop / Pro Shop orders (exclude Bar, Food, and Cafeteria orders)
+  const orders = rawOrders.filter(
+    (order) => order.channel !== 'BAR' && (!order.orderNo || !order.orderNo.startsWith('BAR-'))
+  );
 
   return (
     <div className="space-y-6 font-sans">

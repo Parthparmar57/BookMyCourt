@@ -67,6 +67,10 @@ export const joinSocialPlay = async (bookingId, data, user) => {
   // A MEMBER always joins as themselves; staff may add a member or a guest.
   const memberId = user?.role === 'MEMBER' ? user.memberId : data.memberId || null;
 
+  if (!memberId && !(data.guestName && data.guestPhone)) {
+    throw new ApiError(400, 'Either a member or complete guest details (name and phone) are required');
+  }
+
   return prisma.$transaction(async (tx) => {
     // Lock the session row so concurrent joins serialize — otherwise two players
     // could both pass the capacity check and exceed maxPlayers (Rule 11).

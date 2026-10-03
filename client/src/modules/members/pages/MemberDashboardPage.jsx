@@ -124,13 +124,13 @@ export const MemberDashboardPage = () => {
           </div>
         </div>
 
-        {/* Bar Tab */}
+        {/* Bar & Cafeteria Perk */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Bar Tab</p>
-            <h3 className="text-lg font-black text-slate-900">₹0.00</h3>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Cafeteria & Bar</p>
+            <h3 className="text-lg font-black text-slate-900">{memberPlan.barDiscountPct}% Off Menu</h3>
             <Link to="/member/tab" className="text-[11px] text-emerald-600 hover:underline font-bold">
-              View open tab ➔
+              Order food & drinks ➔
             </Link>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">

@@ -23,15 +23,32 @@ export const createBarOrder = async (data, user) => {
 
   // An order billed to a member's tab is paid when the tab is settled — it must
   // NOT also take an immediate payment (that would double-count in the ledger).
-  const onTab = Boolean(data.barTabId);
-  const immediatePaymentMode = onTab ? null : data.paymentMode || null;
+  let barTabId = data.barTabId;
+  if ((!barTabId && data.paymentMode === 'TAB' && memberId) || (data.onTab && memberId && !barTabId)) {
+    let openTab = await prisma.barTab.findFirst({
+      where: { memberId, status: TAB_STATUS.OPEN },
+    });
+    if (!openTab) {
+      openTab = await prisma.barTab.create({
+        data: {
+          memberId,
+          notes: 'Cafeteria running tab',
+          status: TAB_STATUS.OPEN,
+        },
+      });
+    }
+    barTabId = openTab.id;
+  }
+
+  const onTab = Boolean(barTabId);
+  const immediatePaymentMode = onTab ? null : (data.paymentMode === 'TAB' ? null : data.paymentMode || null);
 
   const { barDiscountPct } = await getMemberDiscounts(prisma, memberId);
 
   return prisma.$transaction(async (tx) => {
     // A settled/closed tab must never accept new items (Rule 21).
     if (onTab) {
-      const tab = await tx.barTab.findUnique({ where: { id: data.barTabId } });
+      const tab = await tx.barTab.findUnique({ where: { id: barTabId } });
       if (!tab) throw new ApiError(404, 'Bar tab not found');
       if (tab.status !== TAB_STATUS.OPEN) {
         throw new ApiError(409, 'Cannot add items to a tab that is already settled');
@@ -84,7 +101,7 @@ export const createBarOrder = async (data, user) => {
         memberId: memberId || null,
         channel: ORDER_CHANNEL.BAR,
         barTableId: data.barTableId || null,
-        barTabId: data.barTabId || null,
+        barTabId: barTabId || null,
         shiftId,
         status: ORDER_STATUS.PLACED,
         subtotal,
@@ -113,7 +130,7 @@ export const createBarOrder = async (data, user) => {
     if (onTab) {
       // Accrue onto the tab; ledger posting happens once, at tab settlement.
       await tx.barTab.update({
-        where: { id: data.barTabId },
+        where: { id: barTabId },
         data: { totalAmount: { increment: total } },
       });
     } else if (immediatePaymentMode) {
@@ -232,11 +249,17 @@ export const settleBarOrder = async (orderId, { paymentMode = PAYMENT_MODE.UPI, 
   });
 };
 
-export const listBarOrders = async ({ tableId, status, page = 1, limit = 50 }) => {
+export const listBarOrders = async ({ tableId, status, page = 1, limit = 50 }, user) => {
+  let memberFilter = {};
+  if (user?.role === 'MEMBER') {
+    memberFilter = { memberId: user.memberId };
+  }
+
   const where = {
     channel: ORDER_CHANNEL.BAR,
     ...(tableId && { barTableId: tableId }),
     ...(status && { status }),
+    ...memberFilter,
   };
 
   const [total, orders] = await Promise.all([

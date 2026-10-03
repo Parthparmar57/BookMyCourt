@@ -14,12 +14,13 @@ export const createBarOrderSchema = z.object({
   barTableId: z.string().uuid().optional().nullable(),
   memberId: z.string().uuid().optional().nullable(),
   barTabId: z.string().uuid().optional().nullable(),
+  onTab: z.boolean().optional(),
   items: z.array(z.object({
     menuItemId: z.string().uuid(),
     quantity: z.coerce.number().int().min(1).max(50),
   })).min(1, 'Order must contain at least 1 menu item'),
   notes: z.string().max(200).optional().nullable(),
-  paymentMode: z.nativeEnum(PAYMENT_MODE).optional().nullable(),
+  paymentMode: z.nativeEnum(PAYMENT_MODE).or(z.literal('TAB')).optional().nullable(),
 });
 
 export const updateKitchenStatusSchema = z.object({
@@ -27,7 +28,7 @@ export const updateKitchenStatusSchema = z.object({
 });
 
 export const openTabSchema = z.object({
-  memberId: z.string().uuid('Valid member ID is required to open a tab'),
+  memberId: z.string().uuid('Valid member ID is required to open a tab').optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 

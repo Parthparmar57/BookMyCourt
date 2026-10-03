@@ -6,7 +6,13 @@ import * as tabService from './tab.service.js';
 import { getMemberByUserId } from '../../membership/members/member.service.js';
 
 export const openTab = asyncHandler(async (req, res) => {
-  const tab = await tabService.openTab(req.body);
+  let memberId = req.body.memberId;
+  if (req.user?.role === ROLES.MEMBER) {
+    const me = await getMemberByUserId(req.user.id);
+    if (!me) throw new ApiError(403, 'No member profile linked to this account');
+    memberId = me.id;
+  }
+  const tab = await tabService.openTab({ ...req.body, memberId });
   return success(res, tab, 'Bar tab opened successfully', 201);
 });
 

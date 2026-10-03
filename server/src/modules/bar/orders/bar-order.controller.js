@@ -13,7 +13,7 @@ export const settleOrder = asyncHandler(async (req, res) => {
 });
 
 export const listOrders = asyncHandler(async (req, res) => {
-  const result = await barOrderService.listBarOrders(req.query);
+  const result = await barOrderService.listBarOrders(req.query, req.user);
   return success(res, result);
 });
 

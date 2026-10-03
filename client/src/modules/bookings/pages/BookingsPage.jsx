@@ -65,11 +65,13 @@ export const BookingsPage = () => {
   const isFrontDesk = role === 'FRONT_DESK';
   const isStaff = isOwner || isFrontDesk;
   const isMember = role === 'MEMBER';
+  const currentMemberId = user?.memberId || user?.member?.id || null;
 
   const [activeMainTab, setActiveMainTab] = useState('schedule'); // 'schedule' | 'social' | 'history' | 'rules'
   const [date, setDate] = useState(today());
   const [selectedSport, setSelectedSport] = useState('ALL'); // 'ALL' | 'Tennis' | 'Badminton' | 'Padel' | 'Cricket'
   const [slotIntervalFilter, setSlotIntervalFilter] = useState('ALL'); // 'ALL' (30-min slots) | 'HOURLY' (:00 only)
+  const [slotStatusFilter, setSlotStatusFilter] = useState('ALL'); // 'ALL' | 'AVAILABLE' | 'BOOKED'
 
   // Drawer / Selection states
   const [selectedSlot, setSelectedSlot] = useState(null); // { courtId, courtName, sport, slotTime, walkInRate }
@@ -187,11 +189,11 @@ export const BookingsPage = () => {
   }, [rawMembers, memberSearch]);
 
   const selectedMemberObj = useMemo(() => {
-    if (isMember && user?.memberId) {
-      return rawMembers.find((m) => m.id === user.memberId);
+    if (isMember && currentMemberId) {
+      return rawMembers.find((m) => m.id === currentMemberId);
     }
     return rawMembers.find((m) => m.id === selectedMemberId);
-  }, [rawMembers, selectedMemberId, isMember, user]);
+  }, [rawMembers, selectedMemberId, isMember, currentMemberId]);
 
   // Date Navigation
   const handlePrevDay = () => {
@@ -256,7 +258,7 @@ export const BookingsPage = () => {
 
     // Default booking tab: member if member or staff booking
     setBookingTab(isMember ? 'member' : 'member');
-    setSelectedMemberId(isMember && user?.memberId ? user.memberId : '');
+    setSelectedMemberId(isMember && currentMemberId ? currentMemberId : '');
     setWalkInName('');
     setWalkInPhone('');
     setPaymentMode('UPI');
@@ -421,7 +423,7 @@ export const BookingsPage = () => {
     };
 
     if (isMember) {
-      // Backend automatically maps logged-in user to memberId
+      if (currentMemberId) payload.memberId = currentMemberId;
     } else {
       if (socialJoinTab === 'member') {
         if (!socialMemberId) {
@@ -944,7 +946,7 @@ export const BookingsPage = () => {
 
               // Check if current logged in member has joined
               const userParticipant = isMember
-                ? participants.find((p) => p.memberId === user?.memberId)
+                ? participants.find((p) => p.memberId === currentMemberId || p.member?.user?.id === user?.id)
                 : null;
 
               return (
@@ -1017,7 +1019,7 @@ export const BookingsPage = () => {
                           {participants.map((p) => {
                             const pName = p.member?.user?.name || p.guestName || 'Player';
                             const pPhone = p.member?.user?.phone || p.guestPhone || '';
-                            const isMe = isMember && p.memberId === user?.memberId;
+                            const isMe = isMember && (p.memberId === currentMemberId || p.member?.user?.id === user?.id);
 
                             return (
                               <div
@@ -1064,7 +1066,7 @@ export const BookingsPage = () => {
                         onClick={() => {
                           setSelectedSocialSession(session);
                           setSocialJoinTab(isMember ? 'member' : 'member');
-                          setSocialMemberId(isMember && user?.memberId ? user.memberId : '');
+                          setSocialMemberId(isMember && currentMemberId ? currentMemberId : '');
                           setSocialGuestName('');
                           setSocialGuestPhone('');
                         }}
