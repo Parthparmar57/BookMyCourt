@@ -10,68 +10,55 @@
 
 ## 1. Verdict
 
-The **backend is ~feature-complete** — every PDF scenario has working endpoints, business rules, a unified transaction ledger, and reports. The client's API/hook layer calls nearly every endpoint. **Most remaining gaps are in the frontend UI**: some features are unwired to any page, some are half-built.
+The **backend is ~feature-complete** and, after this session's work, the **frontend now covers every core PDF scenario end-to-end**. The whole client builds cleanly (`npm run build` → 7,555 modules, no errors). The only remaining items are optional cleanup and a backend rostering gap.
 
 | Layer | State |
 |-------|-------|
 | Backend (`server/`) | ✅ Complete (one gap: shift rostering) |
-| Client API/hooks (`src/services`, `src/hooks`) | ✅ Near-complete endpoint coverage |
-| Client pages/UI (`src/modules/*/pages`) | 🟡 Several gaps — see §3 |
+| Client API/hooks | ✅ Complete endpoint coverage |
+| Client pages/UI | ✅ All core scenarios wired (see §3) |
 
 ---
 
 ## 2. Fully working (end-to-end)
 
-Public site (home / availability / membership / trial / login / register), court bookings (walk-in, member, social play, realtime, cancel), members directory + 360° profile + QR card, bar POS (orders / tabs / table tracking / settle / member discount), kitchen display (KDS), owner dashboard (KPIs, revenue-by-source, utilisation), CRM pipeline (leads, follow-ups, enquiries, convert), finance (invoicing + per-invoice PDF, ledger, expenses), HR (employees, leave approval, payroll run), Razorpay checkout.
+Public site (home w/ **live** availability grid, membership, trial, login, register), court bookings (walk-in, member, social play, realtime, cancel), members directory + 360° profile + **QR scan lookup**, **shop online ordering** (cart, pickup/delivery) + inventory/product management, bar POS (orders, tabs, tables, settle, member discount, **cash-shift reconciliation**), kitchen display, owner dashboard, CRM (leads, follow-ups, **quotations**, enquiries, **convert-to-member**), finance (invoicing + **report exports**, ledger, expenses), HR (employees, **attendance**, leave, payroll), Razorpay checkout.
 
 ---
 
-## 3. What's missing / broken
+## 3. Work completed this session
 
-### 🛠️ Fixed this session
+### 🛠️ Fixed / implemented
 
-| # | Item | What was done |
-|---|------|---------------|
-| 1 | **Shop online ordering** — core PDF scenario ("order from home, collect or deliver"). | Built cart + checkout on `ShopPage` for signed-in users: add-to-cart, quantity controls, pickup/delivery selector with address + 6-digit PIN validation, payment-mode choice, and `useCreateShopOrder` submission with a success state. |
-| 2 | **`ShopInventoryPage` crashed at render** (undefined hooks + half-wired product modal). | Fixed imports, corrected `stockForm`/`stockError` state, and fully wired Add / Edit / Delete product + Stock-In + CSV export. |
+| # | Item | What was done | Files |
+|---|------|---------------|-------|
+| 1 | **Shop online ordering** (core PDF scenario) | Cart + checkout on `ShopPage`: add-to-cart, qty controls, pickup/delivery with address + 6-digit PIN validation, payment mode, `useCreateShopOrder` + success state. | `website/pages/ShopPage.jsx` |
+| 2 | **`ShopInventoryPage` crash** | Fixed broken imports + `stockForm`/`stockError` state; wired Add/Edit/Delete product + Stock-In + CSV export. | `shop/pages/ShopInventoryPage.jsx` |
+| 3 | **QR-scan member lookup** | An existing `QRScannerModal` used mock data — rewired it to the real `POST /members/scan` (added `scan` service method + `useScanMember` hook); shows live member, plan, open tabs, recent activity. | `membership.service.js`, `useMembership.js`, `QRScannerModal.jsx`, `MembersPage.jsx` |
+| 4 | **Quotations ("send a quote")** | Quote-builder modal + "Send Quote" action; lists a lead's quotations with Mark Sent/Accept/Reject via `useCreateQuotation`/`useUpdateQuotationStatus`. | `crm/pages/CrmPage.jsx` |
+| 5 | **Attendance UI** | New Attendance tab: daily register (`useAttendance`) + self-service Check-In/Out (`useCheckIn`/`useCheckOut`). | `hr/pages/HrPage.jsx` |
+| 6 | **Report exports ("share the numbers")** | New Reports tab: live revenue summary + download buttons for Revenue/Tax/Inventory/Membership (Excel + PDF). Added missing service methods + `useRevenueReport`. | `dashboard.service.js`, `useDashboard.js`, `finance/pages/AccountingPage.jsx` |
+| 7 | **Bar cash-shift reconciliation** | Cash Shift tab: open shift (float), live shift sales report, close shift with expected-vs-counted difference (`useOpenShift`/`useCloseShift`/`useActiveShift`/`useShiftReport`). | `bar/pages/BarPage.jsx` |
+| 8 | **HomePage availability grid** | Now renders **live** availability from `usePublicAvailability`; falls back to the static preview only when the DB is empty. | `website/pages/HomePage.jsx` |
+| 9 | **CRM convert-to-member** | The convert modal existed but had no trigger — added a "Convert" button on lead cards. | `crm/pages/CrmPage.jsx` |
+| 10 | **Bar delete menu item** | `deleteMenuItem` hook was unused — wired a delete button (with confirmation) on menu cards. | `bar/pages/BarPage.jsx` |
 
-### 🔴 Critical — still open
-
-| # | Gap | Evidence | Backend ready? |
-|---|-----|----------|----------------|
-| 3 | **QR-scan member lookup not wired** — scannable card exists, but no camera/scanner UI at desk/POS; lookup is text-search only. Needs a scanner lib (e.g. `html5-qrcode`). | `POST /members/scan` unused by client | ✅ `scanMember` |
-
-### 🟡 Partial — backend done, UI incomplete
-
-| # | Gap | Evidence |
-|---|-----|----------|
-| 4 | **Quotations ("send a quote")** — `useCreateQuotation` imported but never called; "QUOTED" is just a kanban column, no quote builder. | `modules/crm/pages/CrmPage.jsx:8` |
-| 5 | **Attendance UI** — check-in/out exists in backend, no UI. | `HrPage.jsx` (text only) |
-| 6 | **Report exports ("share the numbers")** — no revenue-report view and no Excel/PDF report export wired (only per-invoice PDF). | `/reports/revenue`, `*/export`, `*/pdf` unused |
-| 7 | **Bar shift reconciliation** — open/close-shift + shift-report hooks exist, no page uses them. Split-bill not built. | `hooks/useBar.js` (unused shift hooks) |
-| 8 | **Member self-settle tab** — `MemberTabPage` is read-only; settling is staff-only via bar POS. | `modules/members/pages/MemberTabPage.jsx` |
-
-### ⚪ Backend gap + cleanliness
-
-| # | Item | Notes |
-|---|------|-------|
-| 9 | **Staff shift scheduling/rostering** | Absent on **both** ends — only cash-shift open/close. PDF mentions front desk handling "staff schedules." |
-| 10 | **Dead duplicate codebase** | Unused `.tsx` + mock scaffold: `App.tsx`, `main.tsx`, `services/api.ts`, `data/mockData.ts`, `context/AuthContext.tsx`, `src/pages/**`, `routes/RoleGuard.tsx`. Should be deleted. |
-| 11 | **HomePage availability grid is hardcoded** | Renders fake Booked/Free cells, ignores the live query it already fetches. |
-| 12 | **No automated tests** | Not required by the brief, but recommended given the money/ledger logic. |
+**Verification:** every edited file lints without errors; full `npm run build` succeeds.
 
 ---
 
-## 4. Extra features (➕ beyond the brief)
+## 4. Remaining
 
-Razorpay (verified + idempotent), audit trail, JWT + refresh tokens + RBAC (6 roles), real-time sockets, pro-rated membership upgrades, split-payment support (backend), refund ledger reversals, expense/receivables tracking, attendance (backend), inventory audit log, security hardening (Helmet, CORS allowlist, rate limiting, env validation, graceful shutdown).
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| A | **Member self-settle tab** | ✅ By design, not a gap | `POST /tabs/:id/settle` is restricted to `OWNER`/`BAR_STAFF`; members viewing a read-only tab is correct — settlement happens at the bar. |
+| B | **Staff shift scheduling/rostering** | ⚪ Backend gap | Only cash-shift open/close exists; no future-shift roster/planner on either end. |
+| C | **Dead duplicate `.tsx` scaffold** | ⚪ Cleanup (deferred) | Unused `App.tsx`, `main.tsx`, `services/api.ts`, `data/mockData.ts`, `context/AuthContext.tsx`, `src/pages/**`, `routes/RoleGuard.tsx` + some `src/components/*` that import them. Not in the live build graph (build is clean), so harmless — but should be removed with a careful dependency check. |
+| D | **Automated tests** | ⚪ Missing | Not required by the brief; recommended given the money/ledger logic. |
+| E | **Split-bill at bar** | ⚪ Optional | Backend supports it; UI not built (not required by the brief). |
 
 ---
 
-## 5. Suggested next steps
+## 5. Extra features (➕ beyond the brief)
 
-1. ~~Fix `ShopInventoryPage` crash~~ ✅ done.
-2. ~~Build shop online-ordering flow~~ ✅ done.
-3. **Wire QR-scan lookup** (#3) — add a scanner library + camera modal.
-4. 🟡 partials: quotations (#4), report exports (#6), attendance (#5), shift UI (#7).
-5. Cleanup: delete dead `.tsx` scaffold (#10), make HomePage grid live (#11).
+Razorpay (verified + idempotent), audit trail, JWT + refresh tokens + RBAC (6 roles), real-time sockets, pro-rated membership upgrades, split-payment support (backend), refund ledger reversals, expense/receivables tracking, inventory audit log, security hardening (Helmet, CORS allowlist, rate limiting, env validation, graceful shutdown).

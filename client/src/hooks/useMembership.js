@@ -70,3 +70,7 @@ export const useRenewMember = () => {
     },
   });
 };
+
+// Front-desk QR scan: resolve a member from a raw decoded QR string.
+export const useScanMember = () =>
+  useMutation({ mutationFn: (payload) => membersApi.scan(payload) });

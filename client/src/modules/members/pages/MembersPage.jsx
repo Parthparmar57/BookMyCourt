@@ -389,7 +389,6 @@ export const MembersPage = () => {
       <QRScannerModal
         isOpen={showQRScanner}
         onClose={() => setShowQRScanner(false)}
-        membersList={membersQuery.data?.items?.map(toView) || []}
         onRegisterMember={(prefill) => {
           if (prefill?.email) setValue('email', prefill.email);
           if (prefill?.phone) setValue('phone', prefill.phone);

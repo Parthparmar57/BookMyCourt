@@ -3,11 +3,12 @@ import {
   useLeads, 
   useCreateLead, 
   useUpdateLead, 
-  useAddFollowUp, 
-  useCreateQuotation, 
-  useConvertLead, 
-  useEnquiries, 
-  useUpdateEnquiryStatus 
+  useAddFollowUp,
+  useCreateQuotation,
+  useUpdateQuotationStatus,
+  useConvertLead,
+  useEnquiries,
+  useUpdateEnquiryStatus
 } from '../../../hooks/useCrm';
 import { usePlans } from '../../../hooks/useMembership';
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
@@ -24,7 +25,9 @@ import {
   Clock, 
   Inbox,
   Filter,
-  Users
+  Users,
+  FileText,
+  IndianRupee
 } from 'lucide-react';
 
 const STAGES = [
@@ -41,6 +44,7 @@ export const CrmPage = () => {
   const [selectedLead, setSelectedLead] = useState(null);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   // Queries
@@ -53,6 +57,8 @@ export const CrmPage = () => {
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
   const addFollowUp = useAddFollowUp();
+  const createQuotation = useCreateQuotation();
+  const updateQuotationStatus = useUpdateQuotationStatus();
   const convertLead = useConvertLead();
   const updateEnquiryStatus = useUpdateEnquiryStatus();
 
@@ -80,6 +86,15 @@ export const CrmPage = () => {
     startDate: new Date().toISOString().split('T')[0],
     password: 'Password@123',
     emergencyContact: '',
+  });
+
+  // Quotation form — validUntil defaults to 14 days out
+  const [quoteForm, setQuoteForm] = useState({
+    planId: '',
+    amount: '',
+    discount: 0,
+    validUntil: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+    notes: '',
   });
 
   const handleCreateLead = async (e) => {
@@ -119,6 +134,52 @@ export const CrmPage = () => {
       setFeedback({ type: 'success', message: 'Follow-up interaction logged.' });
     } catch (err) {
       setFeedback({ type: 'error', message: err?.message || 'Failed to log follow-up.' });
+    }
+  };
+
+  // Open the quote builder for a lead, pre-filling amount from the selected plan.
+  const openQuoteModal = (lead) => {
+    setSelectedLead(lead);
+    setQuoteForm({
+      planId: plans[0]?.id || '',
+      amount: plans[0]?.price ? String(plans[0].price) : '',
+      discount: 0,
+      validUntil: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+      notes: '',
+    });
+    setShowQuoteModal(true);
+  };
+
+  const handleCreateQuote = async (e) => {
+    e.preventDefault();
+    if (!selectedLead || !quoteForm.amount) return;
+    try {
+      await createQuotation.mutateAsync({
+        id: selectedLead.id,
+        amount: Number(quoteForm.amount),
+        discount: Number(quoteForm.discount) || 0,
+        validUntil: quoteForm.validUntil,
+        planId: quoteForm.planId || null,
+        notes: quoteForm.notes || null,
+      });
+      // Advance the lead to the QUOTED stage if it isn't already there.
+      if (selectedLead.stage !== 'QUOTED' && selectedLead.stage !== 'WON') {
+        await updateLead.mutateAsync({ id: selectedLead.id, stage: 'QUOTED' });
+      }
+      setShowQuoteModal(false);
+      setSelectedLead(null);
+      setFeedback({ type: 'success', message: 'Quotation created and sent to the lead.' });
+    } catch (err) {
+      setFeedback({ type: 'error', message: err?.message || 'Failed to create quotation.' });
+    }
+  };
+
+  const handleUpdateQuoteStatus = async (quotationId, status) => {
+    try {
+      await updateQuotationStatus.mutateAsync({ quotationId, status });
+      setFeedback({ type: 'success', message: `Quotation marked ${status}.` });
+    } catch (err) {
+      setFeedback({ type: 'error', message: err?.message || 'Could not update quotation.' });
     }
   };
 
@@ -265,14 +326,58 @@ export const CrmPage = () => {
                         </div>
                       ) : (
                         <>
+                          {/* Existing quotations on this lead */}
+                          {Array.isArray(lead.quotations) && lead.quotations.length > 0 && (
+                            <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                              {lead.quotations.map((q) => (
+                                <div key={q.id} className="bg-purple-50/70 border border-purple-100 rounded-lg p-2 space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-black text-slate-800 flex items-center gap-1">
+                                      <FileText className="w-3 h-3 text-purple-500" />
+                                      {formatCurrency(Number(q.amount))}
+                                    </span>
+                                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-white text-purple-700 border border-purple-200">
+                                      {q.status || 'DRAFT'}
+                                    </span>
+                                  </div>
+                                  {/* Quick status transitions */}
+                                  {q.status !== 'ACCEPTED' && q.status !== 'REJECTED' && (
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold">
+                                      {q.status !== 'SENT' && (
+                                        <button onClick={() => handleUpdateQuoteStatus(q.id, 'SENT')} className="text-blue-600 hover:text-blue-800">Mark Sent</button>
+                                      )}
+                                      <button onClick={() => handleUpdateQuoteStatus(q.id, 'ACCEPTED')} className="text-emerald-600 hover:text-emerald-800">Accept</button>
+                                      <button onClick={() => handleUpdateQuoteStatus(q.id, 'REJECTED')} className="text-rose-500 hover:text-rose-700">Reject</button>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
                           {/* Active Stage Actions */}
-                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-medium">
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap text-[10px] font-medium">
                             <button
                               onClick={() => { setSelectedLead(lead); setShowFollowUpModal(true); }}
                               className="text-slate-600 hover:text-slate-900 flex items-center gap-1.5 py-0.5 cursor-pointer"
                             >
                               <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
                               <span>Log Follow-up</span>
+                            </button>
+                            <button
+                              onClick={() => openQuoteModal(lead)}
+                              className="text-purple-700 hover:text-purple-900 flex items-center gap-1.5 py-0.5 cursor-pointer font-bold"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-purple-600" />
+                              <span>Send Quote</span>
+                            </button>
+                            {/* Convert the lead into a full member (opens the conversion modal). */}
+                            <button
+                              onClick={() => { setSelectedLead(lead); setShowConvertModal(true); }}
+                              className="text-emerald-700 hover:text-emerald-900 flex items-center gap-1.5 py-0.5 cursor-pointer font-bold"
+                            >
+                              <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Convert</span>
                             </button>
                           </div>
 
@@ -610,6 +715,108 @@ export const CrmPage = () => {
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl shadow-xs transition-colors"
               >
                 Log Follow-up
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* SEND QUOTE MODAL */}
+      {showQuoteModal && selectedLead && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-purple-600" /> Send Quotation
+                </h3>
+                <p className="text-[11px] text-slate-500">Quote for {selectedLead.name}</p>
+              </div>
+              <button onClick={() => setShowQuoteModal(false)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
+            </div>
+
+            <form onSubmit={handleCreateQuote} className="space-y-3 text-xs font-semibold">
+              {/* Optional plan — selecting one pre-fills the amount */}
+              <div>
+                <label className="text-slate-700 block mb-1">Plan (optional)</label>
+                <select
+                  value={quoteForm.planId}
+                  onChange={(e) => {
+                    const plan = plans.find((p) => p.id === e.target.value);
+                    setQuoteForm({
+                      ...quoteForm,
+                      planId: e.target.value,
+                      amount: plan?.price ? String(plan.price) : quoteForm.amount,
+                    });
+                  }}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white focus:border-purple-500 focus:outline-none"
+                >
+                  <option value="">— No specific plan —</option>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — {formatCurrency(Number(p.price))}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-slate-700 block mb-1">Amount (₹)</label>
+                  <div className="relative">
+                    <IndianRupee className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={quoteForm.amount}
+                      onChange={(e) => setQuoteForm({ ...quoteForm, amount: e.target.value })}
+                      className="w-full border border-slate-200 rounded-xl p-2.5 pl-8 focus:border-purple-500 focus:outline-none"
+                      placeholder="12000"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-slate-700 block mb-1">Discount (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={quoteForm.discount}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, discount: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-700 block mb-1">Valid Until</label>
+                <input
+                  type="date"
+                  required
+                  value={quoteForm.validUntil}
+                  onChange={(e) => setQuoteForm({ ...quoteForm, validUntil: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-700 block mb-1">Notes (optional)</label>
+                <textarea
+                  rows={2}
+                  value={quoteForm.notes}
+                  onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
+                  placeholder="Includes 1 free trial session and racket restring."
+                  className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={createQuotation.isPending}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold py-3 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 mt-2"
+              >
+                {createQuotation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Create & Send Quote
               </button>
             </form>
           </div>

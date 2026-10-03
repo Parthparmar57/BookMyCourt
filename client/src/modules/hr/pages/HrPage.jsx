@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  useEmployees, 
-  useCreateEmployee, 
-  useLeaves, 
-  useUpdateLeaveStatus, 
-  usePayrolls, 
-  useRunPayroll, 
-  useUpdatePayrollStatus 
+import {
+  useEmployees,
+  useCreateEmployee,
+  useLeaves,
+  useUpdateLeaveStatus,
+  usePayrolls,
+  useRunPayroll,
+  useUpdatePayrollStatus,
+  useAttendance,
+  useCheckIn,
+  useCheckOut
 } from '../../../hooks/useHr';
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
 import { 
@@ -21,7 +24,10 @@ import {
   Check, 
   XCircle,
   Clock,
-  Filter
+  Filter,
+  LogIn,
+  LogOut,
+  CalendarCheck
 } from 'lucide-react';
 
 const ROLE_COLORS = {
@@ -40,21 +46,47 @@ const LEAVE_TYPE_COLORS = {
 };
 
 export const HrPage = () => {
-  const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'leaves' | 'payroll'
+  const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'leaves' | 'payroll' | 'attendance'
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [leaveStatusFilter, setLeaveStatusFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'
   const [feedback, setFeedback] = useState(null);
+  // Attendance tab: which day's register to view (defaults to today).
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Queries
   const { data: employees = [], isLoading: empLoading } = useEmployees();
   const { data: leaves = [], isLoading: leavesLoading } = useLeaves();
   const { data: payrolls = [], isLoading: payrollLoading } = usePayrolls();
+  const { data: attendance = [], isLoading: attendanceLoading } = useAttendance({ date: attendanceDate });
 
   // Mutations
   const createEmployee = useCreateEmployee();
   const updateLeaveStatus = useUpdateLeaveStatus();
   const runPayroll = useRunPayroll();
   const updatePayrollStatus = useUpdatePayrollStatus();
+  // Attendance is self-service: the backend derives the employee from the auth
+  // token and ignores any employeeId in the body, so these mark the CURRENT
+  // user's own attendance. The table below is the admin's monitoring view.
+  const checkIn = useCheckIn();
+  const checkOut = useCheckOut();
+
+  const handleSelfCheckIn = async () => {
+    try {
+      await checkIn.mutateAsync({});
+      setFeedback({ type: 'success', message: 'You have been checked in for today.' });
+    } catch (err) {
+      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Check-in failed.' });
+    }
+  };
+
+  const handleSelfCheckOut = async () => {
+    try {
+      await checkOut.mutateAsync({});
+      setFeedback({ type: 'success', message: 'You have been checked out for today.' });
+    } catch (err) {
+      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Check-out failed.' });
+    }
+  };
 
   // Add Employee Form State
   const [empForm, setEmpForm] = useState({
@@ -168,6 +200,14 @@ export const HrPage = () => {
             >
               Payroll
             </button>
+            <button
+              onClick={() => setActiveTab('attendance')}
+              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                activeTab === 'attendance' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Attendance
+            </button>
           </div>
 
           {activeTab === 'directory' && (
@@ -189,6 +229,28 @@ export const HrPage = () => {
               {runPayroll.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
               <span>Run Month Payroll</span>
             </button>
+          )}
+
+          {/* Self-service attendance for the logged-in staff member */}
+          {activeTab === 'attendance' && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSelfCheckIn}
+                disabled={checkIn.isPending}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {checkIn.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+                <span>Check In</span>
+              </button>
+              <button
+                onClick={handleSelfCheckOut}
+                disabled={checkOut.isPending}
+                className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {checkOut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+                <span>Check Out</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -492,6 +554,106 @@ export const HrPage = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: ATTENDANCE REGISTER (admin monitoring + self-service check-in/out) */}
+      {activeTab === 'attendance' && (
+        <div className="space-y-4">
+          {/* Date selector + daily summary */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-2">
+              <CalendarCheck className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-bold text-slate-500">Register for</span>
+              <input
+                type="date"
+                value={attendanceDate}
+                onChange={(e) => setAttendanceDate(e.target.value)}
+                className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold focus:border-emerald-600 focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2 text-[11px] font-bold">
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                {attendance.filter((a) => a.checkIn).length} Checked In
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+                {attendance.filter((a) => a.checkOut).length} Checked Out
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900">Daily Attendance Register</h3>
+                <p className="text-[11px] text-slate-500">Staff mark their own attendance; this is the admin monitoring view.</p>
+              </div>
+              <span className="text-xs font-bold text-slate-500">{attendance.length} records</span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider">
+                    <th className="p-4">Employee</th>
+                    <th className="p-4">Role</th>
+                    <th className="p-4">Check-In</th>
+                    <th className="p-4">Check-Out</th>
+                    <th className="p-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {attendanceLoading && (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-400">
+                        <Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading attendance register…
+                      </td>
+                    </tr>
+                  )}
+
+                  {!attendanceLoading && attendance.map((a) => (
+                    <tr key={a.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-4">
+                        <div className="font-extrabold text-slate-900">{a.employee?.user?.name || 'Staff Member'}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{a.employee?.employeeNo}</div>
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${ROLE_COLORS[a.employee?.user?.role] || 'bg-slate-100 text-slate-700'}`}>
+                          {a.employee?.user?.role?.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="p-4 font-bold text-emerald-800">
+                        {a.checkIn ? new Date(a.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </td>
+                      <td className="p-4 font-bold text-slate-700">
+                        {a.checkOut ? new Date(a.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${
+                          a.status === 'PRESENT' ? 'bg-emerald-100 text-emerald-800' :
+                          a.status === 'ABSENT' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {a.status === 'PRESENT' && <CheckCircle2 className="w-3 h-3" />}
+                          {a.status === 'ABSENT' && <XCircle className="w-3 h-3" />}
+                          <span>{a.status || 'PENDING'}</span>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {!attendanceLoading && attendance.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-12 text-center text-slate-400">
+                        <CalendarCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <div className="font-bold text-slate-600">No attendance records for this date</div>
+                        <div className="text-[11px] text-slate-400 mt-1">Staff check-ins for the selected day will appear here.</div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

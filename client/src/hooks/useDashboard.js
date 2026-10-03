@@ -19,5 +19,8 @@ export const useInventoryReport = (filters = {}) =>
 export const useMembershipReport = (filters = {}) =>
   useQuery({ queryKey: qk.reports.byType('membership', filters), queryFn: () => reportsApi.membership(filters) });
 
+export const useRevenueReport = (filters = {}) =>
+  useQuery({ queryKey: qk.reports.byType('revenue', filters), queryFn: () => reportsApi.revenue(filters) });
+
 // Excel export helper (returns a Blob the caller can download).
 export { reportsApi };

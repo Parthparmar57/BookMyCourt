@@ -1,14 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  useMenu, 
-  useBarTables, 
-  useCreateBarOrder, 
-  useBarOrders, 
-  useTabs, 
-  useSettleTab, 
-  useCreateMenuItem, 
+import {
+  useMenu,
+  useBarTables,
+  useCreateBarOrder,
+  useBarOrders,
+  useTabs,
+  useSettleTab,
+  useCreateMenuItem,
   useUpdateMenuItem,
-  useDeleteMenuItem
+  useDeleteMenuItem,
+  useActiveShift,
+  useShiftReport,
+  useOpenShift,
+  useCloseShift
 } from '../../../hooks/useBar';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { 
@@ -22,13 +26,15 @@ import {
   Plus, 
   TrendingUp, 
   AlertCircle, 
-  DollarSign, 
-  Users, 
+  DollarSign,
+  Users,
   ShoppingBag,
   Download,
   Edit,
   Trash2,
-  Sparkles
+  Sparkles,
+  Wallet,
+  LogOut
 } from 'lucide-react';
 import { useMembers } from '../../../hooks/useMembership';
 
@@ -46,8 +52,15 @@ export const BarPage = () => {
   const updateMenuItem = useUpdateMenuItem();
   const deleteMenuItem = useDeleteMenuItem();
 
+  // Cash shift (open / live report / close & reconcile)
+  const activeShiftQuery = useActiveShift();
+  const activeShift = activeShiftQuery.data || null;
+  const shiftReportQuery = useShiftReport(activeShift?.id);
+  const openShift = useOpenShift();
+  const closeShift = useCloseShift();
+
   // Active sub-tab
-  const [activeTab, setActiveTab] = useState('pos'); // 'pos' | 'orders' | 'tabs' | 'menu' | 'reports'
+  const [activeTab, setActiveTab] = useState('pos'); // 'pos' | 'orders' | 'tabs' | 'menu' | 'shift'
 
   // POS State
   const [selectedTable, setSelectedTable] = useState(null);
@@ -65,6 +78,13 @@ export const BarPage = () => {
   // Settle Tab Modal State
   const [settleTabTarget, setSettleTabTarget] = useState(null);
   const [tabPaymentMode, setTabPaymentMode] = useState('CARD');
+
+  // Shift state
+  const [openShiftForm, setOpenShiftForm] = useState({ openingCash: '', notes: '' });
+  const [showCloseShift, setShowCloseShift] = useState(false);
+  const [closeForm, setCloseForm] = useState({ closingCash: '', notes: '' });
+  const [closedShift, setClosedShift] = useState(null); // closed shift record for reconciliation
+  const [shiftError, setShiftError] = useState('');
 
   // Categories
   const categories = useMemo(
@@ -166,6 +186,46 @@ export const BarPage = () => {
     }
   };
 
+  // Open a new cash shift with a starting float.
+  const handleOpenShift = async (e) => {
+    e.preventDefault();
+    setShiftError('');
+    try {
+      await openShift.mutateAsync({
+        openingCash: Number(openShiftForm.openingCash || 0),
+        ...(openShiftForm.notes ? { notes: openShiftForm.notes } : {}),
+      });
+      setOpenShiftForm({ openingCash: '', notes: '' });
+      setClosedShift(null);
+    } catch (err) {
+      setShiftError(err?.message || 'Could not open shift.');
+    }
+  };
+
+  // Close the active shift with the counted cash; keep the result for reconciliation.
+  const handleCloseShift = async (e) => {
+    e.preventDefault();
+    setShiftError('');
+    if (!activeShift) return;
+    try {
+      const result = await closeShift.mutateAsync({
+        id: activeShift.id,
+        closingCash: Number(closeForm.closingCash || 0),
+        ...(closeForm.notes ? { notes: closeForm.notes } : {}),
+      });
+      setClosedShift(result);
+      setShowCloseShift(false);
+      setCloseForm({ closingCash: '', notes: '' });
+    } catch (err) {
+      setShiftError(err?.message || 'Could not close shift.');
+    }
+  };
+
+  // Live shift report summary + derived expected cash (opening float + cash sales).
+  const shiftSummary = shiftReportQuery.data?.summary || null;
+  const cashSales = shiftSummary?.paymentBreakdown?.CASH || 0;
+  const expectedCash = activeShift ? Number(activeShift.openingCash || 0) + Number(cashSales) : 0;
+
   return (
     <div className="space-y-6 font-sans">
       {/* Header Banner */}
@@ -224,6 +284,16 @@ export const BarPage = () => {
             }`}
           >
             <Utensils className="w-4 h-4" /> Menu Catalog
+          </button>
+          <button
+            onClick={() => setActiveTab('shift')}
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${
+              activeTab === 'shift'
+                ? 'bg-[#2e7d32] text-white shadow-md'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <Wallet className="w-4 h-4" /> Cash Shift {activeShift ? '• OPEN' : ''}
           </button>
         </div>
       </div>
@@ -662,10 +732,210 @@ export const BarPage = () => {
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
+                    {/* Remove this item from the menu (with confirmation). */}
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Remove "${item.name}" from the menu?`)) {
+                          deleteMenuItem.mutate(item.id);
+                        }
+                      }}
+                      className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: CASH SHIFT (open / live report / close & reconcile) */}
+      {activeTab === 'shift' && (
+        <div className="space-y-6">
+          {shiftError && (
+            <div className="p-4 rounded-2xl text-xs font-bold bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600" /> {shiftError}
+            </div>
+          )}
+
+          {/* No open shift → Open Shift form */}
+          {!activeShift ? (
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-xs max-w-md">
+              <div className="flex items-center gap-2 border-b border-gray-100 pb-4 mb-4">
+                <Wallet className="w-5 h-5 text-[#2e7d32]" />
+                <div>
+                  <h3 className="font-black text-base text-slate-900">Start a Cash Shift</h3>
+                  <p className="text-xs text-slate-500 font-medium">Count the opening float before taking orders.</p>
+                </div>
+              </div>
+
+              {/* Reconciliation summary of the shift just closed */}
+              {closedShift && (
+                <div className="mb-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1 text-xs">
+                  <div className="font-black text-slate-900 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#2e7d32]" /> Previous shift closed
+                  </div>
+                  <div className="flex justify-between text-slate-600"><span>Expected cash</span><span className="font-bold">{formatCurrency(Number(closedShift.expectedCash || 0))}</span></div>
+                  <div className="flex justify-between text-slate-600"><span>Counted cash</span><span className="font-bold">{formatCurrency(Number(closedShift.actualCash || closedShift.closingCash || 0))}</span></div>
+                  <div className={`flex justify-between font-black ${Number(closedShift.actualCash || 0) - Number(closedShift.expectedCash || 0) < 0 ? 'text-rose-600' : 'text-[#2e7d32]'}`}>
+                    <span>Difference</span>
+                    <span>{formatCurrency(Number(closedShift.actualCash || 0) - Number(closedShift.expectedCash || 0))}</span>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleOpenShift} className="space-y-3 text-xs font-semibold text-slate-700">
+                <div>
+                  <label className="block mb-1">Opening Cash Float (₹) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={openShiftForm.openingCash}
+                    onChange={(e) => setOpenShiftForm({ ...openShiftForm, openingCash: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#2e7d32] focus:outline-none"
+                    placeholder="e.g. 2000"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Notes (optional)</label>
+                  <input
+                    value={openShiftForm.notes}
+                    onChange={(e) => setOpenShiftForm({ ...openShiftForm, notes: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#2e7d32] focus:outline-none"
+                    placeholder="e.g. Evening shift"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={openShift.isPending}
+                  className="w-full bg-[#2e7d32] hover:bg-[#236327] disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                >
+                  {openShift.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <Wallet className="w-4 h-4" /> Open Shift
+                </button>
+              </form>
+            </div>
+          ) : (
+            /* Active shift → summary + live report + close */
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Shift summary */}
+              <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-xs space-y-3">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-[#2e7d32]" /> Active Shift
+                  </h3>
+                  <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">OPEN</span>
+                </div>
+                <div className="text-xs text-slate-600 space-y-2">
+                  <div className="flex justify-between"><span>Cashier</span><span className="font-bold text-slate-900">{activeShift.employee?.user?.name || '—'}</span></div>
+                  <div className="flex justify-between"><span>Opened</span><span className="font-bold text-slate-900">{activeShift.startTime ? new Date(activeShift.startTime).toLocaleString() : '—'}</span></div>
+                  <div className="flex justify-between"><span>Opening float</span><span className="font-bold text-slate-900">{formatCurrency(Number(activeShift.openingCash || 0))}</span></div>
+                </div>
+                <button
+                  onClick={() => { setShiftError(''); setShowCloseShift(true); }}
+                  className="w-full mt-2 bg-slate-900 hover:bg-black text-white font-extrabold text-xs py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" /> Close Shift & Reconcile
+                </button>
+              </div>
+
+              {/* Live report */}
+              <div className="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-[#2e7d32]" /> Shift Sales Report
+                  </h3>
+                  {shiftReportQuery.isLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                    <div className="text-[10px] font-mono uppercase text-slate-400 font-bold">Total Sales</div>
+                    <div className="text-lg font-black text-slate-900">{formatCurrency(Number(shiftSummary?.totalSales || 0))}</div>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                    <div className="text-[10px] font-mono uppercase text-slate-400 font-bold">Paid Orders</div>
+                    <div className="text-lg font-black text-slate-900">{shiftSummary?.paidOrders ?? 0} / {shiftSummary?.totalOrders ?? 0}</div>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                    <div className="text-[10px] font-mono uppercase text-slate-400 font-bold">Cash Sales</div>
+                    <div className="text-lg font-black text-slate-900">{formatCurrency(Number(cashSales))}</div>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                    <div className="text-[10px] font-mono uppercase text-[#2e7d32] font-bold">Expected Cash</div>
+                    <div className="text-lg font-black text-[#2e7d32]">{formatCurrency(expectedCash)}</div>
+                  </div>
+                </div>
+
+                {/* Payment-mode breakdown */}
+                <div>
+                  <div className="text-xs font-bold text-slate-500 uppercase mb-2">Sales by Payment Mode</div>
+                  <div className="space-y-1.5">
+                    {shiftSummary && Object.keys(shiftSummary.paymentBreakdown || {}).length > 0 ? (
+                      Object.entries(shiftSummary.paymentBreakdown).map(([mode, amt]) => (
+                        <div key={mode} className="flex items-center justify-between text-xs bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                          <span className="font-bold text-slate-700">{mode}</span>
+                          <span className="font-black text-slate-900">{formatCurrency(Number(amt))}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-slate-400 font-medium">No paid sales in this shift yet.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODAL: CLOSE SHIFT */}
+      {showCloseShift && activeShift && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+              <h3 className="font-extrabold text-base text-slate-900">Close Shift & Reconcile</h3>
+              <button onClick={() => setShowCloseShift(false)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+            <div className="space-y-1 text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <div className="flex justify-between"><span>Opening float</span><span className="font-bold">{formatCurrency(Number(activeShift.openingCash || 0))}</span></div>
+              <div className="flex justify-between"><span>Cash sales</span><span className="font-bold">{formatCurrency(Number(cashSales))}</span></div>
+              <div className="flex justify-between font-black text-[#2e7d32]"><span>Expected in drawer</span><span>{formatCurrency(expectedCash)}</span></div>
+            </div>
+            <form onSubmit={handleCloseShift} className="space-y-3 text-xs font-semibold text-slate-700">
+              <div>
+                <label className="block mb-1">Counted Closing Cash (₹) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={closeForm.closingCash}
+                  onChange={(e) => setCloseForm({ ...closeForm, closingCash: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#2e7d32] focus:outline-none"
+                  placeholder="Counted cash in the drawer"
+                />
+              </div>
+              <div>
+                <label className="block mb-1">Notes (optional)</label>
+                <input
+                  value={closeForm.notes}
+                  onChange={(e) => setCloseForm({ ...closeForm, notes: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#2e7d32] focus:outline-none"
+                  placeholder="e.g. ₹50 short — noted"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={closeShift.isPending}
+                className="w-full bg-slate-900 hover:bg-black disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
+                {closeShift.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Confirm & Close Shift
+              </button>
+            </form>
           </div>
         </div>
       )}

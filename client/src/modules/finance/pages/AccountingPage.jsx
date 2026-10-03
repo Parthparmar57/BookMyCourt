@@ -9,7 +9,9 @@ import {
   useCreateExpense, 
   useMarkExpensePaid 
 } from '../../../hooks/useFinance';
+import { useRevenueReport } from '../../../hooks/useDashboard';
 import { invoicesApi } from '../../../services/finance.service';
+import { reportsApi } from '../../../services/dashboard.service';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { 
   Receipt, 
@@ -22,8 +24,11 @@ import {
   AlertCircle, 
   X, 
   Loader2, 
-  Filter, 
-  CreditCard 
+  Filter,
+  CreditCard,
+  FileSpreadsheet,
+  FileDown,
+  BarChart3
 } from 'lucide-react';
 
 const SOURCE_COLORS = {
@@ -35,12 +40,13 @@ const SOURCE_COLORS = {
 };
 
 export const AccountingPage = () => {
-  const [activeTab, setActiveTab] = useState('ledger'); // 'ledger' | 'invoices' | 'expenses'
+  const [activeTab, setActiveTab] = useState('ledger'); // 'ledger' | 'invoices' | 'expenses' | 'reports'
   const [sourceFilter, setSourceFilter] = useState('');
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [reportDownloading, setReportDownloading] = useState(''); // which report file is downloading
 
   // Queries
   const { data: ledgerData, isLoading: ledgerLoading } = useLedger(sourceFilter ? { source: sourceFilter } : {});
@@ -49,6 +55,7 @@ export const AccountingPage = () => {
   const { data: invoicesData, isLoading: invoicesLoading } = useInvoices();
   const invoices = invoicesData?.invoices || [];
   const { data: expenses = [], isLoading: expensesLoading } = useExpenses();
+  const { data: revenueReport, isLoading: revenueLoading } = useRevenueReport();
 
   // Mutations
   const createInvoice = useCreateInvoice();
@@ -94,6 +101,32 @@ export const AccountingPage = () => {
       setDownloadingId(null);
     }
   };
+
+  // Generic report download: fetches a Blob and triggers a browser download.
+  // `key` drives the per-button spinner; `mime`/extension pick the file type.
+  const handleDownloadReport = async (key, fetchFn, baseName, mime) => {
+    try {
+      setReportDownloading(key);
+      const res = await fetchFn();
+      const blob = new Blob([res], { type: mime });
+      const url = window.URL.createObjectURL(blob);
+      const ext = mime === 'application/pdf' ? 'pdf' : 'xlsx';
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${baseName}_${new Date().toISOString().split('T')[0]}.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setFeedback({ type: 'error', message: err?.message || 'Could not download the report.' });
+    } finally {
+      setReportDownloading('');
+    }
+  };
+
+  const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const PDF_MIME = 'application/pdf';
 
   const handleCreateInvoice = async (e) => {
     e.preventDefault();
@@ -176,6 +209,14 @@ export const AccountingPage = () => {
               }`}
             >
               Expenses
+            </button>
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                activeTab === 'reports' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Reports
             </button>
           </div>
 
@@ -459,6 +500,117 @@ export const AccountingPage = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: REPORTS — revenue summary + downloadable reports (share the numbers) */}
+      {activeTab === 'reports' && (
+        <div className="space-y-5">
+          {/* Revenue summary */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-emerald-600" />
+              <h3 className="font-extrabold text-sm text-slate-900">Revenue Report (all time)</h3>
+            </div>
+
+            {revenueLoading ? (
+              <div className="p-8 text-center text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin inline mr-2" /> Loading revenue report…
+              </div>
+            ) : (
+              <div className="p-5 space-y-5">
+                {/* Totals */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
+                    <div className="text-[10px] font-bold text-emerald-700 uppercase">Total Revenue</div>
+                    <div className="text-xl font-black text-emerald-900">{formatCurrency(Number(revenueReport?.totalRevenue || 0))}</div>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl">
+                    <div className="text-[10px] font-bold text-blue-700 uppercase">Total Tax (GST)</div>
+                    <div className="text-xl font-black text-blue-900">{formatCurrency(Number(revenueReport?.totalTax || 0))}</div>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase">Transactions</div>
+                    <div className="text-xl font-black text-slate-900">{revenueReport?.totalTransactions || 0}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* By source */}
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Revenue by Source</h4>
+                    <div className="border border-slate-100 rounded-xl divide-y divide-slate-100">
+                      {(revenueReport?.bySource || []).map((s) => (
+                        <div key={s.source} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                          <span className={`px-2 py-0.5 rounded-full font-extrabold border ${SOURCE_COLORS[s.source] || SOURCE_COLORS.OTHER}`}>{s.source}</span>
+                          <span className="font-black text-slate-900">{formatCurrency(Number(s.amount || 0))}</span>
+                        </div>
+                      ))}
+                      {(!revenueReport?.bySource || revenueReport.bySource.length === 0) && (
+                        <div className="px-4 py-6 text-center text-slate-400 text-xs">No revenue recorded yet.</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* By payment mode */}
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Revenue by Payment Mode</h4>
+                    <div className="border border-slate-100 rounded-xl divide-y divide-slate-100">
+                      {(revenueReport?.byPaymentMode || []).map((m) => (
+                        <div key={m.mode} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                          <span className="font-bold text-slate-700 flex items-center gap-1.5"><CreditCard className="w-3.5 h-3.5 text-slate-400" />{m.mode}</span>
+                          <span className="font-black text-slate-900">{formatCurrency(Number(m.amount || 0))}</span>
+                        </div>
+                      ))}
+                      {(!revenueReport?.byPaymentMode || revenueReport.byPaymentMode.length === 0) && (
+                        <div className="px-4 py-6 text-center text-slate-400 text-xs">No payments recorded yet.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Downloadable reports */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs">
+            <div className="p-4 border-b border-slate-100">
+              <h3 className="font-extrabold text-sm text-slate-900">Export & Share Reports</h3>
+              <p className="text-[11px] text-slate-500">Download reports as Excel or PDF to share with partners, auditors or the tax office.</p>
+            </div>
+            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { title: 'Revenue', xlsx: reportsApi.exportRevenue, pdf: reportsApi.pdfRevenue, base: 'Revenue_Report' },
+                { title: 'Tax (GST)', xlsx: reportsApi.exportTax, pdf: null, base: 'Tax_Report' },
+                { title: 'Inventory', xlsx: reportsApi.exportInventory, pdf: reportsApi.pdfInventory, base: 'Inventory_Report' },
+                { title: 'Membership', xlsx: reportsApi.exportMembership, pdf: reportsApi.pdfMembership, base: 'Membership_Report' },
+              ].map((r) => (
+                <div key={r.base} className="border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <h4 className="font-extrabold text-sm text-slate-900">{r.title}</h4>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => handleDownloadReport(`${r.base}-xlsx`, r.xlsx, r.base, XLSX_MIME)}
+                      disabled={reportDownloading === `${r.base}-xlsx`}
+                      className="inline-flex items-center justify-center gap-1.5 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-xl transition-colors disabled:opacity-60"
+                    >
+                      {reportDownloading === `${r.base}-xlsx` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
+                      Excel
+                    </button>
+                    {r.pdf && (
+                      <button
+                        onClick={() => handleDownloadReport(`${r.base}-pdf`, r.pdf, r.base, PDF_MIME)}
+                        disabled={reportDownloading === `${r.base}-pdf`}
+                        className="inline-flex items-center justify-center gap-1.5 text-[11px] font-extrabold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition-colors disabled:opacity-60"
+                      >
+                        {reportDownloading === `${r.base}-pdf` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+                        PDF
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

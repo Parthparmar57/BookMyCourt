@@ -82,6 +82,13 @@ export const HomePage = () => {
   const availabilityQuery = usePublicAvailability({ date: selectedDate });
   const liveCourts = availabilityQuery.data || [];
 
+  // Use the live availability grid when the backend returns data; otherwise fall
+  // back to the static marketing preview below so the section never looks empty.
+  const hasLive = liveCourts.length > 0;
+  const liveColumns = (liveCourts[0]?.slots || [])
+    .filter((s) => s.slotTime.endsWith(':00'))
+    .map((s) => s.slotTime);
+
   const timeSlots = ['06:00', '07:00', '08:00', '09:00', '10:00', '17:00', '18:00', '19:00', '20:00'];
 
   const defaultMatrix = [
@@ -576,13 +583,13 @@ export const HomePage = () => {
                   <th className="p-4 sticky left-0 bg-[#121212] z-10">Court Name</th>
                   <th className="p-4">Sport</th>
                   <th className="p-4">Rate</th>
-                  {timeSlots.map((time) => (
+                  {(hasLive ? liveColumns : timeSlots).map((time) => (
                     <th key={time} className="p-4 whitespace-nowrap text-center">{time}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
-                {defaultMatrix.map((court) => {
+                {(hasLive ? liveCourts : defaultMatrix).map((court) => {
                   return (
                     <tr key={court.courtId} className="hover:bg-gray-50/80 transition-colors">
                       <td className="p-4 font-extrabold text-[#121212] sticky left-0 bg-white shadow-2xs">
@@ -596,7 +603,36 @@ export const HomePage = () => {
                       <td className="p-4 font-extrabold text-[#4A812F]">
                         ₹{court.walkInRate}/hr
                       </td>
-                      {timeSlots.map((time) => {
+                      {(hasLive ? liveColumns : timeSlots).map((time) => {
+                        // LIVE grid: look up the real slot for this time and show its true state.
+                        if (hasLive) {
+                          const slot = court.slots.find((s) => s.slotTime === time);
+                          if (!slot) return <td key={time} className="p-3 text-center text-gray-300">—</td>;
+                          if (!slot.isAvailable) {
+                            const social = slot.bookingType === 'SOCIAL';
+                            return (
+                              <td key={time} className="p-3 text-center">
+                                <span className={`px-2.5 py-1.5 font-extrabold text-[10px] block border ${social
+                                  ? 'bg-indigo-100 border-indigo-300 text-indigo-900'
+                                  : 'bg-rose-50 border-rose-200 text-rose-700'}`}>
+                                  {social ? 'Social Play' : 'Booked'}
+                                </span>
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={time} className="p-3 text-center">
+                              <a
+                                href="#trial"
+                                className="px-2.5 py-1.5 bg-[#EBF7E7] border border-[#d6ebd3] text-[#2d6215] font-extrabold text-[10px] block hover:bg-[#4A812F] hover:text-white transition-colors"
+                              >
+                                Free Slot
+                              </a>
+                            </td>
+                          );
+                        }
+
+                        // FALLBACK preview (no live data yet): illustrative sample cells.
                         const isFridaySocial = time === '18:00' && court.sport === 'Padel';
                         const isBooked = (time === '09:00' || time === '17:00') && court.sport === 'Tennis';
 
