@@ -108,7 +108,7 @@ export const router = createBrowserRouter([
   // Kitchen Display Screen (KDS)
   {
     path: '/staff/kitchen',
-    ...guarded(['OWNER', 'KITCHEN', 'BAR_STAFF'], <KitchenLayout />, [
+    ...guarded(['OWNER', 'KITCHEN', 'BAR_STAFF'], <AppLayout />, [
       { index: true, element: <KitchenPage /> }
     ])
   },
