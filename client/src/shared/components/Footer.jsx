@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { 
   Mail, 
   Phone, 
-  ChevronRight
+  ChevronRight,
+  MapPin,
+  Clock
 } from 'lucide-react';
 
 const InstagramIcon = (props) => (
@@ -83,76 +85,71 @@ export const Footer = () => {
   return (
     <footer className="bg-[#141518] text-gray-400 pt-16 pb-12 border-t border-gray-800 text-xs font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 space-y-12">
-        {/* 1. TOP 5 NAVIGATION COLUMNS GRID */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 pb-8 border-b border-gray-800/80">
+        {/* 1. RELEVANT NAVIGATION COLUMNS GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 pb-8 border-b border-gray-800/80">
           {/* Column 1: TOP FEATURES */}
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-white font-mono">
               TOP FEATURES
             </h4>
-            <ul className="space-y-1.5 text-[13px] font-medium text-gray-400">
+            <ul className="space-y-2 text-[13px] font-medium text-gray-400">
               <li><Link to="/availability" className="hover:text-white transition-colors">Public Booking</Link></li>
               <li><Link to="/courts" className="hover:text-white transition-colors">Court Reservations</Link></li>
               <li><Link to="/membership" className="hover:text-white transition-colors">Memberships</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Lessons & Programming</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Mobile App</Link></li>
-              <li><Link to="/trial" className="hover:text-emerald-400 font-bold transition-colors">All Features →</Link></li>
+              <li><Link to="/shop" className="hover:text-white transition-colors">Pro Gear Shop</Link></li>
+              <li><a href="#trial" className="hover:text-emerald-400 font-bold transition-colors">Book a Trial Session →</a></li>
             </ul>
           </div>
 
-          {/* Column 2: SOLUTIONS */}
-          <div className="space-y-2.5">
+          {/* Column 2: PORTALS & SOLUTIONS */}
+          <div className="space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-white font-mono">
-              SOLUTIONS
+              PORTALS & SOLUTIONS
             </h4>
-            <ul className="space-y-1.5 text-[13px] font-medium text-gray-400">
-              <li><Link to="/admin" className="hover:text-white transition-colors">Club Owners</Link></li>
+            <ul className="space-y-2 text-[13px] font-medium text-gray-400">
+              <li><Link to="/admin" className="hover:text-white transition-colors">Club Owners & Management</Link></li>
               <li><Link to="/staff/frontdesk" className="hover:text-white transition-colors">Front Desk & Staff</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Instructors & Pros</Link></li>
-              <li><Link to="/member" className="hover:text-white transition-colors">Players</Link></li>
-              <li><Link to="/courts" className="hover:text-white transition-colors">Tennis, Pickleball & Padel</Link></li>
+              <li><Link to="/member" className="hover:text-white transition-colors">Member Dashboard</Link></li>
+              <li><Link to="/login" className="hover:text-white transition-colors">Player Login</Link></li>
             </ul>
           </div>
 
-          {/* Column 3: COMPANY */}
-          <div className="space-y-2.5">
+          {/* Column 3: THE CHAMPIONS CLUB */}
+          <div className="space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-white font-mono">
-              COMPANY
+              THE CHAMPIONS CLUB
             </h4>
-            <ul className="space-y-1.5 text-[13px] font-medium text-gray-400">
-              <li><Link to="/trial" className="hover:text-white transition-colors">About Us</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Careers</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Events & Shows</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">BookMyCourt Academy</Link></li>
-              <li><Link to="/trial" className="hover:text-emerald-400 transition-colors">Contact Us</Link></li>
+            <ul className="space-y-2 text-[13px] font-medium text-gray-400">
+              <li><a href="#about" className="hover:text-white transition-colors">About the Club</a></li>
+              <li><a href="#plans" className="hover:text-white transition-colors">Plans & Pricing</a></li>
+              <li><a href="#availability" className="hover:text-white transition-colors">Live Court Schedule</a></li>
+              <li><a href="#shop" className="hover:text-white transition-colors">Gear & Apparel</a></li>
+              <li><a href="#contact" className="hover:text-emerald-400 transition-colors">Contact & Enquiries</a></li>
             </ul>
           </div>
 
-          {/* Column 4: RESOURCES */}
-          <div className="space-y-2.5">
+          {/* Column 4: CONTACT & HOURS */}
+          <div className="space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-white font-mono">
-              RESOURCES
+              CONTACT & HOURS
             </h4>
-            <ul className="space-y-1.5 text-[13px] font-medium text-gray-400">
-              <li><Link to="/availability" className="hover:text-white transition-colors">How it Works</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Help Center</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Blog & Ebooks</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">State of the Industry</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Case Studies</Link></li>
-            </ul>
-          </div>
-
-          {/* Column 5: FREE TOOLS */}
-          <div className="space-y-2.5">
-            <h4 className="text-xs font-black uppercase tracking-wider text-white font-mono">
-              FREE TOOLS
-            </h4>
-            <ul className="space-y-1.5 text-[13px] font-medium text-gray-400">
-              <li><Link to="/trial" className="hover:text-white transition-colors">Free Tools Hub</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Revenue Estimator</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Pricing Calculator</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Utilization Planner</Link></li>
-              <li><Link to="/trial" className="hover:text-white transition-colors">Facility Scorecard</Link></li>
+            <ul className="space-y-2.5 text-[13px] font-medium text-gray-400">
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-[#4A812F] shrink-0" />
+                <span>+91 98200 11223</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-[#4A812F] shrink-0" />
+                <span>sales@bookmycourt.in</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-[#4A812F] shrink-0 mt-0.5" />
+                <span>Sports Complex Road, St. Augustine, FL 32080</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#4A812F] shrink-0" />
+                <span>Mon–Sun: 6:00 AM – 10:00 PM</span>
+              </li>
             </ul>
           </div>
         </div>
@@ -161,13 +158,13 @@ export const Footer = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-10 border-b border-gray-800/80">
           {/* Email & Phone */}
           <div className="flex flex-wrap items-center gap-8 text-sm font-bold text-white">
-            <a href="mailto:info@bookmycourt.com" className="flex items-center gap-2 hover:text-emerald-400 transition-colors">
+            <a href="mailto:sales@bookmycourt.in" className="flex items-center gap-2 hover:text-emerald-400 transition-colors">
               <Mail className="w-4.5 h-4.5 text-emerald-400" />
-              <span>info@bookmycourt.com</span>
+              <span>sales@bookmycourt.in</span>
             </a>
-            <a href="tel:+18444073737" className="flex items-center gap-2 hover:text-emerald-400 transition-colors">
+            <a href="tel:+919820011223" className="flex items-center gap-2 hover:text-emerald-400 transition-colors">
               <Phone className="w-4.5 h-4.5 text-emerald-400" />
-              <span>+1 (844) 407-3737</span>
+              <span>+91 98200 11223</span>
             </a>
           </div>
 
@@ -191,11 +188,11 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* 3. BOTTOM BRANDING & STORE DOWNLOADS */}
-        <div className="space-y-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+        {/* 3. BOTTOM BRANDING & COPYRIGHT */}
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             {/* Logo & Sports Partner Badges */}
-            <div className="flex flex-wrap items-center gap-8">
+            <div className="flex flex-wrap items-center gap-6">
               <Link to="/">
                 <img
                   src="/bookmycourt_logo.jpg"
@@ -205,7 +202,7 @@ export const Footer = () => {
               </Link>
 
               {/* Partner Badges */}
-              <div className="flex flex-wrap items-center gap-6 opacity-60 text-[11px] font-black tracking-widest text-gray-300 uppercase font-mono">
+              <div className="flex flex-wrap items-center gap-5 opacity-60 text-[11px] font-black tracking-widest text-gray-300 uppercase font-mono">
                 <span>USTA</span>
                 <span>IAPPF</span>
                 <span>USA PICKLEBALL</span>
@@ -213,43 +210,20 @@ export const Footer = () => {
                 <span>PPR</span>
               </div>
             </div>
-
-            {/* App Store Download Badges */}
-            <div className="flex items-center gap-4">
-              <a href="#appstore" className="hover:scale-105 transition-transform">
-                <img
-                  src="/Frame-44-1-300x116.webp"
-                  alt="Download on App Store"
-                  className="h-10 w-auto object-contain rounded-lg shadow-sm"
-                />
-              </a>
-              <a href="#playstore" className="hover:scale-105 transition-transform">
-                <img
-                  src="/Frame-43-2-300x116.webp"
-                  alt="Get it on Google Play"
-                  className="h-10 w-auto object-contain rounded-lg shadow-sm"
-                />
-              </a>
-            </div>
           </div>
 
           {/* Privacy & Copyright */}
           <div className="flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-500 font-medium border-t border-gray-800/80 pt-6 gap-4">
             <div className="flex flex-wrap items-center gap-4">
-              <a href="#" className="hover:text-gray-300 transition-colors">App Privacy Policy</a>
-              <span>|</span>
-              <a href="#" className="hover:text-gray-300 transition-colors">Website Privacy Policy</a>
-              <span>|</span>
-              <a href="#" className="hover:text-gray-300 transition-colors">Acceptable Use Policy</a>
+              <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
               <span>|</span>
               <a href="#" className="hover:text-gray-300 transition-colors">Terms of Use</a>
               <span>|</span>
-              <a href="#" className="hover:text-gray-300 transition-colors">Privacy Requests</a>
+              <a href="#" className="hover:text-gray-300 transition-colors">Acceptable Use</a>
             </div>
 
             <div className="text-right">
-              <p>© 2016–2026 BookMyCourt.com</p>
-              <p className="text-[10px] text-gray-600 mt-0.5">100 Island Cottage Way, St. Augustine, FL 32080</p>
+              <p>© 2026 BookMyCourt — Digital Club OS. All rights reserved.</p>
             </div>
           </div>
         </div>
@@ -257,4 +231,3 @@ export const Footer = () => {
     </footer>
   );
 };
-

@@ -19,7 +19,9 @@ import {
   TrendingUp,
   ExternalLink,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Phone,
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { roleHomePath } from '../utils/roles';
@@ -50,11 +52,11 @@ export const Navbar = () => {
   const productFeatures = [
     { name: 'Court Reservations', icon: Banknote, link: '/courts' },
     { name: 'Public Booking', icon: Globe, link: '/availability' },
-    { name: 'Events & Programming', icon: Calendar, link: '/trial' },
-    { name: 'Branded Mobile App', icon: Smartphone, link: '/trial' },
-    { name: 'Leagues & Ladders', icon: BarChart3, link: '/trial' },
-    { name: 'Integrations', icon: Layers, link: '/trial' },
-    { name: 'Lessons', icon: GraduationCap, link: '/trial' },
+    { name: 'Events & Programming', icon: Calendar, link: '#trial' },
+    { name: 'Branded Mobile App', icon: Smartphone, link: '#trial' },
+    { name: 'Leagues & Ladders', icon: BarChart3, link: '#trial' },
+    { name: 'Integrations', icon: Layers, link: '#trial' },
+    { name: 'Lessons', icon: GraduationCap, link: '#trial' },
     { name: 'Pro Shop & POS', icon: ShoppingBag, link: '/shop' },
     { name: 'Memberships', icon: CreditCard, link: '/membership' },
     { name: 'Invoicing & Batch Billing', icon: Receipt, link: '/admin' },
@@ -67,36 +69,7 @@ export const Navbar = () => {
       className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-2xs relative"
       onMouseLeave={handleMouseLeave}
     >
-      {/* 1. TOP BLACK SEGMENTED SWITCHER HEADER */}
-      <div className="bg-[#121212] text-white text-xs px-4 sm:px-8 lg:px-16 flex items-center h-10 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setActiveSegment('clubs')}
-              className={`px-5 py-2 rounded-t-lg font-bold text-xs transition-all ${
-                activeSegment === 'clubs' ? 'bg-white text-[#121212] shadow-sm' : 'text-gray-300 hover:text-white bg-transparent'
-              }`}
-            >
-              For Clubs
-            </button>
-            <button
-              onClick={() => setActiveSegment('players')}
-              className={`px-5 py-2 rounded-t-lg font-bold text-xs transition-all ${
-                activeSegment === 'players' ? 'bg-white text-[#121212] shadow-sm' : 'text-gray-300 hover:text-white bg-transparent'
-              }`}
-            >
-              For Players
-            </button>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-6 text-[11px] text-gray-300 font-medium">
-            <span>📞 +91 98200 11223</span>
-            <span>✉️ sales@bookmycourt.in</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. MAIN NAVBAR WITH LOGO */}
+      {/* MAIN NAVBAR WITH LOGO */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-16 py-3.5 flex items-center justify-between">
         {/* Main Brand Logo */}
         <Link to="/" className="flex items-center gap-3 group" onClick={() => setActiveDropdown(null)}>
@@ -107,8 +80,8 @@ export const Navbar = () => {
           />
         </Link>
 
-        {/* Navigation Links with Dropdown Indicators */}
-        <nav className="hidden lg:flex items-center gap-6 text-[15px] font-medium text-[#4a4d52]">
+        {/* Navigation Links with Dropdown Indicators & Direct Section Links */}
+        <nav className="hidden lg:flex items-center gap-5 text-[15px] font-medium text-[#4a4d52]">
           {/* PRODUCT DROPDOWN TRIGGER */}
           <div 
             className="relative py-2"
@@ -116,7 +89,7 @@ export const Navbar = () => {
           >
             <button 
               onClick={() => setActiveDropdown(activeDropdown === 'product' ? null : 'product')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
                 activeDropdown === 'product' 
                   ? 'bg-[#EBF7E7] text-[#2d6215] font-extrabold shadow-2xs' 
                   : 'hover:text-[#4A812F]'
@@ -131,23 +104,50 @@ export const Navbar = () => {
             </button>
           </div>
 
-          {/* PRICING LINK */}
-          <Link 
-            to="/courts" 
+          {/* ABOUT CLUB LINK */}
+          <a 
+            href="#about" 
             className="hover:text-[#4A812F] transition-colors px-2 py-1.5"
             onMouseEnter={() => handleMouseEnter(null)}
           >
-            Pricing
-          </Link>
+            About
+          </a>
 
-          {/* HOW IT WORKS LINK */}
-          <Link 
-            to="/availability" 
+          {/* PLANS & PRICING LINK */}
+          <a 
+            href="#plans" 
             className="hover:text-[#4A812F] transition-colors px-2 py-1.5"
             onMouseEnter={() => handleMouseEnter(null)}
           >
-            How it Works
-          </Link>
+            Plans
+          </a>
+
+          {/* COURT AVAILABILITY LINK */}
+          <a 
+            href="#availability" 
+            className="hover:text-[#4A812F] transition-colors px-2 py-1.5"
+            onMouseEnter={() => handleMouseEnter(null)}
+          >
+            Availability
+          </a>
+
+          {/* PRO SHOP LINK */}
+          <a 
+            href="#shop" 
+            className="hover:text-[#4A812F] transition-colors px-2 py-1.5"
+            onMouseEnter={() => handleMouseEnter(null)}
+          >
+            Shop
+          </a>
+
+          {/* CONTACT / ENQUIRY LINK */}
+          <a 
+            href="#contact" 
+            className="hover:text-[#4A812F] transition-colors px-2 py-1.5"
+            onMouseEnter={() => handleMouseEnter(null)}
+          >
+            Contact
+          </a>
 
           {/* SOLUTIONS DROPDOWN TRIGGER */}
           <div 
@@ -156,7 +156,7 @@ export const Navbar = () => {
           >
             <button 
               onClick={() => setActiveDropdown(activeDropdown === 'solutions' ? null : 'solutions')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
                 activeDropdown === 'solutions' 
                   ? 'bg-[#EBF7E7] text-[#2d6215] font-extrabold shadow-2xs' 
                   : 'hover:text-[#4A812F]'
@@ -170,32 +170,10 @@ export const Navbar = () => {
               )}
             </button>
           </div>
-
-          {/* RESOURCES DROPDOWN TRIGGER */}
-          <div 
-            className="relative py-2"
-            onMouseEnter={() => handleMouseEnter('resources')}
-          >
-            <button 
-              onClick={() => setActiveDropdown(activeDropdown === 'resources' ? null : 'resources')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-                activeDropdown === 'resources' 
-                  ? 'bg-[#EBF7E7] text-[#2d6215] font-extrabold shadow-2xs' 
-                  : 'hover:text-[#4A812F]'
-              }`}
-            >
-              <span>Resources</span>
-              {activeDropdown === 'resources' ? (
-                <ChevronUp className="w-4 h-4 text-[#2d6215]" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              )}
-            </button>
-          </div>
         </nav>
 
         {/* Right Action Buttons */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <Link
@@ -227,13 +205,13 @@ export const Navbar = () => {
             </Link>
           )}
 
-          <Link
-            to="/trial"
-            className="px-5 py-2.5 bg-[#1a1c1e] text-white text-sm font-extrabold rounded-lg hover:bg-black transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+          <a
+            href="#trial"
+            className="px-6 py-2.5 bg-[#1f2125] hover:bg-black text-white text-sm font-extrabold rounded-lg transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
           >
-            <span>Contact Sales</span>
-            <ChevronRight className="w-4 h-4 text-emerald-400" />
-          </Link>
+            <span>Book a Trial</span>
+            <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+          </a>
         </div>
       </div>
 

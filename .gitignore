@@ -16,11 +16,13 @@ lerna-debug.log*
 node_modules/
 **/node_modules/
 
-# Build outputs
+# Build outputs & cache
 dist/
 dist-ssr/
 build/
 *.local
+.vite/
+**/.vite/
 
 # Diagnostic / temp data
 .tmp/
