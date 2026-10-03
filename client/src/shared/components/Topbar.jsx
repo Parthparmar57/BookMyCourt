@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Calendar, Menu, X, CheckCircle2, XCircle, Clock, Check, Search } from 'lucide-react';
+import { Bell, Calendar, Menu, X, CheckCircle2, XCircle, Clock, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
 import { useLeaveRealtime } from '../../hooks/useRealtime';
@@ -102,8 +102,8 @@ export const Topbar = () => {
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 sm:px-8 py-3.5 flex items-center justify-between font-sans sticky top-0 z-20 shadow-2xs">
-      {/* Left Area: Responsive Hamburger / Cross Toggle Button + Search */}
-      <div className="flex items-center gap-3 sm:gap-4 flex-1 max-w-xl">
+      {/* Left Area: Responsive Hamburger / Cross Toggle Button */}
+      <div className="flex items-center gap-3 sm:gap-4">
         {/* Toggle Button at fixed place: Switches between Hamburger (☰) and Cross (✕) */}
         <button
           onClick={toggleSidebar}
@@ -117,16 +117,6 @@ export const Topbar = () => {
             <Menu className="w-4 h-4 text-slate-700 transition-transform duration-200 hover:scale-110" />
           )}
         </button>
-
-        {/* Global Search Input */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search members, bookings, courts..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50/80 border border-slate-200/80 rounded-2xl text-xs font-medium focus:bg-white focus:border-[#2e7d32] focus:outline-none transition-all placeholder:text-slate-400"
-          />
-        </div>
       </div>
 
       {/* Right Actions: Apply Leave (for staff) + Bell Notifications + Initial Avatar + Name */}
@@ -226,6 +216,9 @@ export const Topbar = () => {
           </div>
         )}
       </div>
+
+      {/* Apply Leave Modal */}
+      {showLeaveModal && <ApplyLeaveModal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} />}
     </header>
   );
 };
