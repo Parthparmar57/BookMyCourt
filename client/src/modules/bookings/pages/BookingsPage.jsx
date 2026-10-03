@@ -360,18 +360,6 @@ export const BookingsPage = () => {
       return;
     }
 
-    // Guard against past time slots on today's date (Rule R11)
-    const isToday = date === today();
-    if (isToday) {
-      const [h, m] = slot.slotTime.split(':').map(Number);
-      const slotDate = new Date();
-      slotDate.setHours(h, m, 0, 0);
-      if (slotDate < new Date()) {
-        setErrorMsg('Cannot book a court slot in the past.');
-        return;
-      }
-    }
-
     // Default booking tab: member if member or staff booking
     setBookingTab(isMember ? 'member' : 'member');
     setSelectedMemberId(isMember && currentMemberId ? currentMemberId : '');
@@ -385,6 +373,18 @@ export const BookingsPage = () => {
       slotTime: slot.slotTime,
       walkInRate: Number(court.walkInRate),
     });
+
+    // Guard against past time slots on today's date (Rule R11)
+    const isToday = date === today();
+    if (isToday) {
+      const [h, m] = slot.slotTime.split(':').map(Number);
+      const slotDate = new Date();
+      slotDate.setHours(h, m, 0, 0);
+      if (slotDate < new Date()) {
+        setErrorMsg('Cannot book a slot in the past.');
+        return;
+      }
+    }
   };
 
   // Handle Confirm Booking (Member, Walk-in, Maintenance, Event)
@@ -727,7 +727,7 @@ export const BookingsPage = () => {
           <button onClick={() => setSuccessMsg('')}><X className="w-4 h-4 cursor-pointer" /></button>
         </div>
       )}
-      {errorMsg && (
+      {errorMsg && !selectedSlot && !inspectedBooking && !isSchedulingSocial && !selectedSocialSession && !editingCourt && (
         <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-medium flex items-center justify-between animate-in fade-in duration-150">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -1516,10 +1516,17 @@ export const BookingsPage = () => {
                   </h3>
                   <p className="text-xs font-bold text-[#2e7d32] mt-0.5">{selectedSlot.courtName} · {date} ({selectedSlot.slotTime})</p>
                 </div>
-                <button onClick={() => setSelectedSlot(null)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer">
+                <button onClick={() => { setSelectedSlot(null); setErrorMsg(''); }} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              {errorMsg && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
 
               {/* Action Selection Tabs for Staff */}
               {isStaff ? (

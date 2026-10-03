@@ -83,7 +83,6 @@ export const qk = {
 
   // HR
   employees: { all: ['employees'], list: () => ['employees'], detail: (id) => ['employee', id] },
-  attendance: { all: ['attendance'], list: (filters = {}) => ['attendance', filters] },
   leave: { all: ['leave'], list: () => ['leave'] },
   payroll: { all: ['payroll'], list: () => ['payroll'] },
 };

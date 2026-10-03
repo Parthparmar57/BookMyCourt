@@ -7,7 +7,7 @@ import shopRoutes, { productRoutes, inventoryRoutes, orderRoutes } from './modul
 import barRoutes, { tableRoutes, barOrderRoutes, tabRoutes, kitchenRoutes, menuRoutes, shiftRoutes } from './modules/bar/index.js';
 import crmRoutes, { publicRoutes, enquiryRoutes, leadRoutes } from './modules/crm/index.js';
 import financeRoutes, { paymentRoutes, ledgerRoutes, invoiceRoutes, expenseRoutes } from './modules/finance/index.js';
-import hrRoutes, { employeeRoutes, attendanceRoutes, leaveRoutes, payrollRoutes } from './modules/hr/index.js';
+import hrRoutes, { employeeRoutes, leaveRoutes, payrollRoutes } from './modules/hr/index.js';
 import { dashboardRoutes } from './modules/dashboard/index.js';
 import { reportRoutes } from './modules/reports/index.js';
 
@@ -57,7 +57,6 @@ router.use('/ledger', ledgerRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/expenses', expenseRoutes);
 router.use('/employees', employeeRoutes);
-router.use('/attendance', attendanceRoutes);
 router.use('/leave', leaveRoutes);
 router.use('/payroll', payrollRoutes);
 

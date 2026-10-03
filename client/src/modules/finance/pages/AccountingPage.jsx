@@ -44,6 +44,8 @@ export const AccountingPage = () => {
   const [sourceFilter, setSourceFilter] = useState('');
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [invoiceError, setInvoiceError] = useState('');
+  const [expenseError, setExpenseError] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
   const [reportDownloading, setReportDownloading] = useState(''); // which report file is downloading
@@ -130,6 +132,7 @@ export const AccountingPage = () => {
 
   const handleCreateInvoice = async (e) => {
     e.preventDefault();
+    setInvoiceError('');
     try {
       await createInvoice.mutateAsync({
         clientEmail: invoiceForm.clientEmail,
@@ -147,12 +150,13 @@ export const AccountingPage = () => {
       setShowInvoiceModal(false);
       setFeedback({ type: 'success', message: 'GST Tax Invoice issued successfully.' });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.message || 'Failed to create invoice.' });
+      setInvoiceError(err?.response?.data?.message || err?.message || 'Failed to create invoice.');
     }
   };
 
   const handleCreateExpense = async (e) => {
     e.preventDefault();
+    setExpenseError('');
     try {
       await createExpense.mutateAsync({
         category: expenseForm.category,
@@ -163,7 +167,7 @@ export const AccountingPage = () => {
       setShowExpenseModal(false);
       setFeedback({ type: 'success', message: 'Operational expense recorded.' });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.message || 'Failed to log expense.' });
+      setExpenseError(err?.response?.data?.message || err?.message || 'Failed to log expense.');
     }
   };
 
@@ -621,8 +625,15 @@ export const AccountingPage = () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3 border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900">Issue GST Tax Invoice</h3>
-              <button onClick={() => setShowInvoiceModal(false)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowInvoiceModal(false); setInvoiceError(''); }} className="text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
+
+            {invoiceError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{invoiceError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleCreateInvoice} className="space-y-3 text-xs font-semibold">
               <div>
@@ -721,8 +732,15 @@ export const AccountingPage = () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3 border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900">Record Operational Expense</h3>
-              <button onClick={() => setShowExpenseModal(false)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowExpenseModal(false); setExpenseError(''); }} className="text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
+
+            {expenseError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{expenseError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleCreateExpense} className="space-y-3 text-xs font-semibold">
               <div>

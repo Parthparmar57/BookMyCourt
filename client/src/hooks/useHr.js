@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { qk, toCollection } from '../lib/queryKeys';
-import { employeesApi, attendanceApi, leaveApi, payrollApi } from '../services/hr.service';
+import { employeesApi, leaveApi, payrollApi } from '../services/hr.service';
 
 /* ---------------- Employees ---------------- */
 export const useEmployees = () =>
@@ -20,20 +20,6 @@ export const useUpdateEmployee = () => {
     mutationFn: ({ id, ...payload }) => employeesApi.update(id, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.employees.all }),
   });
-};
-
-/* ---------------- Attendance ---------------- */
-export const useAttendance = (filters = {}) =>
-  useQuery({ queryKey: qk.attendance.list(filters), queryFn: () => attendanceApi.list(filters), select: (d) => toCollection(d, 'attendance').items });
-
-export const useCheckIn = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: attendanceApi.checkIn, onSuccess: () => qc.invalidateQueries({ queryKey: qk.attendance.all }) });
-};
-
-export const useCheckOut = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: attendanceApi.checkOut, onSuccess: () => qc.invalidateQueries({ queryKey: qk.attendance.all }) });
 };
 
 /* ---------------- Leave ---------------- */

@@ -28,7 +28,6 @@ async function main() {
     'quotation',
     'lead',
     'enquiry',
-    'attendance',
     'payroll',
     'leaveRequest',
     'shift',
@@ -92,20 +91,6 @@ async function main() {
       },
     });
     createdEmployees.push(emp);
-
-    // Attendance records for past 5 days
-    for (let i = 1; i <= 5; i++) {
-      const attDate = subDays(now, i);
-      await prisma.attendance.create({
-        data: {
-          employeeId: emp.id,
-          date: attDate,
-          checkIn: setHours(attDate, 8),
-          checkOut: setHours(attDate, 17),
-          status: i === 4 ? 'HALF_DAY' : 'PRESENT',
-        },
-      });
-    }
 
     // Processed payroll
     await prisma.payroll.create({

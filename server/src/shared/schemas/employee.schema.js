@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { ROLES } from '../constants/roles.js';
-import { ATTENDANCE_STATUS } from '../constants/enums.js';
 
 export const createEmployeeSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -19,11 +18,3 @@ export const createEmployeeSchema = z.object({
 
 export const updateEmployeeSchema = createEmployeeSchema.partial();
 export const employeeIdParamSchema = z.object({ id: z.string().uuid() });
-
-export const checkInSchema = z.object({
-  notes: z.string().optional().nullable(),
-});
-
-export const checkOutSchema = z.object({
-  notes: z.string().optional().nullable(),
-});

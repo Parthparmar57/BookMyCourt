@@ -140,13 +140,6 @@ export const LEAVE_STATUS = {
   REJECTED: 'REJECTED',
 };
 
-export const ATTENDANCE_STATUS = {
-  PRESENT: 'PRESENT',
-  ABSENT: 'ABSENT',
-  HALF_DAY: 'HALF_DAY',
-  ON_LEAVE: 'ON_LEAVE',
-};
-
 export const PAYROLL_STATUS = {
   DRAFT: 'DRAFT',
   PROCESSED: 'PROCESSED',
