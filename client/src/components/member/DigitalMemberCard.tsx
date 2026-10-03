@@ -17,11 +17,13 @@ export const DigitalMemberCard: React.FC<DigitalMemberCardProps> = ({ member }) 
       {/* Card Header */}
       <div className="relative z-10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-md bg-primary text-white shadow-sm">
-            <Trophy className="w-4 h-4" />
-          </div>
+          <img
+            src="/my_fevicon_logo.png"
+            alt="BookMyCourt"
+            className="w-7 h-7 object-contain bg-white/10 p-0.5 rounded-md border border-white/20"
+          />
           <div>
-            <div className="text-xs font-extrabold tracking-wider uppercase">CHAMPIONS CLUB</div>
+            <div className="text-xs font-extrabold tracking-wider uppercase">BOOK MY COURT</div>
             <div className="text-[9px] text-accent font-semibold tracking-widest uppercase">Digital Member Pass</div>
           </div>
         </div>

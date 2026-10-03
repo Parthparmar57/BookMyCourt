@@ -106,18 +106,18 @@ export const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-white text-foreground flex flex-col font-sans selection:bg-primary/20 selection:text-primary">
       {/* 1. GLASSMOPHIC PUBLIC NAVBAR */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-border/80 h-20 px-6 lg:px-12 flex items-center justify-between shadow-2xs">
+        {/* Brand Logo: Desktop (Full Logo) & Mobile (Favicon/Short Logo) */}
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-          <div className="p-2.5 bg-primary text-white rounded-xl shadow-md">
-            <Trophy className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-xl font-extrabold tracking-tight text-foreground leading-none">
-              CHAMPIONS CLUB
-            </div>
-            <div className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">
-              Digital Club OS
-            </div>
-          </div>
+          <img
+            src="/bookmycourt_logo.jpg"
+            alt="BookMyCourt"
+            className="h-10 sm:h-12 w-auto object-contain hidden sm:block"
+          />
+          <img
+            src="/my_fevicon_logo.png"
+            alt="BookMyCourt"
+            className="h-10 w-10 object-contain sm:hidden"
+          />
         </div>
 
         {/* Navigation Links */}
@@ -578,9 +578,12 @@ export const LandingPage: React.FC = () => {
       <footer className="bg-[#141615] text-white/80 py-12 px-6 lg:px-12 border-t border-white/10 text-xs">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-primary" />
-              <span className="font-extrabold text-base text-white">CHAMPIONS CLUB</span>
+            <div className="flex items-center gap-3">
+              <img
+                src="/bookmycourt_logo.jpg"
+                alt="BookMyCourt"
+                className="h-10 w-auto object-contain bg-white p-1 rounded-md"
+              />
             </div>
             <p className="text-white/60 leading-relaxed">
               Digital Club Operating System for modern racquet & sports clubs.

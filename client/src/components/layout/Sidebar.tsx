@@ -100,18 +100,17 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="w-64 bg-surface text-foreground border-r border-border flex flex-col h-screen sticky top-0 shrink-0 select-none z-20">
       {/* Brand Header */}
-      <div className="h-16 px-6 border-b border-border flex items-center gap-3 bg-white">
-        <div className="p-2 bg-primary text-white rounded-lg shadow-sm">
-          <Trophy className="w-5 h-5" />
-        </div>
-        <div>
-          <h2 className="text-base font-extrabold tracking-tight text-foreground leading-none">
-            CHAMPIONS CLUB
-          </h2>
-          <p className="text-[10px] font-semibold text-primary uppercase tracking-wider mt-0.5">
-            Digital Club OS
-          </p>
-        </div>
+      <div className="h-16 px-4 border-b border-border flex items-center justify-between bg-white">
+        <img
+          src="/bookmycourt_logo.jpg"
+          alt="BookMyCourt"
+          className="h-9 w-auto object-contain max-w-[170px]"
+        />
+        <img
+          src="/my_fevicon_logo.png"
+          alt="BookMyCourt"
+          className="h-7 w-7 object-contain hidden"
+        />
       </div>
 
       {/* Role Access Scope Badge */}
