@@ -241,43 +241,73 @@ export const CrmPage = () => {
                         </p>
                       )}
 
-                      {/* Action buttons */}
-                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold">
-                        <button
-                          onClick={() => { setSelectedLead(lead); setShowFollowUpModal(true); }}
-                          className="text-slate-600 hover:text-slate-900 flex items-center gap-1"
-                        >
-                          <PhoneCall className="w-3 h-3 text-emerald-600" />
-                          <span>Follow-up</span>
-                        </button>
-
-                        {stage.id !== 'WON' && (
+                      {/* Stage Action / Controls */}
+                      {lead.stage === 'WON' ? (
+                        <div className="pt-2 border-t border-slate-100">
+                          <div className="w-full text-center inline-flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-800 bg-emerald-50 py-1.5 rounded-lg border border-emerald-200/80">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Won & Converted</span>
+                          </div>
+                        </div>
+                      ) : lead.stage === 'LOST' ? (
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                            <X className="w-3 h-3 text-slate-400" />
+                            Closed / Lost
+                          </span>
                           <button
-                            onClick={() => {
-                              setSelectedLead(lead);
-                              if (plans.length && !convertForm.planId) setConvertForm(f => ({ ...f, planId: plans[0].id }));
-                              setShowConvertModal(true);
-                            }}
-                            className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-md flex items-center gap-1 font-extrabold"
+                            onClick={() => handleStageMove(lead.id, 'CONTACTED')}
+                            className="text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-medium text-[10px] transition-colors cursor-pointer border border-slate-200"
+                            title="Reopen prospect as contacted"
                           >
-                            <UserCheck className="w-3 h-3" />
-                            <span>Convert</span>
+                            Reopen
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Active Stage Actions */}
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-medium">
+                            <button
+                              onClick={() => { setSelectedLead(lead); setShowFollowUpModal(true); }}
+                              className="text-slate-600 hover:text-slate-900 flex items-center gap-1.5 py-0.5 cursor-pointer"
+                            >
+                              <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Log Follow-up</span>
+                            </button>
+                          </div>
 
-                      {/* Move Stage Selector */}
-                      <div className="pt-1">
-                        <select
-                          value={lead.stage}
-                          onChange={(e) => handleStageMove(lead.id, e.target.value)}
-                          className="w-full text-[10px] font-semibold bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-700 focus:outline-none"
-                        >
-                          {STAGES.map((s) => (
-                            <option key={s.id} value={s.id}>Move: {s.label}</option>
-                          ))}
-                        </select>
-                      </div>
+                          {/* Forward-only Move Stage Selector */}
+                          <div className="pt-1">
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                if (e.target.value) handleStageMove(lead.id, e.target.value);
+                              }}
+                              className="w-full text-[10px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md px-2 py-1.5 text-slate-700 focus:outline-none cursor-pointer"
+                            >
+                              <option value="" disabled>Move forward to...</option>
+                              {lead.stage === 'NEW' && (
+                                <>
+                                  <option value="CONTACTED">Move to: Contacted</option>
+                                  <option value="LOST">Mark as: Lost / Closed</option>
+                                </>
+                              )}
+                              {lead.stage === 'CONTACTED' && (
+                                <>
+                                  <option value="QUOTED">Move to: Quotation Sent</option>
+                                  <option value="LOST">Mark as: Lost / Closed</option>
+                                </>
+                              )}
+                              {lead.stage === 'QUOTED' && (
+                                <>
+                                  <option value="WON">Move to: Won / Converted</option>
+                                  <option value="LOST">Mark as: Lost / Closed</option>
+                                </>
+                              )}
+                            </select>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
 

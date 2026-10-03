@@ -1,9 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { useProducts, useStockIn, useInventoryLogs } from '../../../hooks/useShop';
+import { useState, useMemo } from 'react';
+import {
+  useProducts,
+  useStockIn,
+  useInventoryLogs,
+  useCreateProduct,
+  useUpdateProduct,
+  useDeleteProduct,
+} from '../../../hooks/useShop';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
 import {
-  ShoppingBag,
   AlertTriangle,
   Plus,
   Loader2,
@@ -11,30 +17,45 @@ import {
   CheckCircle2,
   PackageCheck,
   Search,
-  Filter,
-  ArrowUpDown,
   Boxes,
   History,
-  TrendingUp,
   Tag,
   BarChart2,
   XCircle,
-  Clock
+  Pencil,
+  Trash2,
+  Download
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ShopInventoryPage = () => {
   const productsQuery = useProducts();
-  const lowStockQuery = useLowStock();
-  const inventoryLogsQuery = useInventoryLogs();
-  const shopOrdersQuery = useShopOrders();
-
-  const stockIn = useStockIn();
   const logsQuery = useInventoryLogs();
 
+  const stockIn = useStockIn();
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
+  const deleteProduct = useDeleteProduct();
+
+  // Stock-In modal state
   const [stockTarget, setStockTarget] = useState(null); // product being restocked
-  const [form, setForm] = useState({ quantity: 10, cost: '', supplier: '' });
-  const [error, setError] = useState('');
+  const [stockForm, setStockForm] = useState({ quantity: 10, cost: '', supplier: '' });
+  const [stockError, setStockError] = useState('');
+
+  // Add / Edit Product modal state
+  const emptyProductForm = {
+    sku: '',
+    name: '',
+    category: 'RACKETS',
+    price: '',
+    stock: 0,
+    reorderLevel: 5,
+    imageUrl: '',
+    description: '',
+  };
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [productForm, setProductForm] = useState(emptyProductForm);
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,6 +120,26 @@ export const ShopInventoryPage = () => {
     }
   };
 
+  // Open the product modal in "add" mode (no product) or "edit" mode (existing product).
+  const openProductModal = (product = null) => {
+    setEditingProduct(product);
+    setProductForm(
+      product
+        ? {
+            sku: product.sku || '',
+            name: product.name || '',
+            category: product.category || 'RACKETS',
+            price: product.price ?? '',
+            stock: product.stock ?? 0,
+            reorderLevel: product.reorderLevel ?? 5,
+            imageUrl: product.imageUrl || '',
+            description: product.description || '',
+          }
+        : emptyProductForm
+    );
+    setShowProductModal(true);
+  };
+
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     try {
@@ -130,6 +171,16 @@ export const ShopInventoryPage = () => {
       setEditingProduct(null);
     } catch (err) {
       alert(err?.message || 'Error saving product.');
+    }
+  };
+
+  // Delete a catalog product after confirmation.
+  const handleDeleteProduct = async (p) => {
+    if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+    try {
+      await deleteProduct.mutateAsync(p.id);
+    } catch (err) {
+      alert(err?.message || 'Could not delete product.');
     }
   };
 
@@ -165,7 +216,7 @@ export const ShopInventoryPage = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link
             to="/staff/shop"
             className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-2xl flex items-center gap-2 transition-colors shrink-0"
@@ -173,10 +224,20 @@ export const ShopInventoryPage = () => {
             <BarChart2 className="w-4 h-4 text-slate-600" />
             View Analytics Dashboard
           </Link>
-          <span className="bg-emerald-50 text-[#4A812F] border border-emerald-200 text-xs font-extrabold px-3.5 py-2 rounded-2xl flex items-center gap-2 shadow-2xs shrink-0">
-            <ShoppingBag className="w-4 h-4 text-[#4A812F]" />
-            OMNICHANNEL POOL LIVE
-          </span>
+          <button
+            onClick={exportStockCSV}
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-2xl flex items-center gap-2 transition-colors shrink-0"
+          >
+            <Download className="w-4 h-4 text-slate-600" />
+            Export CSV
+          </button>
+          <button
+            onClick={() => openProductModal(null)}
+            className="bg-[#4A812F] hover:bg-[#3b6725] text-white text-xs font-extrabold px-4 py-2 rounded-2xl flex items-center gap-2 transition-colors shrink-0 shadow-xs"
+          >
+            <Plus className="w-4 h-4" />
+            Add Product
+          </button>
         </div>
       </div>
 
@@ -193,7 +254,7 @@ export const ShopInventoryPage = () => {
         </div>
 
         <button
-          onClick={() => setStockFilter(stockFilter === 'ALL' ? 'ALL' : 'ALL')}
+          onClick={() => setStockFilter('ALL')}
           className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${stockFilter === 'ALL' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200'
             }`}
         >
@@ -368,12 +429,26 @@ export const ShopInventoryPage = () => {
                       </td>
                       <td className="p-4 text-slate-500 font-mono text-xs">{p.reorderLevel} Units</td>
                       <td className="p-4">
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => openStockIn(p)}
                             className="px-3.5 h-8 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold flex items-center gap-1.5 text-[11px] shadow-xs transition-all"
                           >
                             <Plus className="w-3.5 h-3.5" /> Stock In
+                          </button>
+                          <button
+                            onClick={() => openProductModal(p)}
+                            title="Edit product"
+                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(p)}
+                            title="Delete product"
+                            className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -579,8 +654,10 @@ export const ShopInventoryPage = () => {
 
               <button
                 type="submit"
-                className="w-full bg-[#4A812F] hover:bg-[#3b6725] text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-sm cursor-pointer mt-2"
+                disabled={createProduct.isPending || updateProduct.isPending}
+                className="w-full bg-[#4A812F] hover:bg-[#3b6725] disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-sm cursor-pointer mt-2 flex items-center justify-center gap-2"
               >
+                {(createProduct.isPending || updateProduct.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
                 Save Product
               </button>
             </form>

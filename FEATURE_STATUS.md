@@ -1,128 +1,77 @@
-# Champions Club — Feature Status Report
+# Champions Club — Full-Stack Feature Status
 
-**Source of requirements:** `Sports_Club_Management_System.pdf` (Odoo challenge brief)
-**Scope reviewed:** `server/` backend (Express + Prisma + PostgreSQL)
+**Requirements:** `docs/Sports_Club_Management_System.pdf` (Odoo challenge brief)
+**Scope reviewed:** `server/` (Express + Prisma) **and** `client/` (React 19 + Vite, the live `.jsx` app)
 **Date:** 2026-10-03
 
-> Legend: ✅ Done · 🟡 Partial / needs verification · ❌ Missing · ➕ Extra (beyond the brief)
+> Legend: ✅ Done · 🟡 Partial · 🔴 Missing/Broken · 🛠️ Fixed this session · ➕ Extra
 
 ---
 
-## 1. Summary
+## 1. Verdict
 
-The backend covers **essentially every requirement** described in the PDF's "A Week at the Club" scenarios. All six story arcs (new member, court booking, shop, bar, online stranger, owner's month-end) are backed by working modules with real business rules, a unified transaction ledger, and reporting.
+The **backend is ~feature-complete** — every PDF scenario has working endpoints, business rules, a unified transaction ledger, and reports. The client's API/hook layer calls nearly every endpoint. **Most remaining gaps are in the frontend UI**: some features are unwired to any page, some are half-built.
 
-| Area | Status |
-|------|--------|
-| A new member walks in | ✅ Complete |
-| Booking a court | ✅ Complete |
-| Gearing up (shop) | ✅ Complete |
-| After the match (bar) | ✅ Complete |
-| A stranger finds the club online (CRM) | ✅ Complete |
-| The owner at month-end (finance/reports) | ✅ Complete |
-| Staff scheduling (rostering) | 🟡 Partial |
-| Automated tests | ❌ Missing |
+| Layer | State |
+|-------|-------|
+| Backend (`server/`) | ✅ Complete (one gap: shift rostering) |
+| Client API/hooks (`src/services`, `src/hooks`) | ✅ Near-complete endpoint coverage |
+| Client pages/UI (`src/modules/*/pages`) | 🟡 Several gaps — see §3 |
 
 ---
 
-## 2. Completed features (mapped to the brief)
+## 2. Fully working (end-to-end)
 
-### A new member walks in
-| Requirement | Status | Where |
-|-------------|--------|-------|
-| Capture who the member is, create profile | ✅ | `membership/members` — `registerMember` |
-| Plan tiers: Gold / Silver / Junior | ✅ | `Plan` model + `membership/plans` |
-| Junior restricted to under-18 | ✅ | `registerMember` age check (Rule BR6) |
-| Plan entitlements (court rate, shop/bar discount) | ✅ | `Plan` fields + `utils/pricing.js` |
-| Membership expiry — no one has to remember | ✅ | `jobs/membershipExpiry.job.js` (15/7/1-day email reminders) |
-| Recognise member quickly | ✅ | QR member card — `scanMember` + `lib/qr.js` |
-| See member history | ✅ | `getMemberProfile` (bookings, orders, tabs, invoices, transactions) |
-
-### Booking a court on a busy evening
-| Requirement | Status | Where |
-|-------------|--------|-------|
-| 1-hour sessions, new slot every 30 min | ✅ | `SESSION_MINUTES=60`, `generateDailySlots(...,30)` |
-| Member can play at most twice a day | ✅ | `createBooking` daily-limit (Rule BR3, from plan) |
-| Members pay less / nothing vs walk-ins | ✅ | `calculateCourtPrice` (Rule BR4/BR8) |
-| Cancellations (+ refund policy) | ✅ | `cancelBooking` with 2-hour refund window + ledger reversal |
-| Social play on Friday (shared court) | ✅ | `social-play` — Friday-only, join/leave, capacity cap |
-| Two people never on the same court at once | ✅ | Overlap pre-check **+ DB `EXCLUDE` constraint** `booking_no_overlap` |
-
-### Gearing up before a match (shop)
-| Requirement | Status | Where |
-|-------------|--------|-------|
-| Sells rackets, balls, shoes, accessories, apparel | ✅ | `ProductCategory` enum (all 5) |
-| Always know stock + when running low | ✅ | `inventory` (`stockIn`, logs, `getLowStockProducts`) + `jobs/lowStock.job.js` |
-| Order from home → pickup or delivery | ✅ | `FulfilmentType` (DINE_IN/PICKUP/DELIVERY), `deliveryAddress`, `pinCode` |
-| Counter + online buy from the same shelf | ✅ | Both channels decrement the same `Product.stock` atomically (Rule BR10) |
-
-### After the match, at the bar
-| Requirement | Status | Where |
-|-------------|--------|-------|
-| Table orders, kitchen knows who ordered what | ✅ | `bar/orders` + `bar/kitchen` (live queue via socket) |
-| Member discount without asking | ✅ | `getMemberDiscounts` auto-applied per line (Rule BR9) |
-| Run a tab and settle before leaving | ✅ | `bar/tabs` (`openTab`, accrual, `settleTab`) |
-| Pay by cash, card or UPI | ✅ | `PaymentMode` (CASH/CARD/UPI/ONLINE) + split payments |
-| Staff work in shifts | ✅ | `bar/shifts` (`openShift`/`closeShift`) |
-| Tables tracked | ✅ | `bar/tables` + `TableStatus` (auto free on settle) |
-| Owner sees what the bar earned today | ✅ | `getShiftReport` + dashboard |
-
-### A stranger finds the club online (CRM / public)
-| Requirement | Status | Where |
-|-------------|--------|-------|
-| Public view: plans & prices | ✅ | `crm/public` — `getPublicPlans` |
-| Public view: what's free this week | ✅ | `getPublicAvailability` |
-| Public view: what the shop sells | ✅ | `getPublicShop` |
-| Book a trial session on the spot | ✅ | `bookTrial` + `TrialBooking` model |
-| Enquiry must not vanish | ✅ | `submitEnquiry` + `Enquiry` model + `crm/enquiries` |
-| Someone at the club hears about it | ✅ | `notifyStaff` emails all staff on new enquiry **and** trial booking |
-| Follow up, send a quote, convert | ✅ | `crm/leads` — `addFollowUp`, `createQuotation`, `convertLeadToMember` |
-
-### The owner, at the end of the month (finance / reports)
-| Requirement | Status | Where |
-|-------------|--------|-------|
-| Revenue from courts, shop, bar in one place | ✅ | Unified `Transaction` ledger (every module posts to it) |
-| Split by card / cash / online | ✅ | `dashboard` payment-mode split + `ledger` summary |
-| Invoice memberships **and** business clients | ✅ | `finance/invoices` (`type` MEMBERSHIP/BUSINESS, `companyName`, `gstin`) |
-| Pay employees | ✅ | `hr/payroll` — `runPayroll` |
-| Approve leave | ✅ | `hr/leave` — `updateLeaveStatus` |
-| Taxes to report | ✅ | `reports` — `getTaxReport` (+ Excel export) |
-| See today / this week / this month | ✅ | `dashboard` — `getDashboardSummary` |
-| Share the numbers | ✅ | Reports export to **Excel and PDF** |
+Public site (home / availability / membership / trial / login / register), court bookings (walk-in, member, social play, realtime, cancel), members directory + 360° profile + QR card, bar POS (orders / tabs / table tracking / settle / member discount), kitchen display (KDS), owner dashboard (KPIs, revenue-by-source, utilisation), CRM pipeline (leads, follow-ups, enquiries, convert), finance (invoicing + per-invoice PDF, ledger, expenses), HR (employees, leave approval, payroll run), Razorpay checkout.
 
 ---
 
-## 3. Extra features (➕ beyond the brief)
+## 3. What's missing / broken
 
-These were not explicitly required but are implemented and add real value:
+### 🛠️ Fixed this session
 
-- ➕ **Razorpay online payments** — order creation + signature verification + idempotency (`finance/payments`, `lib/razorpay.js`).
-- ➕ **Audit trail** — `AuditLog` model + `writeAudit` on sensitive actions (bookings, members, invoices).
-- ➕ **JWT auth + refresh tokens + role-based access control** — 6 roles (`OWNER`, `FRONT_DESK`, `BAR_STAFF`, `KITCHEN`, `SHOP_STAFF`, `MEMBER`) with per-route `authorize(...)`.
-- ➕ **Real-time updates via Socket.IO** — live court availability + kitchen display board.
-- ➕ **Pro-rated membership upgrades** — unused-days credit on plan change (`renewMembership`).
-- ➕ **Split-payment settlement** at the bar (multiple payment modes on one order).
-- ➕ **Refund ledger reversals** — cancelled bookings reverse income so reports stay accurate.
-- ➕ **Finance depth** — expense management, accounts-receivable, ledger summary.
-- ➕ **Staff attendance** — check-in / check-out (`hr/attendance`).
-- ➕ **Inventory audit log** — every stock movement recorded (`InventoryLog`).
-- ➕ **Production hardening** — Helmet, CORS allowlist, rate limiting, env validation, graceful shutdown.
+| # | Item | What was done |
+|---|------|---------------|
+| 1 | **Shop online ordering** — core PDF scenario ("order from home, collect or deliver"). | Built cart + checkout on `ShopPage` for signed-in users: add-to-cart, quantity controls, pickup/delivery selector with address + 6-digit PIN validation, payment-mode choice, and `useCreateShopOrder` submission with a success state. |
+| 2 | **`ShopInventoryPage` crashed at render** (undefined hooks + half-wired product modal). | Fixed imports, corrected `stockForm`/`stockError` state, and fully wired Add / Edit / Delete product + Stock-In + CSV export. |
+
+### 🔴 Critical — still open
+
+| # | Gap | Evidence | Backend ready? |
+|---|-----|----------|----------------|
+| 3 | **QR-scan member lookup not wired** — scannable card exists, but no camera/scanner UI at desk/POS; lookup is text-search only. Needs a scanner lib (e.g. `html5-qrcode`). | `POST /members/scan` unused by client | ✅ `scanMember` |
+
+### 🟡 Partial — backend done, UI incomplete
+
+| # | Gap | Evidence |
+|---|-----|----------|
+| 4 | **Quotations ("send a quote")** — `useCreateQuotation` imported but never called; "QUOTED" is just a kanban column, no quote builder. | `modules/crm/pages/CrmPage.jsx:8` |
+| 5 | **Attendance UI** — check-in/out exists in backend, no UI. | `HrPage.jsx` (text only) |
+| 6 | **Report exports ("share the numbers")** — no revenue-report view and no Excel/PDF report export wired (only per-invoice PDF). | `/reports/revenue`, `*/export`, `*/pdf` unused |
+| 7 | **Bar shift reconciliation** — open/close-shift + shift-report hooks exist, no page uses them. Split-bill not built. | `hooks/useBar.js` (unused shift hooks) |
+| 8 | **Member self-settle tab** — `MemberTabPage` is read-only; settling is staff-only via bar POS. | `modules/members/pages/MemberTabPage.jsx` |
+
+### ⚪ Backend gap + cleanliness
+
+| # | Item | Notes |
+|---|------|-------|
+| 9 | **Staff shift scheduling/rostering** | Absent on **both** ends — only cash-shift open/close. PDF mentions front desk handling "staff schedules." |
+| 10 | **Dead duplicate codebase** | Unused `.tsx` + mock scaffold: `App.tsx`, `main.tsx`, `services/api.ts`, `data/mockData.ts`, `context/AuthContext.tsx`, `src/pages/**`, `routes/RoleGuard.tsx`. Should be deleted. |
+| 11 | **HomePage availability grid is hardcoded** | Renders fake Booked/Free cells, ignores the live query it already fetches. |
+| 12 | **No automated tests** | Not required by the brief, but recommended given the money/ledger logic. |
 
 ---
 
-## 4. Remaining / gaps to close
+## 4. Extra features (➕ beyond the brief)
 
-| Item | Status | Notes |
-|------|--------|-------|
-| **Staff scheduling / rostering** | 🟡 Partial | Brief says front desk handles *"staff schedules."* Current support is **cash-shift open/close** + attendance, but there is **no future-shift roster/planner** (assigning staff to upcoming shifts). Consider a `shift schedule` feature if full rostering is expected. |
-| **Automated tests** | ❌ Missing | No test suite present. Not required by the brief, but recommended before production given the money/ledger logic. |
-| **Seed data for all sports** | 🟡 Config | Brief mentions tennis/padel/badminton/cricket. `Court.sport` is a free field (flexible) — just ensure seed/data covers the intended sports. |
-| **Delivery fulfilment** | 🟡 Note | Delivery address + pincode are captured, but there's no courier/dispatch tracking beyond order status — fine for the brief, flag if end-to-end delivery is expected. |
+Razorpay (verified + idempotent), audit trail, JWT + refresh tokens + RBAC (6 roles), real-time sockets, pro-rated membership upgrades, split-payment support (backend), refund ledger reversals, expense/receivables tracking, attendance (backend), inventory audit log, security hardening (Helmet, CORS allowlist, rate limiting, env validation, graceful shutdown).
 
 ---
 
-## 5. Verdict
+## 5. Suggested next steps
 
-**The backend is feature-complete against the PDF brief.** All six operational scenarios are fully implemented with correct business rules, a single source of truth for money (the transaction ledger), and shareable reports.
-
-The only genuine open items are **staff shift rostering** (partial) and the absence of an **automated test suite** — neither of which blocks the core "digital backbone" the brief asks for.
+1. ~~Fix `ShopInventoryPage` crash~~ ✅ done.
+2. ~~Build shop online-ordering flow~~ ✅ done.
+3. **Wire QR-scan lookup** (#3) — add a scanner library + camera modal.
+4. 🟡 partials: quotations (#4), report exports (#6), attendance (#5), shift UI (#7).
+5. Cleanup: delete dead `.tsx` scaffold (#10), make HomePage grid live (#11).

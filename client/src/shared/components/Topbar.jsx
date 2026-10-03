@@ -11,14 +11,14 @@ export const Topbar = () => {
     currentRole === 'OWNER'
       ? 'Owner / Admin'
       : currentRole === 'FRONT_DESK'
-      ? 'Front Desk'
-      : currentRole === 'BAR_STAFF'
-      ? 'Bar Staff'
-      : currentRole === 'SHOP_STAFF'
-      ? 'Shop Staff'
-      : currentRole === 'KITCHEN'
-      ? 'Kitchen Staff'
-      : 'Member';
+        ? 'Front Desk'
+        : currentRole === 'BAR_STAFF'
+          ? 'Bar Staff'
+          : currentRole === 'SHOP_STAFF'
+            ? 'Shop Staff'
+            : currentRole === 'KITCHEN'
+              ? 'Kitchen Staff'
+              : 'Member';
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 sm:px-8 py-3.5 flex items-center justify-between font-sans sticky top-0 z-20 shadow-2xs">
