@@ -28,6 +28,8 @@ import {
   TrendingUp
 } from 'lucide-react';
 
+import { useDebounce } from '../../../shared/hooks/useDebounce';
+
 export const ShopInventoryPage = () => {
   const productsQuery = useProducts();
   const lowStockQuery = useLowStock();
@@ -44,6 +46,7 @@ export const ShopInventoryPage = () => {
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 350);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   // Stock In Modal State
@@ -73,7 +76,7 @@ export const ShopInventoryPage = () => {
   // Filtered Products
   const categories = ['All', ...Array.from(new Set(products.map((p) => p.category)))];
   const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = p.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || p.sku.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
     const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
     return matchesSearch && matchesCat;
   });
