@@ -38,7 +38,7 @@ export const convertLeadSchema = z.object({
 
 export const createFollowUpSchema = z.object({
   date: z.coerce.date(),
-  type: z.enum(['CALL', 'EMAIL', 'VISIT']).default('CALL'),
+  type: z.enum(['CALL', 'EMAIL', 'VISIT', 'WHATSAPP', 'MEETING']).default('CALL'),
   notes: z.string().min(1, 'Notes are required'),
 });
 

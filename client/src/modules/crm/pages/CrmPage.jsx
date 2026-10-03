@@ -32,7 +32,9 @@ import {
   IndianRupee,
   GripVertical,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const STAGES = [
@@ -114,7 +116,7 @@ export const CrmPage = () => {
     name: '',
     phone: '',
     email: '',
-    sportInterest: 'Badminton',
+    interest: 'Badminton',
     notes: '',
     source: 'WEBSITE',
   });
@@ -133,7 +135,9 @@ export const CrmPage = () => {
     startDate: new Date().toISOString().split('T')[0],
     password: 'Password@123',
     emergencyContact: '',
+    sendConfirmationEmail: true,
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [convertError, setConvertError] = useState('');
   const [addLeadError, setAddLeadError] = useState('');
   const [quoteError, setQuoteError] = useState('');
@@ -146,7 +150,7 @@ export const CrmPage = () => {
     try {
       await createLead.mutateAsync(newLead);
       setShowAddLeadModal(false);
-      setNewLead({ name: '', phone: '', email: '', sportInterest: 'Badminton', notes: '', source: 'WALK_IN' });
+      setNewLead({ name: '', phone: '', email: '', interest: 'Badminton', notes: '', source: 'WALK_IN' });
       setFeedback({ type: 'success', message: 'New sales lead added to pipeline.' });
     } catch (err) {
       setAddLeadError(err?.response?.data?.message || err?.message || 'Failed to create lead.');
@@ -168,7 +172,9 @@ export const CrmPage = () => {
           startDate: new Date().toISOString().split('T')[0],
           password: 'Password@123',
           emergencyContact: targetLead.phone || '',
+          sendConfirmationEmail: true,
         });
+        setShowPassword(false);
         setConvertError('');
         setShowConvertModal(true);
       }
@@ -322,7 +328,9 @@ export const CrmPage = () => {
             startDate: new Date().toISOString().split('T')[0],
             password: 'Password@123',
             emergencyContact: targetLead.phone || '',
+            sendConfirmationEmail: true,
           });
+          setShowPassword(false);
           setConvertError('');
           setShowConvertModal(true);
         }
@@ -355,9 +363,15 @@ export const CrmPage = () => {
         startDate: convertForm.startDate,
         password: convertForm.password,
         emergencyContact: convertForm.emergencyContact,
+        sendConfirmationEmail: convertForm.sendConfirmationEmail !== false,
       });
       setShowConvertModal(false);
-      setFeedback({ type: 'success', message: `Successfully converted ${selectedLead.name} to active Member!` });
+      setFeedback({
+        type: 'success',
+        message: `Successfully converted ${selectedLead.name} to active Member! ${
+          convertForm.sendConfirmationEmail !== false ? 'Welcome & login credentials email dispatched.' : ''
+        }`,
+      });
     } catch (err) {
       setConvertError(err?.response?.data?.message || err?.message || 'Lead conversion failed.');
     }
@@ -486,7 +500,7 @@ export const CrmPage = () => {
                             </div>
                           </div>
                           <span className="text-[9px] uppercase px-2 py-0.5 bg-slate-100 font-bold text-slate-600 rounded">
-                            {lead.sportInterest || 'All Sports'}
+                            {lead.interest || lead.sportInterest || 'All Sports'}
                           </span>
                         </div>
 
@@ -776,8 +790,8 @@ export const CrmPage = () => {
                 <div>
                   <label className="text-slate-700 block mb-1">Sport Interest</label>
                   <select
-                    value={newLead.sportInterest}
-                    onChange={(e) => setNewLead({ ...newLead, sportInterest: e.target.value })}
+                    value={newLead.interest}
+                    onChange={(e) => setNewLead({ ...newLead, interest: e.target.value })}
                     className="w-full border border-slate-200 rounded-xl p-2.5 bg-white"
                   >
                     <option value="Tennis">Tennis</option>
@@ -963,7 +977,7 @@ export const CrmPage = () => {
                   >
                     <option value="CALL">Phone Call</option>
                     <option value="WHATSAPP">WhatsApp</option>
-                    <option value="MEETING">Club Visit</option>
+                    <option value="VISIT">Club Visit</option>
                     <option value="EMAIL">Email</option>
                   </select>
                 </div>
