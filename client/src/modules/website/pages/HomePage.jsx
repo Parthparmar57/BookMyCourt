@@ -180,33 +180,71 @@ export const HomePage = () => {
     }
   };
 
-  const UNIQUE_CARD_IMAGES = [
-    '/photo-1622279457486-62dcc4a431d6.avif',
-    '/photo-1595435934249-5df7ed86e1c0.avif',
-    '/photo-1554068865-24cecd4e34b8.avif',
-    '/photo-1626248801379-51a0748a5f96.avif'
-  ];
+  const ITEM_PRODUCT_IMAGES = {
+    racket_tennis: 'https://images.unsplash.com/photo-1617083934555-ac7d4fed8814?auto=format&fit=crop&q=80&w=600',
+    racket_padel: 'https://images.unsplash.com/photo-1592709823125-a191f07a2a5e?auto=format&fit=crop&q=80&w=600',
+    racket_badminton: 'https://images.unsplash.com/photo-1627627256672-027a4613d028?auto=format&fit=crop&q=80&w=600',
+    balls: 'https://images.unsplash.com/photo-1530915536647-759c9044a7b7?auto=format&fit=crop&q=80&w=600',
+    shoes: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600',
+    apparel: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600',
+    bags: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600',
+    accessories: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&q=80&w=600'
+  };
 
   const getProductImage = (prod, idx = 0) => {
-    const url = prod?.imageUrl;
-    if (url && typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')) {
-      if (!url.includes('photo-1622279457486-62dcc4a431d6') || idx === 0) {
-        return url;
-      }
-    }
     const name = (prod?.name || '').toLowerCase();
     const cat = (prod?.category || '').toLowerCase();
 
+    // Direct valid non-people equipment URL
+    const url = prod?.imageUrl;
+    if (url && typeof url === 'string' && url.trim().length > 0 && !url.includes('.avif') && !url.includes('undefined')) {
+      return url;
+    }
+
+    // 1. Tennis Balls
     if (name.includes('ball') || cat.includes('ball')) {
-      return UNIQUE_CARD_IMAGES[1];
+      return ITEM_PRODUCT_IMAGES.balls;
     }
+
+    // 2. Shoes
     if (name.includes('shoe') || cat.includes('shoe')) {
-      return UNIQUE_CARD_IMAGES[2];
+      return ITEM_PRODUCT_IMAGES.shoes;
     }
-    if (name.includes('grip') || cat.includes('accessor') || name.includes('string')) {
-      return UNIQUE_CARD_IMAGES[3];
+
+    // 3. Apparel
+    if (name.includes('apparel') || name.includes('polo') || name.includes('shirt') || cat.includes('apparel')) {
+      return ITEM_PRODUCT_IMAGES.apparel;
     }
-    return UNIQUE_CARD_IMAGES[idx % UNIQUE_CARD_IMAGES.length];
+
+    // 4. Bags
+    if (name.includes('bag') || cat.includes('bag')) {
+      return ITEM_PRODUCT_IMAGES.bags;
+    }
+
+    // 5. Overgrip / Strings / Accessories
+    if (name.includes('grip') || name.includes('string') || name.includes('overgrip') || cat.includes('accessor')) {
+      return ITEM_PRODUCT_IMAGES.accessories;
+    }
+
+    // 6. Rackets
+    if (name.includes('padel') || cat.includes('padel')) {
+      return ITEM_PRODUCT_IMAGES.racket_padel;
+    }
+    if (name.includes('badminton') || name.includes('astrox') || cat.includes('badminton')) {
+      return ITEM_PRODUCT_IMAGES.racket_badminton;
+    }
+    if (name.includes('tennis') || name.includes('pro staff') || name.includes('pure aero') || cat.includes('racket')) {
+      const racketVariations = [
+        ITEM_PRODUCT_IMAGES.racket_tennis,
+        ITEM_PRODUCT_IMAGES.racket_padel,
+        ITEM_PRODUCT_IMAGES.racket_badminton,
+        'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&q=80&w=600'
+      ];
+      return racketVariations[idx % racketVariations.length];
+    }
+
+    const allEquipment = Object.values(ITEM_PRODUCT_IMAGES);
+    return allEquipment[idx % allEquipment.length];
   };
 
   return (

@@ -13,14 +13,14 @@ export const Topbar = () => {
     currentRole === 'OWNER'
       ? 'Owner / Admin'
       : currentRole === 'FRONT_DESK'
-      ? 'Front Desk'
-      : currentRole === 'BAR_STAFF'
-      ? 'Bar Staff'
-      : currentRole === 'SHOP_STAFF'
-      ? 'Shop Staff'
-      : currentRole === 'KITCHEN'
-      ? 'Kitchen Staff'
-      : 'Member';
+        ? 'Front Desk'
+        : currentRole === 'BAR_STAFF'
+          ? 'Bar Staff'
+          : currentRole === 'SHOP_STAFF'
+            ? 'Shop Staff'
+            : currentRole === 'KITCHEN'
+              ? 'Kitchen Staff'
+              : 'Member';
 
   // Dynamic time-based greeting
   const getGreeting = () => {
