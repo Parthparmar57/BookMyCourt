@@ -243,22 +243,11 @@ export const CrmPage = () => {
 
                       {/* Stage Action / Controls */}
                       {lead.stage === 'WON' ? (
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            Won / Converted
-                          </span>
-                          <button
-                            onClick={() => {
-                              setSelectedLead(lead);
-                              if (plans.length && !convertForm.planId) setConvertForm(f => ({ ...f, planId: plans[0].id }));
-                              setShowConvertModal(true);
-                            }}
-                            className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg flex items-center gap-1 font-medium text-[10px] border border-emerald-200 cursor-pointer"
-                          >
-                            <UserCheck className="w-3 h-3" />
-                            <span>Enroll Member</span>
-                          </button>
+                        <div className="pt-2 border-t border-slate-100">
+                          <div className="w-full text-center inline-flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-800 bg-emerald-50 py-1.5 rounded-lg border border-emerald-200/80">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Won & Converted</span>
+                          </div>
                         </div>
                       ) : lead.stage === 'LOST' ? (
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
@@ -280,22 +269,10 @@ export const CrmPage = () => {
                           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-medium">
                             <button
                               onClick={() => { setSelectedLead(lead); setShowFollowUpModal(true); }}
-                              className="text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                              className="text-slate-600 hover:text-slate-900 flex items-center gap-1.5 py-0.5 cursor-pointer"
                             >
-                              <PhoneCall className="w-3 h-3 text-emerald-600" />
-                              <span>Follow-up</span>
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                setSelectedLead(lead);
-                                if (plans.length && !convertForm.planId) setConvertForm(f => ({ ...f, planId: plans[0].id }));
-                                setShowConvertModal(true);
-                              }}
-                              className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium cursor-pointer"
-                            >
-                              <UserCheck className="w-3 h-3" />
-                              <span>Convert</span>
+                              <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Log Follow-up</span>
                             </button>
                           </div>
 
@@ -306,7 +283,7 @@ export const CrmPage = () => {
                               onChange={(e) => {
                                 if (e.target.value) handleStageMove(lead.id, e.target.value);
                               }}
-                              className="w-full text-[10px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md px-2 py-1 text-slate-700 focus:outline-none cursor-pointer"
+                              className="w-full text-[10px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md px-2 py-1.5 text-slate-700 focus:outline-none cursor-pointer"
                             >
                               <option value="" disabled>Move forward to...</option>
                               {lead.stage === 'NEW' && (
