@@ -1,42 +1,30 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Sparkles,
-  Zap,
-  CheckCircle2,
-  Play,
-  Pause,
-  ChevronRight,
-  ShieldCheck,
-  Calendar,
-  CreditCard,
-  Video,
-  X,
-  Banknote,
+  Trophy,
+  ShoppingBag,
+  Coffee,
+  Lightbulb,
+  CalendarBlank,
+  EnvelopeSimple,
+  CaretRight,
+  CheckCircle,
+  Star,
+  Sparkle,
+  PaperPlaneRight,
+  WarningCircle,
+  CircleNotch,
+  Bank,
   Globe,
   GraduationCap,
-  BarChart3,
-  Smartphone,
+  ChartBar,
+  DeviceMobile,
   Receipt,
-  ShoppingBag,
-  Lock,
-  Layers,
-  TrendingUp,
-  Phone,
-  Mail,
-  MapPin,
-  Clock,
-  Star,
-  Send,
-  AlertCircle,
-  Loader2,
-  Dumbbell,
-  Coffee,
-  Trophy,
-  UserCheck,
-  HelpCircle,
-  Lightbulb
-} from 'lucide-react';
+  LockKey,
+  Stack,
+  TrendUp,
+  CreditCard
+} from '@phosphor-icons/react';
 import {
   usePublicPlans,
   usePublicShop,
@@ -47,25 +35,6 @@ import {
 import { formatCurrency } from '../../../shared/utils/formatters';
 
 export const HomePage = () => {
-  const videoRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  // Video Toggle
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        videoRef.current.play().then(() => {
-          setIsPlaying(true);
-        }).catch((err) => {
-          console.log('Video play error:', err);
-        });
-      }
-    }
-  };
-
   // Section 4: Public Plans Data
   const plansQuery = usePublicPlans();
   const fallbackPlans = [
@@ -121,7 +90,7 @@ export const HomePage = () => {
     { courtId: 'c3', courtName: 'Badminton Arena 1', sport: 'Badminton', walkInRate: 500 },
   ];
 
-  // Section 6: Shop Preview Data (Fixed high quality working Unsplash image for Wilson Pro Staff & all items)
+  // Section 6: Shop Preview Data
   const shopQuery = usePublicShop();
   const fallbackProducts = [
     {
@@ -159,33 +128,6 @@ export const HomePage = () => {
       stock: 8,
       sku: 'YON-AST99-PRO',
       imageUrl: '/photo-1626248801379-51a0748a5f96.avif'
-    },
-    {
-      id: 'p6',
-      name: 'NikeCourt Dri-FIT Advantage Tennis Apparel',
-      category: 'Apparel',
-      price: 3499,
-      stock: 25,
-      sku: 'NIKE-POLO-DF',
-      imageUrl: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600'
-    },
-    {
-      id: 'p7',
-      name: 'Head Tour Team 12R Monstercombi Bag',
-      category: 'Bags',
-      price: 7499,
-      stock: 9,
-      sku: 'HEAD-BAG-12R',
-      imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600'
-    },
-    {
-      id: 'p8',
-      name: 'Luxilon ALU Power 125 Tennis String Reel',
-      category: 'Accessories',
-      price: 14999,
-      stock: 14,
-      sku: 'LUX-ALU-125',
-      imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&q=80&w=600'
     }
   ];
   const products = (shopQuery.data && shopQuery.data.length > 0) ? shopQuery.data : fallbackProducts;
@@ -238,23 +180,33 @@ export const HomePage = () => {
     }
   };
 
-  const getProductImage = (prod) => {
-    if (prod?.imageUrl && typeof prod.imageUrl === 'string' && prod.imageUrl.trim().length > 0) {
-      return prod.imageUrl;
+  const UNIQUE_CARD_IMAGES = [
+    '/photo-1622279457486-62dcc4a431d6.avif',
+    '/photo-1595435934249-5df7ed86e1c0.avif',
+    '/photo-1554068865-24cecd4e34b8.avif',
+    '/photo-1626248801379-51a0748a5f96.avif'
+  ];
+
+  const getProductImage = (prod, idx = 0) => {
+    const url = prod?.imageUrl;
+    if (url && typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')) {
+      if (!url.includes('photo-1622279457486-62dcc4a431d6') || idx === 0) {
+        return url;
+      }
     }
     const name = (prod?.name || '').toLowerCase();
     const cat = (prod?.category || '').toLowerCase();
 
-    if (name.includes('racket') || cat.includes('racket')) {
-      return '/photo-1622279457486-62dcc4a431d6.avif';
-    }
     if (name.includes('ball') || cat.includes('ball')) {
-      return '/photo-1595435934249-5df7ed86e1c0.avif';
+      return UNIQUE_CARD_IMAGES[1];
     }
     if (name.includes('shoe') || cat.includes('shoe')) {
-      return '/photo-1554068865-24cecd4e34b8.avif';
+      return UNIQUE_CARD_IMAGES[2];
     }
-    return '/photo-1626248801379-51a0748a5f96.avif';
+    if (name.includes('grip') || cat.includes('accessor') || name.includes('string')) {
+      return UNIQUE_CARD_IMAGES[3];
+    }
+    return UNIQUE_CARD_IMAGES[idx % UNIQUE_CARD_IMAGES.length];
   };
 
   return (
@@ -280,25 +232,25 @@ export const HomePage = () => {
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <a
                 href="#trial"
-                className="px-7 py-3.5 bg-[#1f2125] text-white text-base font-extrabold rounded-lg hover:bg-black transition-all inline-flex items-center gap-2 shadow-md active:scale-95"
+                className="px-7 py-3.5 bg-[#1f2125] text-white text-base font-extrabold hover:bg-black transition-all inline-flex items-center gap-2 shadow-md active:scale-95"
               >
                 <span>Book a Trial</span>
-                <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+                <CaretRight weight="bold" className="w-4 h-4 text-emerald-400" />
               </a>
 
               <a
                 href="#plans"
-                className="px-7 py-3.5 bg-white text-[#1f2125] border border-[#1f2125] text-base font-extrabold rounded-lg hover:bg-gray-50 transition-all inline-flex items-center gap-2 active:scale-95 shadow-2xs"
+                className="px-7 py-3.5 bg-white text-[#1f2125] border border-[#1f2125] text-base font-extrabold hover:bg-gray-50 transition-all inline-flex items-center gap-2 active:scale-95 shadow-2xs"
               >
                 <span>View Plans</span>
-                <ChevronRight className="w-4 h-4 text-gray-700 stroke-[2.5]" />
+                <CaretRight weight="bold" className="w-4 h-4 text-gray-700" />
               </a>
             </div>
           </div>
 
           {/* Right Column: Hero Graphic Composite */}
           <div className="lg:col-span-6 relative">
-            <div className="relative rounded-3xl overflow-hidden bg-white border border-gray-200 shadow-2xl hover:shadow-3xl transition-shadow">
+            <div className="relative overflow-hidden bg-white border border-gray-200 shadow-2xl hover:shadow-3xl transition-shadow">
               <img
                 src="/9923a9a7-ccb8-44f4-b085-21df8fc8691d.png"
                 alt="The Champions Club Courts & Management System"
@@ -350,7 +302,7 @@ export const HomePage = () => {
       {/* 3. ABOUT THE CLUB & FACILITIES SECTION */}
       <section className="py-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-14" id="about">
         <div className="text-center max-w-3xl mx-auto space-y-3">
-          <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-[#EBF7E7] px-3.5 py-1.5 rounded-full inline-block">
+          <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-[#EBF7E7] px-3.5 py-1.5 inline-block">
             ABOUT THE CLUB
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-black text-[#121212] tracking-tight leading-tight">
@@ -362,11 +314,11 @@ export const HomePage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {/* Facility 1: Courts (Replaced Emoji with Lucide Trophy icon) */}
-          <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-lg hover:shadow-xl transition-all space-y-6 flex flex-col justify-between group">
+          {/* Facility 1: Courts (Duotone Phosphor Icon) */}
+          <div className="bg-white p-8 border border-gray-200 shadow-lg hover:shadow-xl transition-all space-y-6 flex flex-col justify-between group">
             <div className="space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#EBF7E7] text-[#4A812F] flex items-center justify-center font-black group-hover:scale-110 transition-transform">
-                <Trophy className="w-7 h-7 text-[#4A812F]" />
+              <div className="w-14 h-14 bg-[#EBF7E7] text-[#4A812F] flex items-center justify-center font-black group-hover:scale-110 transition-transform">
+                <Trophy weight="duotone" className="w-8 h-8 text-[#4A812F]" />
               </div>
               <h3 className="text-2xl font-black text-[#121212] tracking-tight">
                 1. World-Class Courts
@@ -377,15 +329,15 @@ export const HomePage = () => {
             </div>
             <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#4A812F]">
               <span>Tennis • Padel • Badminton</span>
-              <ChevronRight className="w-4 h-4" />
+              <CaretRight weight="bold" className="w-4 h-4" />
             </div>
           </div>
 
-          {/* Facility 2: Gear Shop (Replaced Emoji with Lucide ShoppingBag icon) */}
-          <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-lg hover:shadow-xl transition-all space-y-6 flex flex-col justify-between group">
+          {/* Facility 2: Gear Shop (Duotone Phosphor Icon) */}
+          <div className="bg-white p-8 border border-gray-200 shadow-lg hover:shadow-xl transition-all space-y-6 flex flex-col justify-between group">
             <div className="space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black group-hover:scale-110 transition-transform">
-                <ShoppingBag className="w-7 h-7 text-amber-600" />
+              <div className="w-14 h-14 bg-amber-50 text-amber-600 flex items-center justify-center font-black group-hover:scale-110 transition-transform">
+                <ShoppingBag weight="duotone" className="w-8 h-8 text-amber-600" />
               </div>
               <h3 className="text-2xl font-black text-[#121212] tracking-tight">
                 2. Pro Gear Shop
@@ -396,15 +348,15 @@ export const HomePage = () => {
             </div>
             <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-amber-600">
               <span>Pro Rackets • Shoes • Stringing</span>
-              <ChevronRight className="w-4 h-4" />
+              <CaretRight weight="bold" className="w-4 h-4" />
             </div>
           </div>
 
-          {/* Facility 3: Bar & Cafeteria (Replaced Emoji with Lucide Coffee icon) */}
-          <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-lg hover:shadow-xl transition-all space-y-6 flex flex-col justify-between group">
+          {/* Facility 3: Bar & Cafeteria (Duotone Phosphor Icon) */}
+          <div className="bg-white p-8 border border-gray-200 shadow-lg hover:shadow-xl transition-all space-y-6 flex flex-col justify-between group">
             <div className="space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black group-hover:scale-110 transition-transform">
-                <Coffee className="w-7 h-7 text-emerald-600" />
+              <div className="w-14 h-14 bg-emerald-50 text-emerald-600 flex items-center justify-center font-black group-hover:scale-110 transition-transform">
+                <Coffee weight="duotone" className="w-8 h-8 text-emerald-600" />
               </div>
               <h3 className="text-2xl font-black text-[#121212] tracking-tight">
                 3. Bar & Cafeteria
@@ -415,7 +367,7 @@ export const HomePage = () => {
             </div>
             <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-emerald-600">
               <span>Fresh Juices • Coffee • Smoothies</span>
-              <ChevronRight className="w-4 h-4" />
+              <CaretRight weight="bold" className="w-4 h-4" />
             </div>
           </div>
         </div>
@@ -426,7 +378,7 @@ export const HomePage = () => {
         <div className="max-w-7xl mx-auto space-y-12">
           {/* Header */}
           <div className="text-center max-w-3xl mx-auto space-y-3">
-            <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-white border border-gray-200 px-3.5 py-1.5 rounded-full inline-block">
+            <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-white border border-gray-200 px-3.5 py-1.5 inline-block">
               MEMBERSHIP PLANS & PRICING
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-black text-[#121212] tracking-tight leading-tight">
@@ -444,14 +396,14 @@ export const HomePage = () => {
               return (
                 <div
                   key={plan.id}
-                  className={`rounded-3xl p-8 flex flex-col justify-between transition-all relative ${isGold
+                  className={`p-8 flex flex-col justify-between transition-all relative ${isGold
                       ? 'bg-[#121212] text-white shadow-2xl border-2 border-[#4A812F] transform md:-translate-y-2'
                       : 'bg-white text-gray-900 border border-gray-200 shadow-lg hover:shadow-xl'
                     }`}
                 >
                   {isGold && (
-                    <div className="absolute -top-4 right-8 bg-[#4A812F] text-white text-xs font-black px-4 py-1.5 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider">
-                      <Star className="w-3.5 h-3.5 fill-white" /> MOST POPULAR
+                    <div className="absolute -top-4 right-8 bg-[#4A812F] text-white text-xs font-black px-4 py-1.5 shadow-md flex items-center gap-1 uppercase tracking-wider">
+                      <Star weight="fill" className="w-3.5 h-3.5 text-white" /> MOST POPULAR
                     </div>
                   )}
 
@@ -472,7 +424,7 @@ export const HomePage = () => {
 
                     <div className="pt-4 border-t border-gray-200/40 space-y-3 text-sm">
                       <div className="flex items-center gap-2 font-bold">
-                        <CheckCircle2 className="w-5 h-5 text-[#4A812F]" />
+                        <CheckCircle weight="fill" className="w-5 h-5 text-[#4A812F]" />
                         <span>
                           Court Rate:{' '}
                           {Number(plan.courtRate) === 0 ? (
@@ -485,28 +437,28 @@ export const HomePage = () => {
 
                       {plan.shopDiscountPct > 0 && (
                         <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-[#4A812F]" />
+                          <CheckCircle weight="fill" className="w-5 h-5 text-[#4A812F]" />
                           <span>Pro Shop Discount: <strong>{plan.shopDiscountPct}% OFF</strong></span>
                         </div>
                       )}
 
                       {plan.barDiscountPct > 0 && (
                         <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-[#4A812F]" />
+                          <CheckCircle weight="fill" className="w-5 h-5 text-[#4A812F]" />
                           <span>Bar & Cafeteria: <strong>{plan.barDiscountPct}% OFF</strong></span>
                         </div>
                       )}
 
                       {plan.maxBookingsDay && (
                         <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-[#4A812F]" />
+                          <CheckCircle weight="fill" className="w-5 h-5 text-[#4A812F]" />
                           <span>Up to {plan.maxBookingsDay} bookings per day</span>
                         </div>
                       )}
 
                       {plan.maxAge && (
                         <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-[#4A812F]" />
+                          <CheckCircle weight="fill" className="w-5 h-5 text-[#4A812F]" />
                           <span>Eligible for players under {plan.maxAge} years</span>
                         </div>
                       )}
@@ -516,13 +468,13 @@ export const HomePage = () => {
                   <div className="pt-8">
                     <a
                       href="#trial"
-                      className={`w-full py-3.5 rounded-lg font-extrabold text-base flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 ${isGold
+                      className={`w-full py-3.5 font-extrabold text-base flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 ${isGold
                           ? 'bg-[#1f2125] text-white hover:bg-black'
                           : 'bg-white text-[#1f2125] border border-[#1f2125] hover:bg-gray-50'
                         }`}
                     >
                       <span>Choose {plan.name}</span>
-                      <ChevronRight className={`w-4 h-4 stroke-[2.5] ${isGold ? 'text-emerald-400' : 'text-gray-700'}`} />
+                      <CaretRight weight="bold" className={`w-4 h-4 ${isGold ? 'text-emerald-400' : 'text-gray-700'}`} />
                     </a>
                   </div>
                 </div>
@@ -530,11 +482,11 @@ export const HomePage = () => {
             })}
           </div>
 
-          {/* Walk-in Rate Comparison Banner (Site theme: white, black, secondary green borders) */}
-          <div className="max-w-4xl mx-auto bg-white border-2 border-[#4A812F]/40 hover:border-[#4A812F] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md transition-all">
+          {/* Walk-in Rate Comparison Banner */}
+          <div className="max-w-4xl mx-auto bg-white border-2 border-[#4A812F]/40 hover:border-[#4A812F] p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md transition-all">
             <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-[#EBF7E7] text-[#4A812F] flex items-center justify-center font-extrabold shrink-0 shadow-2xs">
-                <Lightbulb className="w-5 h-5 text-[#4A812F]" />
+              <div className="w-11 h-11 bg-[#EBF7E7] text-[#4A812F] flex items-center justify-center font-extrabold shrink-0 shadow-2xs">
+                <Lightbulb weight="duotone" className="w-6 h-6 text-[#4A812F]" />
               </div>
               <div>
                 <h4 className="font-black text-base text-[#1f2125] tracking-tight">Walk-in Guest Rate</h4>
@@ -545,10 +497,10 @@ export const HomePage = () => {
             </div>
             <a
               href="#trial"
-              className="px-6 py-3 bg-[#1f2125] hover:bg-black text-white font-extrabold text-xs rounded-lg flex items-center gap-2 shadow-sm transition-all active:scale-95 shrink-0"
+              className="px-6 py-3 bg-[#1f2125] hover:bg-black text-white font-extrabold text-xs flex items-center gap-2 shadow-sm transition-all active:scale-95 shrink-0"
             >
               <span>Get Member Discounts</span>
-              <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+              <CaretRight weight="bold" className="w-4 h-4 text-emerald-400" />
             </a>
           </div>
         </div>
@@ -557,7 +509,7 @@ export const HomePage = () => {
       {/* 5. COURT AVAILABILITY THIS WEEK SECTION */}
       <section className="py-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-12" id="availability">
         <div className="text-center max-w-3xl mx-auto space-y-3">
-          <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-[#EBF7E7] px-3.5 py-1.5 rounded-full inline-block">
+          <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-[#EBF7E7] px-3.5 py-1.5 inline-block">
             COURT AVAILABILITY THIS WEEK
           </span>
           <h2 className="text-3xl sm:text-4xl font-black text-[#121212] tracking-tight">
@@ -572,13 +524,13 @@ export const HomePage = () => {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-gray-300 rounded-xl px-3.5 py-2 text-xs font-extrabold focus:border-[#4A812F] focus:outline-none bg-white shadow-2xs"
+              className="border border-gray-300 px-3.5 py-2 text-xs font-extrabold focus:border-[#4A812F] focus:outline-none bg-white shadow-2xs"
             />
           </div>
         </div>
 
         {/* Weekly Read-only Grid Table */}
-        <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
+        <div className="bg-white border border-gray-200 shadow-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -599,7 +551,7 @@ export const HomePage = () => {
                         {court.courtName}
                       </td>
                       <td className="p-4">
-                        <span className="px-2.5 py-1 bg-gray-100 text-gray-800 text-[11px] font-extrabold rounded-lg">
+                        <span className="px-2.5 py-1 bg-gray-100 text-gray-800 text-[11px] font-extrabold">
                           {court.sport}
                         </span>
                       </td>
@@ -613,8 +565,8 @@ export const HomePage = () => {
                         if (isFridaySocial) {
                           return (
                             <td key={time} className="p-3 text-center">
-                              <span className="px-2.5 py-1.5 rounded-lg bg-indigo-100 border border-indigo-300 text-indigo-900 font-extrabold text-[10px] inline-flex items-center gap-1 shadow-2xs">
-                                <Calendar className="w-3.5 h-3.5 text-indigo-700" />
+                              <span className="px-2.5 py-1.5 bg-indigo-100 border border-indigo-300 text-indigo-900 font-extrabold text-[10px] inline-flex items-center gap-1 shadow-2xs">
+                                <CalendarBlank weight="duotone" className="w-4 h-4 text-indigo-700" />
                                 <span>Friday Social Play</span>
                               </span>
                             </td>
@@ -624,7 +576,7 @@ export const HomePage = () => {
                         if (isBooked) {
                           return (
                             <td key={time} className="p-3 text-center">
-                              <span className="px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-bold text-[10px] block">
+                              <span className="px-2.5 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 font-bold text-[10px] block">
                                 Booked
                               </span>
                             </td>
@@ -635,7 +587,7 @@ export const HomePage = () => {
                           <td key={time} className="p-3 text-center">
                             <a
                               href="#trial"
-                              className="px-2.5 py-1.5 rounded-lg bg-[#EBF7E7] border border-[#d6ebd3] text-[#2d6215] font-extrabold text-[10px] block hover:bg-[#4A812F] hover:text-white transition-colors"
+                              className="px-2.5 py-1.5 bg-[#EBF7E7] border border-[#d6ebd3] text-[#2d6215] font-extrabold text-[10px] block hover:bg-[#4A812F] hover:text-white transition-colors"
                             >
                               Free Slot
                             </a>
@@ -650,7 +602,7 @@ export const HomePage = () => {
           </div>
           <div className="p-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-bold text-gray-600">
             <span className="flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-[#4A812F]" />
+              <Sparkle weight="fill" className="w-4 h-4 text-[#4A812F]" />
               <span>Friday Social Play is open to all members & trial guests from 6:00 PM onwards.</span>
             </span>
             <Link to="/availability" className="text-[#4A812F] underline hover:text-[#3d6b27]">
@@ -666,7 +618,7 @@ export const HomePage = () => {
           {/* Header */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-2 text-center md:text-left">
-              <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-white border border-gray-200 px-3.5 py-1.5 rounded-full inline-block">
+              <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-white border border-gray-200 px-3.5 py-1.5 inline-block">
                 PRO SHOP PREVIEW
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-[#121212] tracking-tight">
@@ -679,27 +631,27 @@ export const HomePage = () => {
 
             <Link
               to="/shop"
-              className="px-6 py-3.5 bg-[#1f2125] hover:bg-black text-white font-extrabold text-sm rounded-lg flex items-center gap-2 shadow-md transition-all shrink-0 active:scale-95"
+              className="px-6 py-3.5 bg-[#1f2125] hover:bg-black text-white font-extrabold text-sm flex items-center gap-2 shadow-md transition-all shrink-0 active:scale-95"
             >
               <span>Visit Gear Shop</span>
-              <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+              <CaretRight weight="bold" className="w-4 h-4 text-emerald-400" />
             </Link>
           </div>
 
           {/* Featured Items Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            {products.slice(0, 4).map((prod) => (
+            {products.slice(0, 4).map((prod, idx) => (
               <div
                 key={prod.id}
-                className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-lg hover:shadow-xl transition-all flex flex-col justify-between group"
+                className="bg-white border border-gray-200 overflow-hidden shadow-lg hover:shadow-xl transition-all flex flex-col justify-between group"
               >
                 <div className="relative aspect-square bg-gray-100 overflow-hidden">
                   <img
-                    src={getProductImage(prod)}
+                    src={getProductImage(prod, idx)}
                     alt={prod.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <span className="absolute top-3 left-3 bg-[#121212] text-white text-[10px] font-black px-2.5 py-1 rounded-md uppercase font-mono shadow-md">
+                  <span className="absolute top-3 left-3 bg-[#121212] text-white text-[10px] font-black px-2.5 py-1 uppercase font-mono shadow-md">
                     {prod.category}
                   </span>
                 </div>
@@ -717,16 +669,16 @@ export const HomePage = () => {
                       <span className="text-xl font-black text-[#121212]">
                         {formatCurrency(Number(prod.price))}
                       </span>
-                      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                      <span className="text-[10px] font-extrabold px-2.5 py-1 bg-emerald-100 text-emerald-800">
                         {prod.stock} In Stock
                       </span>
                     </div>
 
                     <Link
                       to="/shop"
-                      className="w-full py-2.5 bg-[#EBF7E7] hover:bg-[#4A812F] text-[#2d6215] hover:text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                      className="w-full py-2.5 bg-[#EBF7E7] hover:bg-[#4A812F] text-[#2d6215] hover:text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors"
                     >
-                      <ShoppingBag className="w-3.5 h-3.5" />
+                      <ShoppingBag weight="duotone" className="w-4 h-4" />
                       <span>View Product</span>
                     </Link>
                   </div>
@@ -739,10 +691,10 @@ export const HomePage = () => {
 
       {/* 7 & 8. BOOK A TRIAL / CONTACT & ENQUIRY SECTION */}
       <section className="py-20 px-4 sm:px-8 max-w-7xl mx-auto" id="trial">
-        <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-3xl shadow-2xl p-8 sm:p-12 space-y-8">
+        <div className="max-w-4xl mx-auto bg-white border border-gray-200 shadow-2xl p-8 sm:p-12 space-y-8">
           {/* Header */}
           <div className="text-center space-y-3">
-            <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-[#EBF7E7] px-3.5 py-1.5 rounded-full inline-block">
+            <span className="text-xs font-black tracking-widest text-[#4A812F] uppercase font-mono bg-[#EBF7E7] px-3.5 py-1.5 inline-block">
               BOOK A TRIAL & ENQUIRIES
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-[#121212] tracking-tight">
@@ -752,36 +704,36 @@ export const HomePage = () => {
               Submit your request on the spot. Saved directly to our concierge team so someone gets in touch immediately!
             </p>
 
-            {/* Toggle Tabs (Replaced Emojis with Lucide Icons) */}
-            <div className="inline-flex p-1 bg-gray-100 rounded-2xl border border-gray-200 mt-2">
+            {/* Toggle Tabs */}
+            <div className="inline-flex p-1 bg-gray-100 border border-gray-200 mt-2">
               <button
                 type="button"
                 onClick={() => setFormType('TRIAL')}
-                className={`px-6 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 ${formType === 'TRIAL'
+                className={`px-6 py-2.5 font-extrabold text-xs transition-all flex items-center gap-2 ${formType === 'TRIAL'
                     ? 'bg-[#4A812F] text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
-                <Calendar className="w-4 h-4" />
+                <CalendarBlank weight="duotone" className="w-4 h-4" />
                 <span>Book a Trial Session</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFormType('ENQUIRY')}
-                className={`px-6 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 ${formType === 'ENQUIRY'
+                className={`px-6 py-2.5 font-extrabold text-xs transition-all flex items-center gap-2 ${formType === 'ENQUIRY'
                     ? 'bg-[#4A812F] text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
-                <Mail className="w-4 h-4" />
+                <EnvelopeSimple weight="duotone" className="w-4 h-4" />
                 <span>General Enquiry</span>
               </button>
             </div>
           </div>
 
           {formSubmitted ? (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-8 text-center space-y-4 animate-in fade-in">
-              <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto" />
+            <div className="bg-emerald-50 border border-emerald-200 p-8 text-center space-y-4 animate-in fade-in">
+              <CheckCircle weight="fill" className="w-16 h-16 text-emerald-600 mx-auto" />
               <h3 className="text-2xl font-black text-gray-900">
                 {formType === 'TRIAL' ? 'Trial Request Saved!' : 'Enquiry Received!'}
               </h3>
@@ -793,7 +745,7 @@ export const HomePage = () => {
                   setFormSubmitted(false);
                   setFormData({ name: '', phone: '', email: '', sport: 'Tennis', preferredDate: new Date().toISOString().split('T')[0], preferredTime: '18:00', message: '' });
                 }}
-                className="px-6 py-2.5 bg-[#4A812F] text-white font-extrabold text-xs rounded-xl hover:bg-[#3d6b27] transition-colors"
+                className="px-6 py-2.5 bg-[#4A812F] text-white font-extrabold text-xs hover:bg-[#3d6b27] transition-colors"
               >
                 Submit Another Request
               </button>
@@ -801,8 +753,8 @@ export const HomePage = () => {
           ) : (
             <form onSubmit={handleFormSubmit} className="space-y-6 text-xs font-semibold text-gray-800" id="contact">
               {formError && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-2xl flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 shrink-0" />
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 flex items-center gap-3">
+                  <WarningCircle weight="fill" className="w-5 h-5 shrink-0" />
                   <span>{formError}</span>
                 </div>
               )}
@@ -818,7 +770,7 @@ export const HomePage = () => {
                     placeholder="e.g. Rahul Sharma"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
+                    className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
                   />
                 </div>
 
@@ -832,7 +784,7 @@ export const HomePage = () => {
                     placeholder="e.g. 9820011223"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
+                    className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
                   />
                 </div>
               </div>
@@ -847,7 +799,7 @@ export const HomePage = () => {
                     placeholder="you@example.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
+                    className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
                   />
                 </div>
 
@@ -858,7 +810,7 @@ export const HomePage = () => {
                   <select
                     value={formData.sport}
                     onChange={(e) => setFormData({ ...formData, sport: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
+                    className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
                   >
                     <option value="Tennis">Tennis</option>
                     <option value="Padel">Padel</option>
@@ -878,7 +830,7 @@ export const HomePage = () => {
                       type="date"
                       value={formData.preferredDate}
                       onChange={(e) => setFormData({ ...formData, preferredDate: e.target.value })}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
+                      className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
                     />
                   </div>
 
@@ -889,7 +841,7 @@ export const HomePage = () => {
                     <select
                       value={formData.preferredTime}
                       onChange={(e) => setFormData({ ...formData, preferredTime: e.target.value })}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
+                      className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
                     >
                       <option value="07:00">07:00 AM Morning</option>
                       <option value="09:00">09:00 AM Morning</option>
@@ -909,7 +861,7 @@ export const HomePage = () => {
                     placeholder="Tell us about your requirements or questions..."
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
+                    className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
                   />
                 </div>
               )}
@@ -917,17 +869,17 @@ export const HomePage = () => {
               <button
                 type="submit"
                 disabled={bookTrial.isPending || submitEnquiry.isPending}
-                className="w-full py-4 bg-[#1f2125] hover:bg-black text-white font-extrabold text-base rounded-lg flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                className="w-full py-4 bg-[#1f2125] hover:bg-black text-white font-extrabold text-base flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50"
               >
                 {bookTrial.isPending || submitEnquiry.isPending ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <CircleNotch weight="bold" className="w-5 h-5 animate-spin" />
                 ) : (
-                  <Send className="w-4 h-4 text-emerald-400" />
+                  <PaperPlaneRight weight="fill" className="w-4 h-4 text-emerald-400" />
                 )}
                 <span>
                   {formType === 'TRIAL' ? 'Submit Trial Session Request' : 'Send General Enquiry'}
                 </span>
-                <ChevronRight className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+                <CaretRight weight="bold" className="w-4 h-4 text-emerald-400" />
               </button>
             </form>
           )}
@@ -936,7 +888,7 @@ export const HomePage = () => {
 
       {/* 4. DARK CHARCOAL CARD CONTAINER & TRAILER VIDEO */}
       <section className="py-12 px-4 sm:px-8 lg:px-12 bg-white">
-        <div className="bg-[#1c1d1f] text-white rounded-[2.5rem] p-8 sm:p-12 lg:p-16 max-w-6xl mx-auto shadow-2xl space-y-12 border border-gray-800/80">
+        <div className="bg-[#1c1d1f] text-white p-8 sm:p-12 lg:p-16 max-w-6xl mx-auto shadow-2xl space-y-12 border border-gray-800/80">
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
               See what you can do <br className="hidden sm:block" /> with BookMyCourt
@@ -945,28 +897,28 @@ export const HomePage = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
             {[
-              { name: 'Court Reservations', icon: Banknote, link: '#availability' },
+              { name: 'Court Reservations', icon: Bank, link: '#availability' },
               { name: 'Public Booking', icon: Globe, link: '#availability' },
               { name: 'Lessons & Trials', icon: GraduationCap, link: '#trial' },
-              { name: 'Events & Programming', icon: Calendar, link: '#trial' },
+              { name: 'Events & Programming', icon: CalendarBlank, link: '#trial' },
               { name: 'Memberships', icon: CreditCard, link: '#plans' },
-              { name: 'Leagues & Ladders', icon: BarChart3, link: '#trial' },
-              { name: 'Branded Mobile App', icon: Smartphone, link: '#trial' },
+              { name: 'Leagues & Ladders', icon: ChartBar, link: '#trial' },
+              { name: 'Branded Mobile App', icon: DeviceMobile, link: '#trial' },
               { name: 'Invoicing & Batch Billing', icon: Receipt, link: '/admin' },
               { name: 'Pro Shop & POS', icon: ShoppingBag, link: '#shop' },
-              { name: 'Access Control', icon: Lock, link: '/admin' },
-              { name: 'Integrations', icon: Layers, link: '#trial' },
-              { name: 'Reporting', icon: TrendingUp, link: '/admin' },
+              { name: 'Access Control', icon: LockKey, link: '/admin' },
+              { name: 'Integrations', icon: Stack, link: '#trial' },
+              { name: 'Reporting', icon: TrendUp, link: '/admin' },
             ].map((feat, idx) => {
               const IconComponent = feat.icon;
               return (
                 <a
                   key={idx}
                   href={feat.link}
-                  className="bg-[#2d3036] hover:bg-[#383b42] border border-gray-700/60 p-4 px-6 rounded-2xl flex items-center gap-4 transition-all cursor-pointer group shadow-xs"
+                  className="bg-[#2d3036] hover:bg-[#383b42] border border-gray-700/60 p-4 px-6 flex items-center gap-4 transition-all cursor-pointer group shadow-xs"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center shrink-0 group-hover:bg-[#4A812F] transition-colors shadow-2xs">
-                    <IconComponent className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 bg-black text-white flex items-center justify-center shrink-0 group-hover:bg-[#4A812F] transition-colors shadow-2xs">
+                    <IconComponent weight="duotone" className="w-5 h-5 text-white" />
                   </div>
                   <span className="text-base font-extrabold text-white group-hover:text-emerald-400 transition-colors">
                     {feat.name}
@@ -978,7 +930,7 @@ export const HomePage = () => {
 
           {/* Video Container with Autoplay & Mouse Hover Effect */}
           <div className="pt-4">
-            <div className="relative rounded-3xl border-2 border-white/90 hover:border-[#4A812F] bg-[#0c0d0f] overflow-hidden shadow-2xl hover:shadow-[0_20px_50px_rgba(74,129,47,0.3)] aspect-video max-w-4xl mx-auto transition-all duration-500 transform hover:scale-[1.02] group">
+            <div className="relative border-2 border-white/90 hover:border-[#4A812F] bg-[#0c0d0f] overflow-hidden shadow-2xl hover:shadow-[0_20px_50px_rgba(74,129,47,0.3)] aspect-video max-w-4xl mx-auto transition-all duration-500 transform hover:scale-[1.02] group">
               <video
                 src="/gemini_generated_video_8dec1fae.mp4"
                 autoPlay
@@ -986,7 +938,7 @@ export const HomePage = () => {
                 loop
                 playsInline
                 controls
-                className="w-full h-full object-cover rounded-2xl"
+                className="w-full h-full object-cover"
               >
                 Your browser does not support HTML5 video player.
               </video>
@@ -997,7 +949,7 @@ export const HomePage = () => {
 
       {/* PLAYER EXPERIENCE SECTION */}
       <section className="py-16 px-4 sm:px-8 lg:px-12 bg-white">
-        <div className="bg-[#f0f7ef] text-gray-900 rounded-[2.5rem] p-8 sm:p-14 max-w-6xl mx-auto shadow-xs border border-[#d6ebd3] space-y-10">
+        <div className="bg-[#f0f7ef] text-gray-900 p-8 sm:p-14 max-w-6xl mx-auto shadow-xs border border-[#d6ebd3] space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-2">
             <span className="text-xs font-black tracking-widest text-[#2d6215] uppercase font-mono block">
               PLAYER EXPERIENCE
@@ -1038,7 +990,7 @@ export const HomePage = () => {
         </div>
       </section>
 
-      {/* PRE-FOOTER CTA BANNER (Internal links to #trial & #plans, 0 external courtreserve.com) */}
+      {/* PRE-FOOTER CTA BANNER */}
       <section className="py-16 sm:py-20 px-6 lg:px-16 bg-[#18191c] text-white border-t border-gray-800/80">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10">
           <div className="space-y-4 text-center lg:text-left max-w-2xl">
@@ -1053,21 +1005,21 @@ export const HomePage = () => {
           <div className="flex flex-col sm:flex-row items-center gap-5 w-full lg:w-auto shrink-0 justify-center lg:justify-end">
             <a
               href="#trial"
-              className="bg-[#1f2125] hover:bg-black text-white rounded-2xl p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-800"
+              className="bg-[#1f2125] hover:bg-black text-white p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-800"
             >
               <div className="flex items-center justify-between text-xl font-black text-white">
                 <span>Book a Trial</span>
-                <ChevronRight className="w-6 h-6 stroke-[3] text-emerald-400 group-hover:translate-x-1.5 transition-transform" />
+                <CaretRight weight="bold" className="w-6 h-6 text-emerald-400 group-hover:translate-x-1.5 transition-transform" />
               </div>
             </a>
 
             <a
               href="#plans"
-              className="bg-white hover:bg-gray-100 text-[#1f2125] rounded-2xl p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-200"
+              className="bg-white hover:bg-gray-100 text-[#1f2125] p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-200"
             >
               <div className="flex items-center justify-between text-xl font-black text-[#1f2125]">
                 <span>See Plans</span>
-                <ChevronRight className="w-6 h-6 stroke-[3] text-gray-700 group-hover:translate-x-1.5 transition-transform" />
+                <CaretRight weight="bold" className="w-6 h-6 text-gray-700 group-hover:translate-x-1.5 transition-transform" />
               </div>
             </a>
           </div>

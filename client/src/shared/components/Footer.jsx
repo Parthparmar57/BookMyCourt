@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Mail, 
+  EnvelopeSimple, 
   Phone, 
-  ChevronRight,
+  CaretRight,
   MapPin,
   Clock
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 const InstagramIcon = (props) => (
   <svg
@@ -139,15 +139,15 @@ export const Footer = () => {
                 <span>+91 98200 11223</span>
               </li>
               <li className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[#4A812F] shrink-0" />
+                <EnvelopeSimple weight="duotone" className="w-4 h-4 text-[#4A812F] shrink-0" />
                 <span>sales@bookmycourt.in</span>
               </li>
               <li className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-[#4A812F] shrink-0 mt-0.5" />
+                <MapPin weight="fill" className="w-4 h-4 text-[#4A812F] shrink-0 mt-0.5" />
                 <span>Sports Complex Road, St. Augustine, FL 32080</span>
               </li>
               <li className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#4A812F] shrink-0" />
+                <Clock weight="duotone" className="w-4 h-4 text-[#4A812F] shrink-0" />
                 <span>Mon–Sun: 6:00 AM – 10:00 PM</span>
               </li>
             </ul>
@@ -159,11 +159,11 @@ export const Footer = () => {
           {/* Email & Phone */}
           <div className="flex flex-wrap items-center gap-8 text-sm font-bold text-white">
             <a href="mailto:sales@bookmycourt.in" className="flex items-center gap-2 hover:text-emerald-400 transition-colors">
-              <Mail className="w-4.5 h-4.5 text-emerald-400" />
+              <EnvelopeSimple weight="duotone" className="w-4.5 h-4.5 text-emerald-400" />
               <span>sales@bookmycourt.in</span>
             </a>
             <a href="tel:+919820011223" className="flex items-center gap-2 hover:text-emerald-400 transition-colors">
-              <Phone className="w-4.5 h-4.5 text-emerald-400" />
+              <Phone weight="fill" className="w-4.5 h-4.5 text-emerald-400" />
               <span>+91 98200 11223</span>
             </a>
           </div>

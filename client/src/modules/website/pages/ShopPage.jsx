@@ -74,23 +74,33 @@ export const ShopPage = () => {
   ];
   const products = (shopQuery.data && shopQuery.data.length > 0) ? shopQuery.data : fallbackProducts;
 
-  const getProductImage = (prod) => {
-    if (prod?.imageUrl && typeof prod.imageUrl === 'string' && prod.imageUrl.trim().length > 0) {
-      return prod.imageUrl;
+  const UNIQUE_CARD_IMAGES = [
+    '/photo-1622279457486-62dcc4a431d6.avif',
+    '/photo-1595435934249-5df7ed86e1c0.avif',
+    '/photo-1554068865-24cecd4e34b8.avif',
+    '/photo-1626248801379-51a0748a5f96.avif'
+  ];
+
+  const getProductImage = (prod, idx = 0) => {
+    const url = prod?.imageUrl;
+    if (url && typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')) {
+      if (!url.includes('photo-1622279457486-62dcc4a431d6') || idx === 0) {
+        return url;
+      }
     }
     const name = (prod?.name || '').toLowerCase();
     const cat = (prod?.category || '').toLowerCase();
 
-    if (name.includes('racket') || cat.includes('racket')) {
-      return '/photo-1622279457486-62dcc4a431d6.avif';
-    }
     if (name.includes('ball') || cat.includes('ball')) {
-      return '/photo-1595435934249-5df7ed86e1c0.avif';
+      return UNIQUE_CARD_IMAGES[1];
     }
     if (name.includes('shoe') || cat.includes('shoe')) {
-      return '/photo-1554068865-24cecd4e34b8.avif';
+      return UNIQUE_CARD_IMAGES[2];
     }
-    return '/photo-1626248801379-51a0748a5f96.avif';
+    if (name.includes('grip') || cat.includes('accessor') || name.includes('string')) {
+      return UNIQUE_CARD_IMAGES[3];
+    }
+    return UNIQUE_CARD_IMAGES[idx % UNIQUE_CARD_IMAGES.length];
   };
 
   return (
@@ -106,9 +116,9 @@ export const ShopPage = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {products.map((prod) => {
+        {products.map((prod, idx) => {
           const inStock = prod.stock > 0;
-          const imgSrc = getProductImage(prod);
+          const imgSrc = getProductImage(prod, idx);
           return (
             <div key={prod.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div className="relative aspect-square bg-gray-100 overflow-hidden flex items-center justify-center">
