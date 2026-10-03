@@ -1,0 +1,106 @@
+import React from 'react';
+import { createBrowserRouter } from 'react-router-dom';
+import { PublicLayout } from '../layouts/PublicLayout';
+import { AppLayout } from '../layouts/AppLayout';
+import { KitchenLayout } from '../layouts/KitchenLayout';
+
+import { HomePage } from '../modules/website/pages/HomePage';
+import { AvailabilityPage } from '../modules/website/pages/AvailabilityPage';
+import { MembershipPage } from '../modules/website/pages/MembershipPage';
+import { ShopPage } from '../modules/website/pages/ShopPage';
+import { TrialPage } from '../modules/website/pages/TrialPage';
+import { LoginPage } from '../modules/website/pages/LoginPage';
+
+import { OwnerDashboardPage } from '../modules/dashboard/pages/OwnerDashboardPage';
+import { BookingsPage } from '../modules/bookings/pages/BookingsPage';
+import { MembersPage } from '../modules/members/pages/MembersPage';
+import { BarPage } from '../modules/bar/pages/BarPage';
+import { KitchenPage } from '../modules/kitchen/pages/KitchenPage';
+import { ShopInventoryPage } from '../modules/shop/pages/ShopInventoryPage';
+
+export const router = createBrowserRouter([
+  // Public Routes (Navbar + Landing Page + Footer + Floating Chat Widget)
+  {
+    path: '/',
+    element: <PublicLayout />,
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: 'courts', element: <AvailabilityPage /> },
+      { path: 'availability', element: <AvailabilityPage /> },
+      { path: 'membership', element: <MembershipPage /> },
+      { path: 'shop', element: <ShopPage /> },
+      { path: 'trial', element: <TrialPage /> },
+      { path: 'login', element: <LoginPage /> }
+    ]
+  },
+
+  // Owner / Admin Executive Suite
+  {
+    path: '/admin',
+    element: <AppLayout />,
+    children: [
+      { index: true, element: <OwnerDashboardPage /> },
+      { path: 'members', element: <MembersPage /> },
+      { path: 'bookings', element: <BookingsPage /> },
+      { path: 'bar', element: <BarPage /> },
+      { path: 'shop', element: <ShopInventoryPage /> },
+      { path: 'crm', element: <OwnerDashboardPage /> },
+      { path: 'accounting', element: <OwnerDashboardPage /> },
+      { path: 'hr', element: <OwnerDashboardPage /> }
+    ]
+  },
+
+  // Front Desk Staff Portal
+  {
+    path: '/staff/frontdesk',
+    element: <AppLayout />,
+    children: [
+      { index: true, element: <MembersPage /> },
+      { path: 'members', element: <MembersPage /> },
+      { path: 'bookings', element: <BookingsPage /> },
+      { path: 'crm', element: <MembersPage /> }
+    ]
+  },
+
+  // Bar Staff POS
+  {
+    path: '/staff/bar',
+    element: <AppLayout />,
+    children: [
+      { index: true, element: <BarPage /> }
+    ]
+  },
+
+  // Shop Staff POS
+  {
+    path: '/staff/shop',
+    element: <AppLayout />,
+    children: [
+      { index: true, element: <ShopInventoryPage /> },
+      { path: 'inventory', element: <ShopInventoryPage /> }
+    ]
+  },
+
+  // Kitchen Display Screen (KDS)
+  {
+    path: '/staff/kitchen',
+    element: <KitchenLayout />,
+    children: [
+      { index: true, element: <KitchenPage /> }
+    ]
+  },
+
+  // Member Portal
+  {
+    path: '/member',
+    element: <AppLayout />,
+    children: [
+      { index: true, element: <BookingsPage /> },
+      { path: 'book', element: <BookingsPage /> },
+      { path: 'bookings', element: <BookingsPage /> },
+      { path: 'shop', element: <ShopPage /> },
+      { path: 'tab', element: <BarPage /> },
+      { path: 'card', element: <MembersPage /> }
+    ]
+  }
+]);
