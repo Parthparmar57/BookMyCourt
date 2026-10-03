@@ -21,6 +21,7 @@ export const getDashboardSummary = async () => {
     totalBookingsToday,
     pendingOrdersCount,
     unpaidExpensesAgg,
+    receivablesAgg,
   ] = await Promise.all([
     // Today revenue
     prisma.transaction.aggregate({
@@ -73,10 +74,15 @@ export const getDashboardSummary = async () => {
         status: { in: ['PLACED', 'PREPARING'] },
       },
     }),
-    // Unpaid expenses
+    // Unpaid expenses (payables)
     prisma.expense.aggregate({
       where: { status: 'UNPAID' },
       _sum: { amount: true },
+    }),
+    // Outstanding invoices (receivables)
+    prisma.invoice.aggregate({
+      where: { status: { in: ['SENT', 'OVERDUE'] } },
+      _sum: { total: true },
     }),
   ]);
 
@@ -89,7 +95,9 @@ export const getDashboardSummary = async () => {
       expiringMembersSoon: expiringMembersCount,
       todayBookings: totalBookingsToday,
       activeKitchenOrders: pendingOrdersCount,
+      payables: unpaidExpensesAgg._sum.amount || 0,
       unpaidExpenses: unpaidExpensesAgg._sum.amount || 0,
+      receivables: receivablesAgg._sum.total || 0,
     },
     revenueBySource: revenueBySource.map((s) => ({
       source: s.source,
@@ -119,19 +127,31 @@ export const getCourtUtilisation = async ({ date = new Date() }) => {
     },
   });
 
-  // Calculate court occupancy assuming 17 hours operation (6:00 to 23:00 = 17 1-hour slots)
-  const totalSlotsPerCourt = 17;
+  const toHours = (hhmm, fallback) => {
+    const [h, m] = String(hhmm || fallback).split(':').map(Number);
+    return (Number.isFinite(h) ? h : 0) + (Number.isFinite(m) ? m : 0) / 60;
+  };
 
   return courts.map((court) => {
-    const bookedHours = court.bookings.length;
-    const utilisationPct = Math.min(100, Math.round((bookedHours / totalSlotsPerCourt) * 100));
+    // Operating hours from the court's own open/close times, not a hard-coded 17.
+    const operatingHours = Math.max(0, toHours(court.closeTime, '23:00') - toHours(court.openTime, '06:00'));
+
+    // Booked hours from actual booking durations (a 2-hour booking counts as 2).
+    const bookedHours = court.bookings.reduce((sum, b) => {
+      const ms = new Date(b.endTime).getTime() - new Date(b.startTime).getTime();
+      return sum + ms / (1000 * 60 * 60);
+    }, 0);
+
+    const utilisationPct = operatingHours > 0
+      ? Math.min(100, Math.round((bookedHours / operatingHours) * 100))
+      : 0;
 
     return {
       courtId: court.id,
       courtName: court.name,
       sport: court.sport,
-      bookedHours,
-      totalAvailableHours: totalSlotsPerCourt,
+      bookedHours: Math.round(bookedHours * 100) / 100,
+      totalAvailableHours: Math.round(operatingHours * 100) / 100,
       utilisationPct,
       bookings: court.bookings.map((b) => ({
         id: b.id,

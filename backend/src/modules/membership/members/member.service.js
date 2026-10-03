@@ -1,8 +1,11 @@
 import bcrypt from 'bcryptjs';
-import { addMonths, differenceInYears } from 'date-fns';
+import { addMonths, differenceInYears, differenceInDays } from 'date-fns';
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { generateQRCodeDataUrl } from '../../../lib/qr.js';
+import { genDocNo } from '../../../utils/ids.js';
+import { round2 } from '../../../utils/money.js';
+import { writeAudit } from '../../../utils/audit.js';
 import { MEMBER_STATUS, ROLES, TRANSACTION_SOURCE, PAYMENT_MODE, INVOICE_STATUS } from '../../../shared/index.js';
 
 export const registerMember = async (data, createdById) => {
@@ -25,7 +28,7 @@ export const registerMember = async (data, createdById) => {
 
   const startDate = new Date(data.startDate);
   const endDate = addMonths(startDate, plan.durationMonths);
-  const memberNo = `MEM-${Date.now().toString().slice(-6)}`;
+  const memberNo = genDocNo('MEM');
 
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(data.password || 'Member@123', salt);
@@ -66,7 +69,7 @@ export const registerMember = async (data, createdById) => {
     });
 
     // 3. Create invoice for membership fee
-    const invoiceNo = `INV-MEM-${Date.now().toString().slice(-6)}`;
+    const invoiceNo = genDocNo('INV-MEM');
     const invoice = await tx.invoice.create({
       data: {
         invoiceNo,
@@ -94,7 +97,7 @@ export const registerMember = async (data, createdById) => {
     // 4. Post to Transaction Ledger (Rule BR11)
     await tx.transaction.create({
       data: {
-        transactionNo: `TXN-MEM-${Date.now().toString().slice(-6)}`,
+        transactionNo: genDocNo('TXN-MEM'),
         source: TRANSACTION_SOURCE.MEMBERSHIP,
         amount: plan.price,
         tax: 0,
@@ -104,6 +107,14 @@ export const registerMember = async (data, createdById) => {
         memberId: member.id,
         notes: `New registration for ${plan.name} plan`,
       },
+    });
+
+    await writeAudit(tx, {
+      actorId: createdById || null,
+      action: 'MEMBER_REGISTER',
+      entity: 'Member',
+      entityId: member.id,
+      meta: { planId: plan.id, memberNo },
     });
 
     return member;
@@ -141,7 +152,9 @@ export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 })
   return { members, total, page, totalPages: Math.ceil(total / limit) };
 };
 
-export const getMemberProfile = async (idOrMemberNo) => {
+const STAFF_ROLES = new Set([ROLES.OWNER, ROLES.FRONT_DESK, ROLES.BAR_STAFF, ROLES.SHOP_STAFF]);
+
+export const getMemberProfile = async (idOrMemberNo, actor) => {
   const member = await prisma.member.findFirst({
     where: {
       OR: [{ id: idOrMemberNo }, { memberNo: idOrMemberNo }],
@@ -175,15 +188,26 @@ export const getMemberProfile = async (idOrMemberNo) => {
   });
 
   if (!member) throw new ApiError(404, 'Member not found');
+
+  // A MEMBER may only view their own profile; staff may view anyone.
+  if (actor && !STAFF_ROLES.has(actor.role) && member.userId !== actor.id) {
+    throw new ApiError(403, 'You can only view your own profile');
+  }
+
   return member;
 };
 
-export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_MODE.UPI }) => {
+export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_MODE.UPI }, actor) => {
   const member = await prisma.member.findUnique({
     where: { id: memberId },
     include: { plan: true },
   });
   if (!member) throw new ApiError(404, 'Member not found');
+
+  // A MEMBER may only renew/upgrade their own membership.
+  if (actor && actor.role === ROLES.MEMBER && member.userId !== actor.id) {
+    throw new ApiError(403, 'You can only renew your own membership');
+  }
 
   const newPlan = await prisma.plan.findUnique({ where: { id: planId } });
   if (!newPlan) throw new ApiError(404, 'Plan not found');
@@ -192,6 +216,23 @@ export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_
   const currentEnd = new Date(member.endDate);
   const baseDate = currentEnd > now ? currentEnd : now;
   const newEndDate = addMonths(baseDate, newPlan.durationMonths);
+
+  // Pro-rated upgrade: if the member is still active and switching to a different
+  // plan, credit the unused value of the remaining days on the current plan.
+  const isUpgrade = newPlan.id !== member.planId && currentEnd > now;
+  let credit = 0;
+  if (isUpgrade && member.plan) {
+    const remainingDays = Math.max(0, differenceInDays(currentEnd, now));
+    const currentPlanDays = (member.plan.durationMonths || 1) * 30;
+    const currentDailyRate = Number(member.plan.price) / currentPlanDays;
+    credit = round2(remainingDays * currentDailyRate);
+  }
+
+  const price = Number(newPlan.price);
+  const chargeAmount = round2(Math.max(0, price - credit));
+  const description = isUpgrade
+    ? `Upgrade to ${newPlan.name} (${newPlan.durationMonths} months, pro-rated credit ${credit})`
+    : `Renewal of ${newPlan.name} (${newPlan.durationMonths} months)`;
 
   return prisma.$transaction(async (tx) => {
     const updatedMember = await tx.member.update({
@@ -204,25 +245,24 @@ export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_
       include: { plan: true, user: true },
     });
 
-    const invoiceNo = `INV-REN-${Date.now().toString().slice(-6)}`;
     const invoice = await tx.invoice.create({
       data: {
-        invoiceNo,
+        invoiceNo: genDocNo('INV-REN'),
         memberId: member.id,
         type: 'MEMBERSHIP',
-        amount: newPlan.price,
+        amount: chargeAmount,
         tax: 0,
-        total: newPlan.price,
+        total: chargeAmount,
         dueDate: now,
         status: INVOICE_STATUS.PAID,
         items: {
           create: [
             {
-              description: `Renewal / Upgrade to ${newPlan.name} (${newPlan.durationMonths} months)`,
+              description,
               quantity: 1,
-              unitPrice: newPlan.price,
+              unitPrice: chargeAmount,
               taxPct: 0,
-              total: newPlan.price,
+              total: chargeAmount,
             },
           ],
         },
@@ -231,15 +271,15 @@ export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_
 
     await tx.transaction.create({
       data: {
-        transactionNo: `TXN-REN-${Date.now().toString().slice(-6)}`,
+        transactionNo: genDocNo('TXN-REN'),
         source: TRANSACTION_SOURCE.MEMBERSHIP,
-        amount: newPlan.price,
+        amount: chargeAmount,
         tax: 0,
         paymentMode,
         reference: invoice.invoiceNo,
         invoiceId: invoice.id,
         memberId: member.id,
-        notes: `Renewal for ${newPlan.name} plan`,
+        notes: description,
       },
     });
 

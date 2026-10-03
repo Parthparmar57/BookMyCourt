@@ -9,4 +9,9 @@ const router = Router();
 router.post('/enquiry', publicApiLimiter, validate({ body: publicEnquirySchema }), controller.submitEnquiry);
 router.post('/trial', publicApiLimiter, validate({ body: publicTrialBookingSchema }), controller.bookTrial);
 
+// Public read-only website data (PRD M5).
+router.get('/plans', publicApiLimiter, controller.getPlans);
+router.get('/availability', publicApiLimiter, controller.getAvailability);
+router.get('/shop', publicApiLimiter, controller.getShop);
+
 export default router;

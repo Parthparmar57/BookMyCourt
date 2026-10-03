@@ -8,6 +8,6 @@ export const createOrder = asyncHandler(async (req, res) => {
 });
 
 export const verifyPayment = asyncHandler(async (req, res) => {
-  const result = await paymentService.verifyAndRecordPayment(req.body);
+  const result = await paymentService.verifyAndRecordPayment(req.body, req.user);
   return success(res, result, 'Payment verified and transaction recorded');
 });

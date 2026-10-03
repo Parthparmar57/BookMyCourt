@@ -13,11 +13,11 @@ export const searchMembers = asyncHandler(async (req, res) => {
 });
 
 export const getMemberProfile = asyncHandler(async (req, res) => {
-  const profile = await memberService.getMemberProfile(req.params.id);
+  const profile = await memberService.getMemberProfile(req.params.id, req.user);
   return success(res, profile);
 });
 
 export const renewMembership = asyncHandler(async (req, res) => {
-  const member = await memberService.renewMembership(req.params.id, req.body);
+  const member = await memberService.renewMembership(req.params.id, req.body, req.user);
   return success(res, member, 'Membership renewed successfully');
 });

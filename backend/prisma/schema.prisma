@@ -172,49 +172,49 @@ enum PayrollStatus {
 }
 
 model User {
-  id               String          @id @default(uuid())
-  name             String
-  email            String          @unique
-  phone            String          @unique
-  passwordHash     String
-  role             Role            @default(MEMBER)
-  member           Member?
-  employee         Employee?
-  bookingsCreated  Booking[]       @relation("CreatedByUser")
-  leadsAssigned    Lead[]          @relation("AssignedLeads")
-  leavesApproved   LeaveRequest[]  @relation("ApprovedLeaves")
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  id              String         @id @default(uuid())
+  name            String
+  email           String         @unique
+  phone           String         @unique
+  passwordHash    String
+  role            Role           @default(MEMBER)
+  member          Member?
+  employee        Employee?
+  bookingsCreated Booking[]      @relation("CreatedByUser")
+  leadsAssigned   Lead[]         @relation("AssignedLeads")
+  leavesApproved  LeaveRequest[] @relation("ApprovedLeaves")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model Plan {
-  id              String       @id @default(uuid())
-  name            String       @unique
-  price           Decimal      @db.Decimal(10, 2)
+  id              String      @id @default(uuid())
+  name            String      @unique
+  price           Decimal     @db.Decimal(10, 2)
   durationMonths  Int
-  courtRate       Decimal      @db.Decimal(10, 2)
-  freeSessions    Int          @default(0)
-  shopDiscountPct Int          @default(0)
-  barDiscountPct  Int          @default(0)
-  maxBookingsDay  Int          @default(2)
+  courtRate       Decimal     @db.Decimal(10, 2)
+  freeSessions    Int         @default(0)
+  shopDiscountPct Int         @default(0)
+  barDiscountPct  Int         @default(0)
+  maxBookingsDay  Int         @default(2)
   maxAge          Int?
   members         Member[]
   quotations      Quotation[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 model Member {
-  id                   String               @id @default(uuid())
-  memberNo             String               @unique
-  userId               String               @unique
-  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String              @id @default(uuid())
+  memberNo             String              @unique
+  userId               String              @unique
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   planId               String
-  plan                 Plan                 @relation(fields: [planId], references: [id])
+  plan                 Plan                @relation(fields: [planId], references: [id])
   dob                  DateTime
   emergencyContact     String?
   photoUrl             String?
-  status               MemberStatus         @default(ACTIVE)
+  status               MemberStatus        @default(ACTIVE)
   qrCode               String?
   startDate            DateTime
   endDate              DateTime
@@ -224,8 +224,8 @@ model Member {
   tabs                 BarTab[]
   invoices             Invoice[]
   transactions         Transaction[]
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 }
 
 model Court {
@@ -258,11 +258,18 @@ model Booking {
   maxPlayers         Int?                @default(1)
   createdById        String
   createdBy          User                @relation("CreatedByUser", fields: [createdById], references: [id])
+  cancelReason       String?
+  cancelledById      String?
+  cancelledAt        DateTime?
+  refundAmount       Decimal?            @db.Decimal(10, 2)
   socialParticipants SocialParticipant[]
   transactions       Transaction[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
+  // Overlap prevention is enforced at the DB level by a GiST EXCLUDE constraint
+  // (see prisma/migrations/manual_constraints.sql) — the non-unique index below
+  // only speeds lookups.
   @@index([courtId, startTime])
   @@index([startTime, endTime])
 }
@@ -279,6 +286,9 @@ model SocialParticipant {
   paymentStatus PaymentStatus @default(PENDING)
   createdAt     DateTime      @default(now())
 
+  // A member can join a given social session only once (guests have null memberId
+  // and are not constrained, since Postgres treats NULLs as distinct).
+  @@unique([bookingId, memberId])
   @@index([bookingId])
 }
 
@@ -318,7 +328,7 @@ model InventoryLog {
 
 model MenuItem {
   id          String       @id @default(uuid())
-  name        String
+  name        String       @unique
   category    MenuCategory
   price       Decimal      @db.Decimal(10, 2)
   taxPct      Decimal      @default(5) @db.Decimal(5, 2)
@@ -467,14 +477,14 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   invoiceId   String
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   description String
-  quantity    Int      @default(1)
-  unitPrice   Decimal  @db.Decimal(10, 2)
-  taxPct      Decimal  @default(0) @db.Decimal(5, 2)
-  total       Decimal  @db.Decimal(10, 2)
+  quantity    Int     @default(1)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  taxPct      Decimal @default(0) @db.Decimal(5, 2)
+  total       Decimal @db.Decimal(10, 2)
 }
 
 model Expense {
@@ -497,20 +507,20 @@ model Expense {
 }
 
 model Lead {
-  id            String          @id @default(uuid())
+  id            String         @id @default(uuid())
   name          String
   phone         String
   email         String?
-  source        String          @default("WEBSITE")
+  source        String         @default("WEBSITE")
   interest      String?
-  stage         LeadStage       @default(NEW)
+  stage         LeadStage      @default(NEW)
   assignedToId  String?
-  assignedTo    User?           @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedTo    User?          @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
   quotations    Quotation[]
   followUps     LeadFollowUp[]
   trialBookings TrialBooking[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([stage])
 }
@@ -622,6 +632,19 @@ model Enquiry {
   message   String?
   status    String   @default("NEW")
   createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId])
 }
 
 model TrialBooking {

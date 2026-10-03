@@ -42,3 +42,16 @@ export const splitBillSchema = z.object({
     amount: z.coerce.number().positive(),
   })).min(2, 'Must have at least 2 splits'),
 });
+
+// Settling a single bar order: either a single paymentMode, or a split bill.
+export const settleBarOrderSchema = z.object({
+  paymentMode: z.nativeEnum(PAYMENT_MODE).default(PAYMENT_MODE.UPI),
+  splits: z
+    .array(
+      z.object({
+        paymentMode: z.nativeEnum(PAYMENT_MODE),
+        amount: z.coerce.number().positive(),
+      })
+    )
+    .optional(),
+});

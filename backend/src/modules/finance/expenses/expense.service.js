@@ -1,9 +1,10 @@
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { EXPENSE_STATUS } from '../../../shared/index.js';
+import { genDocNo } from '../../../utils/ids.js';
 
 export const createExpense = async (data) => {
-  const expenseNo = `EXP-${Date.now().toString().slice(-6)}`;
+  const expenseNo = genDocNo('EXP');
   return prisma.expense.create({
     data: {
       expenseNo,

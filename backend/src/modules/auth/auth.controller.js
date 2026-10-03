@@ -2,25 +2,23 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { success } from '../../utils/response.js';
 import * as authService from './auth.service.js';
 
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  path: '/api/auth',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 export const register = asyncHandler(async (req, res) => {
   const result = await authService.registerUser(req.body);
-  res.cookie('refreshToken', result.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
   return success(res, result, 'User registered successfully', 201);
 });
 
 export const login = asyncHandler(async (req, res) => {
   const result = await authService.loginUser(req.body);
-  res.cookie('refreshToken', result.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
   return success(res, result, 'Login successful');
 });
 
@@ -31,7 +29,7 @@ export const refresh = asyncHandler(async (req, res) => {
 });
 
 export const logout = asyncHandler(async (req, res) => {
-  res.clearCookie('refreshToken');
+  res.clearCookie('refreshToken', { path: '/api/auth' });
   return success(res, null, 'Logged out successfully');
 });
 

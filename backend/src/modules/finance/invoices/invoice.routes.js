@@ -28,12 +28,14 @@ router.get(
 
 router.get(
   '/:id',
+  authorize('OWNER', 'FRONT_DESK', 'MEMBER'),
   validate({ params: invoiceIdParamSchema }),
   controller.getInvoice
 );
 
 router.get(
   '/:id/pdf',
+  authorize('OWNER', 'FRONT_DESK', 'MEMBER'),
   validate({ params: invoiceIdParamSchema }),
   controller.downloadPDF
 );

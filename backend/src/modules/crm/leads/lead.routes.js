@@ -9,6 +9,7 @@ import {
   createFollowUpSchema,
   createQuotationSchema,
   updateQuotationStatusSchema,
+  convertLeadSchema,
 } from '../../../shared/index.js';
 import * as controller from './lead.controller.js';
 
@@ -24,5 +25,6 @@ router.patch('/:id', validate({ params: leadIdParamSchema, body: updateLeadSchem
 router.post('/:id/follow-ups', validate({ params: leadIdParamSchema, body: createFollowUpSchema }), controller.addFollowUp);
 router.post('/:id/quotations', validate({ body: createQuotationSchema }), controller.createQuotation);
 router.patch('/quotations/:id/status', validate({ body: updateQuotationStatusSchema }), controller.updateQuotationStatus);
+router.post('/:id/convert', validate({ params: leadIdParamSchema, body: convertLeadSchema }), controller.convertLead);
 
 export default router;

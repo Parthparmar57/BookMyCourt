@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { auth } from '../../../middleware/auth.js';
 import { authorize } from '../../../middleware/authorize.js';
 import { validate } from '../../../middleware/validate.js';
-import { createBarOrderSchema } from '../../../shared/index.js';
+import { createBarOrderSchema, settleBarOrderSchema } from '../../../shared/index.js';
 import * as controller from './bar-order.controller.js';
 
 const router = Router();
@@ -25,6 +25,7 @@ router.get(
 router.post(
   '/:id/settle',
   authorize('OWNER', 'BAR_STAFF'),
+  validate({ body: settleBarOrderSchema }),
   controller.settleOrder
 );
 

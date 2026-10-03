@@ -2,6 +2,8 @@ import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { getMemberDiscounts } from '../../../utils/pricing.js';
 import { broadcastEvent } from '../../../lib/socket.js';
+import { genDocNo } from '../../../utils/ids.js';
+import { round2 } from '../../../utils/money.js';
 import {
   ORDER_CHANNEL,
   ORDER_STATUS,
@@ -21,52 +23,57 @@ export const createShopOrder = async (data, user) => {
 
   return prisma.$transaction(async (tx) => {
     let subtotal = 0;
+    let totalDiscount = 0;
     let totalTax = 0;
     const orderItemsData = [];
 
-    // Verify stock and prepare items
     for (const item of data.items) {
-      const product = await tx.product.findUnique({
-        where: { id: item.productId },
-      });
+      if (!item.quantity || item.quantity < 1) {
+        throw new ApiError(400, 'Each item quantity must be at least 1');
+      }
 
+      const product = await tx.product.findUnique({ where: { id: item.productId } });
       if (!product) {
         throw new ApiError(404, `Product with ID ${item.productId} not found`);
       }
 
-      // Rule BR10: Shared stock, no sale below zero
-      if (product.stock < item.quantity) {
-        throw new ApiError(400, `Insufficient stock for '${product.name}'. Available: ${product.stock}, Requested: ${item.quantity}`);
-      }
-
-      // Decrement stock immediately
-      await tx.product.update({
-        where: { id: item.productId },
+      // Rule BR10: atomic conditional decrement — only succeeds if enough stock
+      // remains. Combined with the product_stock_nonneg CHECK this makes
+      // overselling impossible even under concurrent orders.
+      const dec = await tx.product.updateMany({
+        where: { id: item.productId, stock: { gte: item.quantity } },
         data: { stock: { decrement: item.quantity } },
       });
+      if (dec.count === 0) {
+        throw new ApiError(409, `Insufficient stock for '${product.name}'. Available: ${product.stock}`);
+      }
 
       const unitPrice = Number(product.price);
       const taxPct = Number(product.taxPct || 0);
-      const lineSubtotal = unitPrice * item.quantity;
-      const lineTax = (lineSubtotal * taxPct) / 100;
+      const lineSubtotal = round2(unitPrice * item.quantity);
+      // Member discount applies to the taxable base, so tax is charged on the
+      // discounted value (GST-correct) rather than the gross.
+      const lineDiscount = round2((lineSubtotal * shopDiscountPct) / 100);
+      const lineTax = round2(((lineSubtotal - lineDiscount) * taxPct) / 100);
 
-      subtotal += lineSubtotal;
-      totalTax += lineTax;
+      subtotal = round2(subtotal + lineSubtotal);
+      totalDiscount = round2(totalDiscount + lineDiscount);
+      totalTax = round2(totalTax + lineTax);
 
       orderItemsData.push({
         productId: product.id,
         quantity: item.quantity,
         unitPrice,
         taxPct,
-        totalPrice: lineSubtotal + lineTax,
+        totalPrice: round2(lineSubtotal - lineDiscount + lineTax),
       });
     }
 
-    // Apply member discount (Rule BR9)
-    const discount = (subtotal * shopDiscountPct) / 100;
-    const total = Math.max(0, subtotal - discount + totalTax);
+    // Rule BR9: member discount already applied per line above.
+    const discount = totalDiscount;
+    const total = round2(Math.max(0, subtotal - discount + totalTax));
 
-    const orderNo = `ORD-${Date.now().toString().slice(-6)}`;
+    const orderNo = genDocNo('ORD');
 
     // Create Order
     const order = await tx.order.create({
@@ -98,7 +105,7 @@ export const createShopOrder = async (data, user) => {
     // Post to Transaction Ledger (Rule BR11)
     await tx.transaction.create({
       data: {
-        transactionNo: `TXN-SHP-${Date.now().toString().slice(-6)}`,
+        transactionNo: genDocNo('TXN-SHP'),
         source: TRANSACTION_SOURCE.SHOP,
         amount: total,
         tax: totalTax,

@@ -14,6 +14,17 @@ export const createLeadSchema = z.object({
 export const updateLeadSchema = createLeadSchema.partial();
 export const leadIdParamSchema = z.object({ id: z.string().uuid() });
 
+// Converting a won lead into a member needs the details a lead doesn't carry
+// (plan, date of birth for the BR6 age check, membership start date).
+export const convertLeadSchema = z.object({
+  planId: z.string().uuid('Invalid plan ID'),
+  dob: z.coerce.date().refine((d) => d < new Date(), { message: 'Date of birth must be in the past' }),
+  startDate: z.coerce.date().default(() => new Date()),
+  email: z.string().email().optional(),
+  password: z.string().min(8).optional(),
+  emergencyContact: z.string().regex(/^[6-9]\d{9}$/).optional().nullable(),
+});
+
 export const createFollowUpSchema = z.object({
   date: z.coerce.date(),
   type: z.enum(['CALL', 'EMAIL', 'VISIT']).default('CALL'),

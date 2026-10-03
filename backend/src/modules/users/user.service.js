@@ -81,11 +81,15 @@ export const createUser = async ({ name, email, phone, password, role }) => {
 };
 
 export const updateUser = async (id, data) => {
-  const updateData = { ...data };
+  // Whitelist updatable fields — never let the request body set arbitrary columns.
+  const updateData = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.phone !== undefined) updateData.phone = data.phone;
+  if (data.role !== undefined) updateData.role = data.role;
   if (data.password) {
     const salt = await bcrypt.genSalt(10);
     updateData.passwordHash = await bcrypt.hash(data.password, salt);
-    delete updateData.password;
   }
 
   return prisma.user.update({
@@ -102,6 +106,21 @@ export const updateUser = async (id, data) => {
   });
 };
 
-export const deleteUser = async (id) => {
+export const deleteUser = async (id, actor) => {
+  if (actor?.id === id) {
+    throw new ApiError(400, 'You cannot delete your own account');
+  }
+
+  const user = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+  if (!user) throw new ApiError(404, 'User not found');
+
+  // Never allow removing the last OWNER — it would lock everyone out.
+  if (user.role === 'OWNER') {
+    const ownerCount = await prisma.user.count({ where: { role: 'OWNER' } });
+    if (ownerCount <= 1) {
+      throw new ApiError(400, 'Cannot delete the last remaining OWNER account');
+    }
+  }
+
   return prisma.user.delete({ where: { id } });
 };

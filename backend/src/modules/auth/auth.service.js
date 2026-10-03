@@ -5,7 +5,7 @@ import { env } from '../../config/env.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ROLES } from '../../shared/index.js';
 
-export const registerUser = async ({ name, email, phone, password, role = ROLES.MEMBER }) => {
+export const registerUser = async ({ name, email, phone, password }) => {
   const existingUser = await prisma.user.findFirst({
     where: {
       OR: [{ email }, { phone }],
@@ -28,7 +28,9 @@ export const registerUser = async ({ name, email, phone, password, role = ROLES.
       email,
       phone,
       passwordHash,
-      role,
+      // Public registration always creates a plain MEMBER. Elevated roles are
+      // assigned only through the OWNER-only user-management route.
+      role: ROLES.MEMBER,
     },
     select: {
       id: true,

@@ -1,10 +1,13 @@
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { success } from '../../../utils/response.js';
+import { ApiError } from '../../../utils/ApiError.js';
 import * as leaveService from './leave.service.js';
 
 export const requestLeave = asyncHandler(async (req, res) => {
-  const empId = req.user.employeeId;
-  const result = await leaveService.requestLeave(empId, req.body);
+  if (!req.user?.employeeId) {
+    throw new ApiError(403, 'Only staff with an employee record can request leave');
+  }
+  const result = await leaveService.requestLeave(req.user.employeeId, req.body);
   return success(res, result, 'Leave requested successfully', 201);
 });
 

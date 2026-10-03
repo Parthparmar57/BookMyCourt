@@ -21,7 +21,8 @@ export const startLowStockJob = () => {
         });
       }
     } catch (error) {
-      // Ignore if table not created yet
+      // Log instead of swallowing — a failing query should be visible, not hidden.
+      logger.error({ error: error.message }, 'Error in lowStock job');
     }
   });
 };

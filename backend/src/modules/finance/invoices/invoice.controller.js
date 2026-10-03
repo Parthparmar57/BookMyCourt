@@ -9,12 +9,12 @@ export const createInvoice = asyncHandler(async (req, res) => {
 });
 
 export const listInvoices = asyncHandler(async (req, res) => {
-  const result = await invoiceService.listInvoices(req.query);
+  const result = await invoiceService.listInvoices(req.query, req.user);
   return success(res, result);
 });
 
 export const getInvoice = asyncHandler(async (req, res) => {
-  const invoice = await invoiceService.getInvoiceById(req.params.id);
+  const invoice = await invoiceService.getInvoiceById(req.params.id, req.user);
   return success(res, invoice);
 });
 
@@ -24,7 +24,7 @@ export const recordPayment = asyncHandler(async (req, res) => {
 });
 
 export const downloadPDF = asyncHandler(async (req, res) => {
-  const invoice = await invoiceService.getInvoiceById(req.params.id);
+  const invoice = await invoiceService.getInvoiceById(req.params.id, req.user);
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `inline; filename="invoice-${invoice.invoiceNo}.pdf"`);
   generateInvoicePDF(invoice, res);

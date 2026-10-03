@@ -1,17 +1,21 @@
-import { addMinutes, startOfDay, endOfDay, isBefore, isAfter } from 'date-fns';
+import { addMinutes, startOfDay, endOfDay, isBefore, isAfter, differenceInMinutes } from 'date-fns';
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { calculateCourtPrice } from '../../../utils/pricing.js';
 import { generateDailySlots, parseTimeOnDate } from '../../../utils/time.js';
+import { genDocNo } from '../../../utils/ids.js';
+import { writeAudit } from '../../../utils/audit.js';
 import { emitBookingUpdate } from '../../../sockets/booking.socket.js';
 import {
   SESSION_MINUTES,
-  MAX_PER_DAY,
   BOOKING_STATUS,
   BOOKING_TYPE,
   TRANSACTION_SOURCE,
   PAYMENT_MODE,
 } from '../../../shared/index.js';
+
+// Full refund if cancelled at least this many hours before start time (PRD policy default).
+const REFUND_WINDOW_HOURS = 2;
 
 export const getAvailability = async ({ date = new Date(), courtId, sport }) => {
   const targetDate = new Date(date);
@@ -75,15 +79,30 @@ export const createBooking = async (data, user) => {
     throw new ApiError(400, 'Selected court is either not found or currently closed');
   }
 
-  // Validate member ID if provided or if booking as MEMBER
-  let memberId = data.memberId;
-  if (!memberId && user?.role === 'MEMBER') {
+  // Resolve the member. A MEMBER may only ever book for themselves — they cannot
+  // pass another member's id. Staff may book on behalf of any member.
+  let memberId = data.memberId ?? null;
+  let walkIn = data.walkIn ?? null;
+  if (user?.role === 'MEMBER') {
+    if (!user.memberId) throw new ApiError(403, 'Your account is not linked to a membership');
     memberId = user.memberId;
+    walkIn = null; // members always book as members
+  }
+
+  if (!memberId && !(walkIn && walkIn.name && walkIn.phone)) {
+    throw new ApiError(400, 'Either a member or complete walk-in details are required');
   }
 
   return prisma.$transaction(async (tx) => {
-    // 1. Check member daily booking limit (Rule BR3)
+    // 1. Daily booking limit (Rule BR3) — taken from the member's plan, not a constant.
     if (memberId) {
+      const member = await tx.member.findUnique({
+        where: { id: memberId },
+        include: { plan: true },
+      });
+      if (!member) throw new ApiError(404, 'Member not found');
+
+      const maxPerDay = member.plan?.maxBookingsDay ?? 2;
       const existingCount = await tx.booking.count({
         where: {
           memberId,
@@ -92,36 +111,36 @@ export const createBooking = async (data, user) => {
         },
       });
 
-      if (existingCount >= MAX_PER_DAY) {
-        throw new ApiError(422, `Member already has ${existingCount} bookings today. Daily limit is ${MAX_PER_DAY}.`);
+      if (existingCount >= maxPerDay) {
+        throw new ApiError(422, `Daily booking limit reached (${maxPerDay} per day for this plan).`);
       }
     }
 
-    // 2. Check for overlapping bookings (Rule BR2)
+    // 2. Early overlap check across ALL non-cancelled bookings (normal + social).
+    //    This is a friendly pre-check; the DB EXCLUDE constraint `booking_no_overlap`
+    //    is the authoritative guarantee under concurrency.
     const overlapping = await tx.booking.findFirst({
       where: {
         courtId: data.courtId,
         status: { not: BOOKING_STATUS.CANCELLED },
-        type: BOOKING_TYPE.NORMAL,
         startTime: { lt: endTime },
         endTime: { gt: startTime },
       },
     });
-
     if (overlapping) {
       throw new ApiError(409, 'This court is already booked for that time');
     }
 
-    // 3. Calculate price based on plan or walk-in rate (Rule BR4 & BR8)
+    // 3. Price based on plan or walk-in rate (Rule BR4 & BR8).
     const price = await calculateCourtPrice(tx, data.courtId, memberId);
 
-    // 4. Create booking
+    // 4. Create booking (DB constraint rejects a concurrent overlapping insert).
     const booking = await tx.booking.create({
       data: {
         courtId: data.courtId,
-        memberId: memberId ?? null,
-        walkInName: data.walkIn?.name ?? null,
-        walkInPhone: data.walkIn?.phone ?? null,
+        memberId,
+        walkInName: walkIn?.name ?? null,
+        walkInPhone: walkIn?.phone ?? null,
         startTime,
         endTime,
         type: data.type || BOOKING_TYPE.NORMAL,
@@ -135,54 +154,101 @@ export const createBooking = async (data, user) => {
       },
     });
 
-    // 5. Post to Transaction Ledger (Rule BR11)
+    // 5. Post to Transaction Ledger (Rule BR11).
     if (price > 0) {
       await tx.transaction.create({
         data: {
-          transactionNo: `TXN-CRT-${Date.now().toString().slice(-6)}`,
+          transactionNo: genDocNo('TXN-CRT'),
           source: TRANSACTION_SOURCE.COURT,
           amount: price,
           tax: 0,
           paymentMode: data.paymentMode || PAYMENT_MODE.UPI,
           reference: booking.id,
           bookingId: booking.id,
-          memberId: memberId ?? null,
-          notes: `Booking for ${court.name} on ${startTime.toLocaleDateString()}`,
+          memberId,
+          notes: `Booking for ${court.name} on ${startTime.toISOString().slice(0, 10)}`,
         },
       });
     }
 
-    // Emit live socket event
-    emitBookingUpdate(booking);
+    await writeAudit(tx, {
+      actorId: user.id,
+      action: 'BOOKING_CREATE',
+      entity: 'Booking',
+      entityId: booking.id,
+      meta: { courtId: data.courtId, memberId, price },
+    });
 
+    emitBookingUpdate(booking);
     return booking;
   });
 };
 
 export const cancelBooking = async (id, user, reason) => {
-  const booking = await prisma.booking.findUnique({
-    where: { id },
-    include: { court: true, member: true },
+  return prisma.$transaction(async (tx) => {
+    const booking = await tx.booking.findUnique({
+      where: { id },
+      include: { court: true, member: true, transactions: true },
+    });
+
+    if (!booking) throw new ApiError(404, 'Booking not found');
+    if (booking.status === BOOKING_STATUS.CANCELLED) {
+      throw new ApiError(400, 'Booking is already cancelled');
+    }
+
+    // Members can only cancel their own bookings.
+    if (user.role === 'MEMBER' && booking.memberId !== user.memberId) {
+      throw new ApiError(403, 'You can only cancel your own bookings');
+    }
+
+    // Refund policy: full refund if cancelled at least REFUND_WINDOW_HOURS before start.
+    const minutesToStart = differenceInMinutes(new Date(booking.startTime), new Date());
+    const eligibleForRefund = minutesToStart >= REFUND_WINDOW_HOURS * 60;
+    const paid = Number(booking.price);
+    const refundAmount = eligibleForRefund ? paid : 0;
+
+    const updated = await tx.booking.update({
+      where: { id },
+      data: {
+        status: BOOKING_STATUS.CANCELLED,
+        cancelReason: reason || null,
+        cancelledById: user.id,
+        cancelledAt: new Date(),
+        refundAmount,
+      },
+      include: { court: true, member: true },
+    });
+
+    // Reverse the revenue from the ledger for whatever is refunded, so dashboards
+    // and reports don't keep counting a cancelled booking's income.
+    if (refundAmount > 0) {
+      const original = booking.transactions.find((t) => t.source === TRANSACTION_SOURCE.COURT);
+      await tx.transaction.create({
+        data: {
+          transactionNo: genDocNo('TXN-REF'),
+          source: TRANSACTION_SOURCE.COURT,
+          amount: -refundAmount,
+          tax: 0,
+          paymentMode: original?.paymentMode || PAYMENT_MODE.UPI,
+          reference: booking.id,
+          bookingId: booking.id,
+          memberId: booking.memberId,
+          notes: `Refund for cancelled booking on ${booking.court.name}`,
+        },
+      });
+    }
+
+    await writeAudit(tx, {
+      actorId: user.id,
+      action: 'BOOKING_CANCEL',
+      entity: 'Booking',
+      entityId: id,
+      meta: { reason: reason || null, refundAmount },
+    });
+
+    emitBookingUpdate(updated);
+    return updated;
   });
-
-  if (!booking) throw new ApiError(404, 'Booking not found');
-  if (booking.status === BOOKING_STATUS.CANCELLED) {
-    throw new ApiError(400, 'Booking is already cancelled');
-  }
-
-  // Members can only cancel their own bookings
-  if (user.role === 'MEMBER' && booking.memberId !== user.memberId) {
-    throw new ApiError(403, 'You can only cancel your own bookings');
-  }
-
-  const updated = await prisma.booking.update({
-    where: { id },
-    data: { status: BOOKING_STATUS.CANCELLED },
-    include: { court: true, member: true },
-  });
-
-  emitBookingUpdate(updated);
-  return updated;
 };
 
 export const listBookings = async ({ courtId, date, status, memberId, page = 1, limit = 20 }) => {
