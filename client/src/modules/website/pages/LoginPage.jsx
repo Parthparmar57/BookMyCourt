@@ -60,18 +60,31 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 bg-slate-50/60 font-sans">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8 space-y-6">
+    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 bg-gradient-to-b from-slate-50 via-white to-slate-50 font-sans">
+      <div className="w-full max-w-md bg-white border border-slate-200/90 rounded-3xl shadow-xl shadow-slate-200/50 p-8 sm:p-9 space-y-6 relative overflow-hidden">
         
-        {/* Header */}
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-slate-900">Sign In</h1>
-          <p className="text-xs text-slate-500">
-            Enter your credentials to access your club account
-          </p>
+        {/* Top Emerald Accent Bar */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
+
+        {/* Brand Header with Book My Court Logo */}
+        <div className="text-center space-y-2">
+          <Link to="/" className="inline-flex flex-col items-center gap-1.5 group">
+            <img
+              src="/bookmycourt_logo.jpg"
+              alt="Book My Court"
+              className="h-12 w-auto object-contain transition-transform group-hover:scale-105"
+            />
+            
+          </Link>
+          <div className="space-y-0.5 pt-1">
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Sign In</h1>
+            <p className="text-xs text-slate-500 font-medium">
+              Enter your credentials to access your club account
+            </p>
+          </div>
         </div>
 
-        {/* 1. Main Sign In Form (Email, Password & Submit) */}
+        {/* Main Sign In Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="flex items-start gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl p-3 leading-relaxed">
@@ -91,7 +104,7 @@ export const LoginPage = () => {
               value={form.login}
               onChange={(e) => setForm((prev) => ({ ...prev, login: e.target.value }))}
               placeholder="e.g. owner@championsclub.com"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-slate-400"
             />
           </div>
 
@@ -108,14 +121,14 @@ export const LoginPage = () => {
               value={form.password}
               onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
               placeholder="••••••••"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-slate-400"
             />
           </div>
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-60 text-white font-semibold text-sm py-2.5 px-4 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-60 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
           >
             {submitting && !activeRole && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>Sign In</span>
@@ -125,13 +138,13 @@ export const LoginPage = () => {
         {/* Divider */}
         <div className="relative flex items-center justify-center pt-1">
           <div className="border-t border-slate-200 w-full" />
-          <span className="bg-white px-3 text-[11px] text-slate-400 uppercase tracking-wider absolute">
+          <span className="bg-white px-3 text-[11px] text-slate-400 uppercase tracking-wider font-semibold absolute">
             or quick demo access
           </span>
         </div>
 
-        {/* 2. Demo Roles Under Email & Password */}
-        <div className="space-y-2 pt-1">
+        {/* Demo Roles Under Email & Password */}
+        <div className="space-y-2.5 pt-1">
           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
             <span>Demo Roles (1-Click Login)</span>
             <span className="text-slate-400 font-normal">Password: {DEMO_PASSWORD}</span>
@@ -148,8 +161,8 @@ export const LoginPage = () => {
                   onClick={() => handleRoleSelect(acc)}
                   className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-all text-center ${
                     isSelected
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/40'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50'
                   } disabled:opacity-60`}
                 >
                   {isSelected ? 'Signing in…' : acc.label}
@@ -160,10 +173,10 @@ export const LoginPage = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center pt-2 border-t border-slate-100">
+        <div className="text-center pt-3 border-t border-slate-100">
           <p className="text-xs text-slate-500">
             Don't have an account?{' '}
-            <Link to="/register" className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">
+            <Link to="/register" className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline">
               Register as Member
             </Link>
           </p>
