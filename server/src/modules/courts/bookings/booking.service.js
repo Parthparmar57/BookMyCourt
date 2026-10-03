@@ -34,6 +34,14 @@ export const getAvailability = async ({ date = new Date(), courtId, sport }) => 
           status: { not: BOOKING_STATUS.CANCELLED },
           startTime: { gte: start, lte: end },
         },
+        include: {
+          member: {
+            include: {
+              user: { select: { name: true, phone: true } },
+              plan: { select: { name: true } },
+            },
+          },
+        },
       },
     },
   });
@@ -54,6 +62,11 @@ export const getAvailability = async ({ date = new Date(), courtId, sport }) => 
         isAvailable: !overlappingBooking,
         bookingType: overlappingBooking ? overlappingBooking.type : null,
         bookingId: overlappingBooking ? overlappingBooking.id : null,
+        bookingStatus: overlappingBooking ? overlappingBooking.status : null,
+        memberName: overlappingBooking?.member?.user?.name || null,
+        memberPhone: overlappingBooking?.member?.user?.phone || null,
+        planName: overlappingBooking?.member?.plan?.name || null,
+        bookingPrice: overlappingBooking ? Number(overlappingBooking.price) : null,
       };
     });
 
