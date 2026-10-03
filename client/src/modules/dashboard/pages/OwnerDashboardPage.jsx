@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDashboardSummary, useDashboardUtilisation } from '../../../hooks/useDashboard';
 import { useLowStock } from '../../../hooks/useShop';
 import { useTabs } from '../../../hooks/useBar';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
-import { TrendingUp, Users, AlertTriangle, ShoppingBag, Calendar, Coffee, Sparkles, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, Users, AlertTriangle, ShoppingBag, Calendar, Coffee, Sparkles, ShieldCheck, CheckCircle2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 
 const SOURCE_META = {
@@ -16,8 +16,9 @@ const SOURCE_META = {
 };
 
 export const OwnerDashboardPage = () => {
-  const summaryQuery = useDashboardSummary();
-  const { data: utilisation = [] } = useDashboardUtilisation();
+  const [period, setPeriod] = useState('today'); // 'today' | 'week' | 'month'
+  const summaryQuery = useDashboardSummary(period);
+  const { data: utilisation = [] } = useDashboardUtilisation(period);
   const { data: lowStock = [] } = useLowStock();
   const { data: openTabs = [] } = useTabs();
 
@@ -39,10 +40,47 @@ export const OwnerDashboardPage = () => {
           </p>
         </div>
 
-        <div className="shrink-0 flex items-center gap-2">
-          <span className="bg-emerald-50 text-[#4A812F] border border-emerald-200 text-xs font-extrabold px-4 py-2 rounded-2xl flex items-center gap-2 shadow-2xs">
+        <div className="shrink-0 flex items-center gap-3">
+          {/* Daily / Weekly / Monthly Period Switcher Tabs */}
+          <div className="bg-slate-100 p-1 rounded-2xl flex items-center gap-1 border border-slate-200 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setPeriod('today')}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                period === 'today'
+                  ? 'bg-white text-[#4A812F] shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Daily
+            </button>
+            <button
+              type="button"
+              onClick={() => setPeriod('week')}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                period === 'week'
+                  ? 'bg-white text-[#4A812F] shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Weekly
+            </button>
+            <button
+              type="button"
+              onClick={() => setPeriod('month')}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                period === 'month'
+                  ? 'bg-white text-[#4A812F] shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Monthly
+            </button>
+          </div>
+
+          <span className="hidden sm:flex bg-emerald-50 text-[#4A812F] border border-emerald-200 text-xs font-extrabold px-3.5 py-2 rounded-2xl items-center gap-2 shadow-2xs">
             <span className="w-2.5 h-2.5 rounded-full bg-[#4A812F] animate-pulse"></span>
-            LIVE SYNC ACTIVE
+            LIVE SYNC
           </span>
         </div>
       </div>
@@ -59,17 +97,76 @@ export const OwnerDashboardPage = () => {
             <>
               {/* KPI cards in crisp white & green */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <KpiCard label="TOTAL REVENUE TODAY" value={formatCurrency(Number(k.todayRevenue))} icon={<TrendingUp className="w-5 h-5" />} tone="emerald" sub={`${formatCurrency(Number(k.monthRevenue))} this month`} />
-                <KpiCard label="COURT BOOKINGS TODAY" value={k.todayBookings} icon={<Calendar className="w-5 h-5" />} tone="emerald" sub={`${k.activeKitchenOrders} active kitchen orders`} />
-                <KpiCard label="RECEIVABLES" value={formatCurrency(Number(k.receivables))} icon={<ShoppingBag className="w-5 h-5" />} tone="blue" sub={`${formatCurrency(Number(k.payables))} payables`} />
-                <KpiCard label="ACTIVE MEMBERS" value={k.activeMembers} icon={<Users className="w-5 h-5" />} tone="green" sub={`${k.expiringMembersSoon} expiring soon`} subTone="amber" />
+                <KpiCard
+                  label={
+                    period === 'today'
+                      ? 'TOTAL REVENUE TODAY'
+                      : period === 'week'
+                      ? 'TOTAL REVENUE THIS WEEK'
+                      : 'TOTAL REVENUE THIS MONTH'
+                  }
+                  value={formatCurrency(
+                    Number(
+                      k.periodRevenue !== undefined
+                        ? k.periodRevenue
+                        : period === 'today'
+                        ? k.todayRevenue
+                        : period === 'week'
+                        ? k.weekRevenue
+                        : k.monthRevenue
+                    )
+                  )}
+                  icon={<TrendingUp className="w-5 h-5" />}
+                  tone="emerald"
+                  sub={
+                    period === 'today'
+                      ? `${formatCurrency(Number(k.monthRevenue))} this month • ${k.revenueGrowthPct >= 0 ? '+' : ''}${k.revenueGrowthPct || 0}% vs yesterday`
+                      : period === 'week'
+                      ? `${formatCurrency(Number(k.monthRevenue))} this month • ${k.revenueGrowthPct >= 0 ? '+' : ''}${k.revenueGrowthPct || 0}% vs last week`
+                      : `${formatCurrency(Number(k.todayRevenue))} today • ${k.revenueGrowthPct >= 0 ? '+' : ''}${k.revenueGrowthPct || 0}% vs last month`
+                  }
+                />
+                <KpiCard
+                  label={
+                    period === 'today'
+                      ? 'COURT BOOKINGS TODAY'
+                      : period === 'week'
+                      ? 'COURT BOOKINGS THIS WEEK'
+                      : 'COURT BOOKINGS THIS MONTH'
+                  }
+                  value={k.periodBookings !== undefined ? k.periodBookings : k.todayBookings}
+                  icon={<Calendar className="w-5 h-5" />}
+                  tone="emerald"
+                  sub={
+                    period === 'today'
+                      ? `${k.activeKitchenOrders} active kitchen orders`
+                      : `${k.bookingsGrowthPct >= 0 ? '+' : ''}${k.bookingsGrowthPct || 0}% vs previous ${period}`
+                  }
+                />
+                <KpiCard
+                  label="RECEIVABLES"
+                  value={formatCurrency(Number(k.receivables))}
+                  icon={<ShoppingBag className="w-5 h-5" />}
+                  tone="blue"
+                  sub={`${formatCurrency(Number(k.payables))} payables`}
+                />
+                <KpiCard
+                  label="ACTIVE MEMBERS"
+                  value={k.activeMembers}
+                  icon={<Users className="w-5 h-5" />}
+                  tone="green"
+                  sub={`${k.expiringMembersSoon} expiring soon`}
+                  subTone="amber"
+                />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Revenue pie */}
                 <div className="lg:col-span-6 bg-white border border-gray-200 p-6 rounded-3xl shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b pb-3 border-gray-100">
-                    <h3 className="font-extrabold text-slate-900 text-base">Revenue by Channel (This Month)</h3>
+                    <h3 className="font-extrabold text-slate-900 text-base">
+                      Revenue by Channel ({summary.periodLabel || (period === 'today' ? 'Today' : period === 'week' ? 'This Week' : 'This Month')})
+                    </h3>
                     <span className="text-[10px] font-mono font-black uppercase bg-emerald-50 text-[#4A812F] border border-emerald-200 px-2.5 py-0.5 rounded-full">
                       GST BREAKDOWN
                     </span>
@@ -95,9 +192,25 @@ export const OwnerDashboardPage = () => {
                           </div>
                         ))}
                       </div>
+
+                      {/* Payment mode split */}
+                      {summary.paymentModeSplit && summary.paymentModeSplit.length > 0 && (
+                        <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <span className="text-[11px] font-mono font-bold text-slate-400 uppercase">Settled Modes:</span>
+                          <div className="flex flex-wrap gap-2">
+                            {summary.paymentModeSplit.map((pm) => (
+                              <span key={pm.mode} className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 font-bold text-[11px]">
+                                {pm.mode}: {formatCurrency(pm.amount)}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (
-                    <p className="text-xs text-slate-400 text-center py-16 font-semibold">No revenue recorded this month yet.</p>
+                    <p className="text-xs text-slate-400 text-center py-16 font-semibold">
+                      No revenue recorded for {summary.periodLabel || (period === 'today' ? 'today' : period === 'week' ? 'this week' : 'this month')} yet.
+                    </p>
                   )}
                 </div>
 
@@ -141,7 +254,9 @@ export const OwnerDashboardPage = () => {
               {utilData.length > 0 && (
                 <div className="bg-white border border-gray-200 p-6 rounded-3xl shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b pb-3 border-gray-100">
-                    <h3 className="font-extrabold text-slate-900 text-base">Court Utilisation Today (%)</h3>
+                    <h3 className="font-extrabold text-slate-900 text-base">
+                      Court Utilisation {summary.periodLabel || (period === 'today' ? 'Today' : period === 'week' ? 'This Week' : 'This Month')} (%)
+                    </h3>
                     <span className="text-xs font-bold text-[#4A812F] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
                       OPTIMIZED OCCUPANCY
                     </span>
