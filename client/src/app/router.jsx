@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { PublicLayout } from '../layouts/PublicLayout';
 import { AppLayout } from '../layouts/AppLayout';
 import { KitchenLayout } from '../layouts/KitchenLayout';
+import { ProtectedRoute } from './ProtectedRoute';
 
 import { HomePage } from '../modules/website/pages/HomePage';
 import { AvailabilityPage } from '../modules/website/pages/AvailabilityPage';
@@ -10,6 +11,7 @@ import { MembershipPage } from '../modules/website/pages/MembershipPage';
 import { ShopPage } from '../modules/website/pages/ShopPage';
 import { TrialPage } from '../modules/website/pages/TrialPage';
 import { LoginPage } from '../modules/website/pages/LoginPage';
+import { RegisterPage } from '../modules/website/pages/RegisterPage';
 
 import { OwnerDashboardPage } from '../modules/dashboard/pages/OwnerDashboardPage';
 import { BookingsPage } from '../modules/bookings/pages/BookingsPage';
@@ -17,6 +19,12 @@ import { MembersPage } from '../modules/members/pages/MembersPage';
 import { BarPage } from '../modules/bar/pages/BarPage';
 import { KitchenPage } from '../modules/kitchen/pages/KitchenPage';
 import { ShopInventoryPage } from '../modules/shop/pages/ShopInventoryPage';
+
+// Helper: wrap a layout + its children behind a role guard.
+const guarded = (roles, layout, children) => ({
+  element: <ProtectedRoute roles={roles} />,
+  children: [{ element: layout, children }],
+});
 
 export const router = createBrowserRouter([
   // Public Routes (Navbar + Landing Page + Footer + Floating Chat Widget)
@@ -30,15 +38,15 @@ export const router = createBrowserRouter([
       { path: 'membership', element: <MembershipPage /> },
       { path: 'shop', element: <ShopPage /> },
       { path: 'trial', element: <TrialPage /> },
-      { path: 'login', element: <LoginPage /> }
+      { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <RegisterPage /> }
     ]
   },
 
   // Owner / Admin Executive Suite
   {
     path: '/admin',
-    element: <AppLayout />,
-    children: [
+    ...guarded(['OWNER'], <AppLayout />, [
       { index: true, element: <OwnerDashboardPage /> },
       { path: 'members', element: <MembersPage /> },
       { path: 'bookings', element: <BookingsPage /> },
@@ -47,60 +55,55 @@ export const router = createBrowserRouter([
       { path: 'crm', element: <OwnerDashboardPage /> },
       { path: 'accounting', element: <OwnerDashboardPage /> },
       { path: 'hr', element: <OwnerDashboardPage /> }
-    ]
+    ])
   },
 
   // Front Desk Staff Portal
   {
     path: '/staff/frontdesk',
-    element: <AppLayout />,
-    children: [
+    ...guarded(['OWNER', 'FRONT_DESK'], <AppLayout />, [
       { index: true, element: <MembersPage /> },
       { path: 'members', element: <MembersPage /> },
       { path: 'bookings', element: <BookingsPage /> },
       { path: 'crm', element: <MembersPage /> }
-    ]
+    ])
   },
 
   // Bar Staff POS
   {
     path: '/staff/bar',
-    element: <AppLayout />,
-    children: [
+    ...guarded(['OWNER', 'BAR_STAFF'], <AppLayout />, [
       { index: true, element: <BarPage /> }
-    ]
+    ])
   },
 
   // Shop Staff POS
   {
     path: '/staff/shop',
-    element: <AppLayout />,
-    children: [
+    ...guarded(['OWNER', 'SHOP_STAFF'], <AppLayout />, [
       { index: true, element: <ShopInventoryPage /> },
       { path: 'inventory', element: <ShopInventoryPage /> }
-    ]
+    ])
   },
 
   // Kitchen Display Screen (KDS)
   {
     path: '/staff/kitchen',
-    element: <KitchenLayout />,
-    children: [
+    ...guarded(['OWNER', 'KITCHEN', 'BAR_STAFF'], <KitchenLayout />, [
       { index: true, element: <KitchenPage /> }
-    ]
+    ])
   },
 
   // Member Portal
   {
     path: '/member',
-    element: <AppLayout />,
-    children: [
+    ...guarded(['MEMBER'], <AppLayout />, [
       { index: true, element: <BookingsPage /> },
       { path: 'book', element: <BookingsPage /> },
       { path: 'bookings', element: <BookingsPage /> },
       { path: 'shop', element: <ShopPage /> },
       { path: 'tab', element: <BarPage /> },
       { path: 'card', element: <MembersPage /> }
-    ]
+    ])
   }
 ]);

@@ -11,4 +11,14 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  // Dev proxy: browser calls same-origin "/api", Vite forwards to the backend.
+  // This avoids CORS entirely in development. The backend default port is 5000.
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

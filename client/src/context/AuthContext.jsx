@@ -1,33 +1,111 @@
-import React, { createContext, useContext, useState } from 'react';
-import { MOCK_USERS } from '../data/mockData';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { authService } from '../services/auth.service';
 
 const AuthContext = createContext(null);
 
+const TOKEN_KEY = 'accessToken';
+const REFRESH_KEY = 'refreshToken';
+
+// Server users have no avatar; generate a stable initials-based one for the UI.
+const withAvatar = (user) =>
+  user
+    ? {
+        ...user,
+        avatar:
+          user.avatar ||
+          `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(user.name || 'User')}`,
+      }
+    : null;
+
+const persistTokens = ({ accessToken, refreshToken }) => {
+  if (accessToken) localStorage.setItem(TOKEN_KEY, accessToken);
+  if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
+};
+
+const clearTokens = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+};
+
 export const AuthProvider = ({ children }) => {
-  // Default to Visitor for landing page demo, but editable
-  const [currentUser, setCurrentUser] = useState(null);
-  const [currentRole, setCurrentRole] = useState('VISITOR'); // 'OWNER' | 'FRONT_DESK' | 'BAR_STAFF' | 'KITCHEN' | 'SHOP_STAFF' | 'MEMBER' | 'VISITOR'
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const loginAsRole = (role) => {
-    setCurrentRole(role);
-    if (role === 'VISITOR') {
-      setCurrentUser(null);
-      return;
+  // On first load, if we have a token, hydrate the user from /auth/me.
+  useEffect(() => {
+    let active = true;
+    const bootstrap = async () => {
+      if (!localStorage.getItem(TOKEN_KEY)) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const me = await authService.me();
+        if (active) setUser(withAvatar(me));
+      } catch {
+        clearTokens();
+        if (active) setUser(null);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+    bootstrap();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // apiClient fires this when a refresh fails — force a clean logout.
+  useEffect(() => {
+    const onForcedLogout = () => {
+      clearTokens();
+      setUser(null);
+    };
+    window.addEventListener('auth:logout', onForcedLogout);
+    return () => window.removeEventListener('auth:logout', onForcedLogout);
+  }, []);
+
+  const login = useCallback(async (login, password) => {
+    const data = await authService.login({ login, password });
+    persistTokens(data);
+    setUser(withAvatar(data.user));
+    return data.user;
+  }, []);
+
+  const register = useCallback(async (payload) => {
+    const data = await authService.register(payload);
+    persistTokens(data);
+    setUser(withAvatar(data.user));
+    return data.user;
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch {
+      /* ignore network/logout errors — clear locally regardless */
     }
-    const userMatch = MOCK_USERS.find(u => u.role === role) || MOCK_USERS[0];
-    setCurrentUser(userMatch);
+    clearTokens();
+    setUser(null);
+  }, []);
+
+  const role = user?.role || 'VISITOR';
+
+  const value = {
+    // Phase 2 API
+    user,
+    role,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    register,
+    logout,
+    // Backward-compatible aliases used by existing components
+    currentUser: user,
+    currentRole: role,
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    setCurrentRole('VISITOR');
-  };
-
-  return (
-    <AuthContext.Provider value={{ currentUser, currentRole, loginAsRole, logout, isAuthenticated: !!currentUser }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
