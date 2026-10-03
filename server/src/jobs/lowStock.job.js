@@ -7,11 +7,17 @@ export const startLowStockJob = () => {
   // Check hourly
   cron.schedule('0 * * * *', async () => {
     try {
-      const lowStockProducts = await prisma.$queryRaw`
-        SELECT id, name, sku, stock, "reorderLevel"
-        FROM "Product"
-        WHERE stock <= "reorderLevel"
-      `;
+      const products = await prisma.product.findMany({
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          stock: true,
+          reorderLevel: true,
+        },
+      });
+
+      const lowStockProducts = products.filter((p) => p.stock <= p.reorderLevel);
 
       if (lowStockProducts && lowStockProducts.length > 0) {
         logger.warn({ count: lowStockProducts.length }, 'Low stock products detected');
@@ -21,7 +27,6 @@ export const startLowStockJob = () => {
         });
       }
     } catch (error) {
-      // Log instead of swallowing — a failing query should be visible, not hidden.
       logger.error({ error: error.message }, 'Error in lowStock job');
     }
   });
