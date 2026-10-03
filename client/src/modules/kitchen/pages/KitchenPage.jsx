@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useKitchenQueue, useUpdateKitchenStatus } from '../../../hooks/useBar';
 import { useKitchenRealtime } from '../../../hooks/useRealtime';
-import { Utensils, Clock, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { Utensils, Clock, CheckCircle2, ArrowRight, Loader2, Calendar } from 'lucide-react';
+import { ApplyLeaveModal } from '../../../shared/components/ApplyLeaveModal';
 
 const minsAgo = (iso) => {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -21,6 +22,7 @@ export const KitchenPage = () => {
   useKitchenRealtime(); // push updates; the 30s poll below is just a fallback
   const queueQuery = useKitchenQueue({ refetchInterval: 30000 });
   const updateStatus = useUpdateKitchenStatus();
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const tickets = (queueQuery.data || []).map(toTicket);
   const newTickets = tickets.filter((t) => t.status === 'PLACED');
@@ -40,17 +42,29 @@ export const KitchenPage = () => {
             <p className="text-xs text-slate-500 font-semibold">Live order queue — auto-refreshes every 10s.</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {queueQuery.isFetching ? (
-            <Loader2 className="w-4 h-4 text-[#4A812F] animate-spin" />
-          ) : (
-            <span className="w-3 h-3 rounded-full bg-[#4A812F] animate-ping"></span>
-          )}
-          <span className="text-xs font-extrabold text-[#4A812F] uppercase tracking-widest bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-            LIVE KITCHEN FEED
-          </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowLeaveModal(true)}
+            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
+          >
+            <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Apply Leave</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            {queueQuery.isFetching ? (
+              <Loader2 className="w-4 h-4 text-[#4A812F] animate-spin" />
+            ) : (
+              <span className="w-3 h-3 rounded-full bg-[#4A812F] animate-ping"></span>
+            )}
+            <span className="text-xs font-extrabold text-[#4A812F] uppercase tracking-widest bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+              LIVE KITCHEN FEED
+            </span>
+          </div>
         </div>
       </div>
+
+      <ApplyLeaveModal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} />
 
       {queueQuery.isError && (
         <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-2xl p-4">

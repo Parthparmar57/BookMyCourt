@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { ApplyLeaveModal } from './ApplyLeaveModal';
 import { 
   CheckCircle2, 
   LayoutDashboard, 
@@ -18,8 +19,11 @@ import {
 } from 'lucide-react';
 
 export const Sidebar = () => {
-  const { currentRole, logout } = useAuth();
+  const { currentRole, currentUser, logout } = useAuth();
   const location = useLocation();
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+
+  const isStaff = ['FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'].includes(currentRole) || !!currentUser?.employee;
 
   const getNavLinks = () => {
     const roleUpper = (currentRole || '').toUpperCase();
@@ -106,17 +110,29 @@ export const Sidebar = () => {
           })}
         </nav>
 
-        {/* Sign Out Footer */}
-        <div className="pt-4 border-t border-gray-100 shrink-0">
+        {/* Footer Actions */}
+        <div className="pt-3 border-t border-gray-100 shrink-0 space-y-2">
+          {isStaff && (
+            <button
+              onClick={() => setShowLeaveModal(true)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors cursor-pointer"
+            >
+              <Calendar className="w-4 h-4 text-emerald-600" />
+              <span>Apply for Leave</span>
+            </button>
+          )}
+
           <button
             onClick={logout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-rose-100 bg-white cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-rose-100 bg-white cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
           </button>
         </div>
       </div>
+
+      <ApplyLeaveModal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} />
     </aside>
   );
 };
