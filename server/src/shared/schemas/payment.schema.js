@@ -1,11 +1,19 @@
 import { z } from 'zod';
 import { TRANSACTION_SOURCE } from '../constants/enums.js';
 
-export const createOrderSchema = z.object({
-  amount: z.coerce.number().positive('Amount must be greater than 0'),
-  currency: z.string().length(3).default('INR'),
-  receipt: z.string().max(40).optional(),
-});
+// The payment amount is NEVER taken from the client — the server derives it from
+// an authoritative source (a plan's price or an invoice's outstanding balance).
+// The caller sends a reference id only.
+export const createOrderSchema = z
+  .object({
+    planId: z.string().uuid().optional(),
+    invoiceId: z.string().uuid().optional(),
+    currency: z.string().length(3).default('INR'),
+    receipt: z.string().max(40).optional(),
+  })
+  .refine((d) => d.planId || d.invoiceId, {
+    message: 'A planId or invoiceId is required',
+  });
 
 export const verifyPaymentSchema = z.object({
   orderId: z.string().min(1, 'orderId is required'),

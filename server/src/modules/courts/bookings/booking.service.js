@@ -2,7 +2,7 @@ import { addMinutes, startOfDay, endOfDay, isBefore, isAfter, differenceInMinute
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { calculateCourtPrice } from '../../../utils/pricing.js';
-import { generateDailySlots, parseTimeOnDate } from '../../../utils/time.js';
+import { generateDailySlots, parseTimeOnDate, assertSlotBookable } from '../../../utils/time.js';
 import { genDocNo } from '../../../utils/ids.js';
 import { writeAudit } from '../../../utils/audit.js';
 import { emitBookingUpdate } from '../../../sockets/booking.socket.js';
@@ -92,6 +92,15 @@ export const createBooking = async (data, user) => {
     throw new ApiError(400, 'Selected court is either not found or currently closed');
   }
 
+  // Reject past slots (Rule 2) and slots outside the court's opening hours (Rule 8).
+  assertSlotBookable({
+    startTime,
+    startHHMM: data.startTime,
+    openTime: court.openTime,
+    closeTime: court.closeTime,
+    sessionMinutes: SESSION_MINUTES,
+  });
+
   // Resolve the member. A MEMBER may only ever book for themselves — they cannot
   // pass another member's id. Staff may book on behalf of any member.
   let memberId = data.memberId ?? null;
@@ -109,6 +118,11 @@ export const createBooking = async (data, user) => {
   return prisma.$transaction(async (tx) => {
     // 1. Daily booking limit (Rule BR3) — taken from the member's plan, not a constant.
     if (memberId) {
+      // Lock the member row so concurrent bookings for the same member serialize
+      // here — otherwise two simultaneous requests could both pass the count
+      // check and exceed the daily limit (Rule 4, concurrency).
+      await tx.$queryRaw`SELECT id FROM "Member" WHERE id = ${memberId} FOR UPDATE`;
+
       const member = await tx.member.findUnique({
         where: { id: memberId },
         include: { plan: true },

@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { authService } from '../services/auth.service';
+import { setAccessToken } from '../lib/apiClient';
 
 const AuthContext = createContext(null);
-
-const TOKEN_KEY = 'accessToken';
-const REFRESH_KEY = 'refreshToken';
 
 // Clean name and derive first letter of the first name
 const getFirstLetter = (name) => {
@@ -33,33 +31,23 @@ const withAvatar = (user) => {
   };
 };
 
-const persistTokens = ({ accessToken, refreshToken }) => {
-  if (accessToken) localStorage.setItem(TOKEN_KEY, accessToken);
-  if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
-};
-
-const clearTokens = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_KEY);
-};
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // On first load, if we have a token, hydrate the user from /auth/me.
+  // On first load the in-memory access token is gone, so silently re-establish the
+  // session from the httpOnly refresh cookie (if any), then hydrate from /auth/me.
   useEffect(() => {
     let active = true;
     const bootstrap = async () => {
-      if (!localStorage.getItem(TOKEN_KEY)) {
-        setIsLoading(false);
-        return;
-      }
       try {
+        const { accessToken } = await authService.refresh();
+        if (!accessToken) throw new Error('No active session');
+        setAccessToken(accessToken);
         const me = await authService.me();
         if (active) setUser(withAvatar(me));
       } catch {
-        clearTokens();
+        setAccessToken(null);
         if (active) setUser(null);
       } finally {
         if (active) setIsLoading(false);
@@ -74,7 +62,7 @@ export const AuthProvider = ({ children }) => {
   // apiClient fires this when a refresh fails — force a clean logout.
   useEffect(() => {
     const onForcedLogout = () => {
-      clearTokens();
+      setAccessToken(null);
       setUser(null);
     };
     window.addEventListener('auth:logout', onForcedLogout);
@@ -83,14 +71,14 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (login, password) => {
     const data = await authService.login({ login, password });
-    persistTokens(data);
+    setAccessToken(data.accessToken); // in memory only; refresh token is the httpOnly cookie
     setUser(withAvatar(data.user));
     return data.user;
   }, []);
 
   const register = useCallback(async (payload) => {
     const data = await authService.register(payload);
-    persistTokens(data);
+    setAccessToken(data.accessToken);
     setUser(withAvatar(data.user));
     return data.user;
   }, []);
@@ -101,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     } catch {
       /* ignore network/logout errors — clear locally regardless */
     }
-    clearTokens();
+    setAccessToken(null);
     setUser(null);
   }, []);
 

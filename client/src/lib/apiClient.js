@@ -21,15 +21,20 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-const TOKEN_KEY = 'accessToken';
-const REFRESH_KEY = 'refreshToken';
+// The access token is kept in MEMORY ONLY (never localStorage) so that an XSS
+// payload cannot read it. The long-lived refresh token lives solely in the
+// backend's httpOnly cookie (sent automatically via withCredentials), which JS
+// cannot read. On a full page reload the in-memory token is gone and is silently
+// re-obtained from the cookie via the refresh flow (see AuthContext bootstrap).
+let accessToken = null;
+export const setAccessToken = (token) => { accessToken = token || null; };
+export const getAccessToken = () => accessToken;
 
-// Attach the access token (if present) to every outgoing request.
+// Attach the in-memory access token (if present) to every outgoing request.
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (token) {
+  if (accessToken) {
     config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
 });
@@ -50,11 +55,12 @@ const normalizeError = (error) => {
 let refreshPromise = null;
 
 const runRefresh = async () => {
-  const stored = localStorage.getItem(REFRESH_KEY);
-  // Use a bare axios call so this request does not recurse through this interceptor.
+  // Refresh relies solely on the httpOnly refresh cookie (withCredentials). No
+  // refresh token is read from or sent via JS storage. Use a bare axios call so
+  // this request does not recurse through this interceptor.
   const { data } = await axios.post(
     `${apiClient.defaults.baseURL}/auth/refresh`,
-    stored ? { refreshToken: stored } : {},
+    {},
     { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
   );
   return data?.data?.accessToken;
@@ -77,14 +83,13 @@ apiClient.interceptors.response.use(
         const newToken = await refreshPromise;
         refreshPromise = null;
         if (!newToken) throw new Error('No access token from refresh');
-        localStorage.setItem(TOKEN_KEY, newToken);
+        setAccessToken(newToken);
         original.headers = original.headers || {};
         original.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(original); // retry (re-unwrapped by this interceptor)
       } catch {
         refreshPromise = null;
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(REFRESH_KEY);
+        setAccessToken(null);
         // Let the app (AuthContext) reset state and redirect to /login.
         window.dispatchEvent(new Event('auth:logout'));
       }

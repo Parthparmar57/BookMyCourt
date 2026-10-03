@@ -11,8 +11,32 @@ const server = http.createServer(app);
 initSocket(server);
 startJobs();
 
+// The overlap/stock guarantees live in prisma/migrations/manual_constraints.sql,
+// which `prisma db push` does NOT apply. Verify the critical one is present so the
+// server never runs without its data-integrity guarantees (Issue #14).
+const verifyDbConstraints = async () => {
+  try {
+    const rows = await prisma.$queryRaw`SELECT 1 FROM pg_constraint WHERE conname = 'booking_no_overlap'`;
+    if (!rows || rows.length === 0) {
+      const msg =
+        'Missing DB constraint "booking_no_overlap". Apply prisma/migrations/manual_constraints.sql ' +
+        '(psql "$DATABASE_URL" -f prisma/migrations/manual_constraints.sql).';
+      if (env.NODE_ENV === 'production') {
+        logger.error(msg);
+        process.exit(1);
+      }
+      logger.warn(msg);
+    } else {
+      logger.info('DB integrity constraints verified.');
+    }
+  } catch (err) {
+    logger.warn({ err: err.message }, 'Could not verify DB constraints');
+  }
+};
+
 server.listen(env.PORT, () => {
   logger.info(`Sports Club Management Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
+  verifyDbConstraints();
 });
 
 // Graceful shutdown: stop accepting connections, close sockets and the DB pool,

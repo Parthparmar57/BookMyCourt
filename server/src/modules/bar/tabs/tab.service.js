@@ -68,22 +68,25 @@ export const getTabById = async (id) => {
 };
 
 export const settleTab = async (tabId, { paymentMode = PAYMENT_MODE.UPI, notes }) => {
-  const tab = await prisma.barTab.findUnique({
-    where: { id: tabId },
-    include: { orders: true, member: true },
-  });
-
-  if (!tab) throw new ApiError(404, 'Bar tab not found');
-  if (tab.status === TAB_STATUS.SETTLED) {
-    throw new ApiError(400, 'Tab is already settled');
-  }
-
-  // Amount and tax come from the tab's own orders (authoritative), not the
-  // cached totalAmount, so the ledger carries the correct GST.
-  const amount = round2(tab.orders.reduce((s, o) => s + Number(o.total), 0));
-  const tax = round2(tab.orders.reduce((s, o) => s + Number(o.tax), 0));
-
   return prisma.$transaction(async (tx) => {
+    // Lock the tab row first so two concurrent settlements serialize here — the
+    // status re-check below then guarantees the ledger is posted exactly once.
+    await tx.$queryRaw`SELECT id FROM "BarTab" WHERE id = ${tabId} FOR UPDATE`;
+
+    const tab = await tx.barTab.findUnique({
+      where: { id: tabId },
+      include: { orders: true, member: true },
+    });
+    if (!tab) throw new ApiError(404, 'Bar tab not found');
+    if (tab.status === TAB_STATUS.SETTLED) {
+      throw new ApiError(400, 'Tab is already settled');
+    }
+
+    // Amount and tax come from the tab's own orders (authoritative), not the
+    // cached totalAmount, so the ledger carries the correct GST.
+    const amount = round2(tab.orders.reduce((s, o) => s + Number(o.total), 0));
+    const tax = round2(tab.orders.reduce((s, o) => s + Number(o.tax), 0));
+
     // 1. Mark all orders under this tab as completed and paid.
     await tx.order.updateMany({
       where: { barTabId: tabId },

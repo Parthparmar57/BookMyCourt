@@ -9,8 +9,11 @@ const router = Router();
 
 router.use(auth);
 
-router.post('/', validate({ body: createLeaveRequestSchema }), controller.requestLeave);
-router.get('/', controller.listLeaves);
+// Leave is staff-only — MEMBER has no employee record and must never reach HR data.
+const STAFF = ['OWNER', 'FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'];
+
+router.post('/', authorize(...STAFF), validate({ body: createLeaveRequestSchema }), controller.requestLeave);
+router.get('/', authorize(...STAFF), controller.listLeaves);
 router.patch('/:id/status', authorize('OWNER'), validate({ params: leaveIdParamSchema, body: updateLeaveStatusSchema }), controller.updateStatus);
 
 export default router;

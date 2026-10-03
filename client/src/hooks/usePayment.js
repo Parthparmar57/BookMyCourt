@@ -17,12 +17,14 @@ export const useRazorpayCheckout = () => {
   const createOrder = useCreatePaymentOrder();
   const verify = useVerifyPayment();
 
-  const checkout = async ({ amount, name = 'BookMyCourt', description, prefill, source, notes }) => {
+  // The amount is NEVER sent from the client — the server derives it from the
+  // planId/invoiceId reference. The server returns the authoritative paise amount.
+  const checkout = async ({ planId, invoiceId, name = 'BookMyCourt', description, prefill, source, notes }) => {
     if (!RAZORPAY_KEY_ID) {
       throw { message: 'Online payments are not configured (missing VITE_RAZORPAY_KEY_ID).' };
     }
     await loadRazorpayScript();
-    const order = await createOrder.mutateAsync({ amount }); // { id, amount(paise), currency }
+    const order = await createOrder.mutateAsync({ planId, invoiceId }); // { id, amount(paise), currency }
 
     return new Promise((resolve, reject) => {
       const rzp = new window.Razorpay({

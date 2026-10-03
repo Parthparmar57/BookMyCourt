@@ -12,6 +12,7 @@ import { ShopPage } from '../modules/website/pages/ShopPage';
 import { TrialPage } from '../modules/website/pages/TrialPage';
 import { LoginPage } from '../modules/website/pages/LoginPage';
 import { RegisterPage } from '../modules/website/pages/RegisterPage';
+import { NotFoundPage } from '../modules/website/pages/NotFoundPage';
 
 import { OwnerDashboardPage } from '../modules/dashboard/pages/OwnerDashboardPage';
 import { BookingsPage } from '../modules/bookings/pages/BookingsPage';
@@ -120,5 +121,11 @@ export const router = createBrowserRouter([
       { path: 'tab', element: <MemberTabPage /> },
       { path: 'card', element: <MemberCardPage /> }
     ])
+  },
+
+  // Fallback Catch-All 404 Page Not Found Route
+  {
+    path: '*',
+    element: <NotFoundPage />
   }
 ]);

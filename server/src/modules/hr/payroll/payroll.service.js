@@ -83,11 +83,20 @@ export const listPayrolls = async ({ month, year, employeeId }) => {
 };
 
 export const updatePayrollStatus = async (id, { status, paidDate }) => {
+  const existing = await prisma.payroll.findUnique({ where: { id } });
+  if (!existing) throw new ApiError(404, 'Payroll record not found');
+
+  // A salary can never be marked paid twice (Rule 32).
+  if (existing.status === PAYROLL_STATUS.PAID && status === PAYROLL_STATUS.PAID) {
+    throw new ApiError(409, 'This payroll has already been marked paid');
+  }
+
   return prisma.payroll.update({
     where: { id },
+    // Only stamp paidDate when actually transitioning to PAID; otherwise preserve it.
     data: {
       status,
-      paidDate: paidDate ? new Date(paidDate) : new Date(),
+      paidDate: status === PAYROLL_STATUS.PAID ? (paidDate ? new Date(paidDate) : new Date()) : existing.paidDate,
     },
     include: { employee: { include: { user: true } } },
   });

@@ -68,6 +68,10 @@ export const joinSocialPlay = async (bookingId, data, user) => {
   const memberId = user?.role === 'MEMBER' ? user.memberId : data.memberId || null;
 
   return prisma.$transaction(async (tx) => {
+    // Lock the session row so concurrent joins serialize — otherwise two players
+    // could both pass the capacity check and exceed maxPlayers (Rule 11).
+    await tx.$queryRaw`SELECT id FROM "Booking" WHERE id = ${bookingId} FOR UPDATE`;
+
     const booking = await tx.booking.findUnique({
       where: { id: bookingId },
       include: { court: true, _count: { select: { socialParticipants: true } } },

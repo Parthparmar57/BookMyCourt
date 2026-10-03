@@ -1,4 +1,25 @@
 import { addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, isBefore, isAfter } from 'date-fns';
+import { ApiError } from './ApiError.js';
+
+// Convert an "HH:MM" string to minutes past midnight.
+const toMinutes = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+};
+
+// Reject a booking slot that is in the past (Rule 2) or outside the court's
+// opening hours (Rule 8). `startTime` is a Date; `startHHMM` is the requested
+// slot start ("HH:MM"); hours are compared as minutes-of-day to avoid tz drift.
+export const assertSlotBookable = ({ startTime, startHHMM, openTime, closeTime, sessionMinutes = 60, now = new Date() }) => {
+  if (startTime.getTime() < now.getTime()) {
+    throw new ApiError(400, 'Cannot book a slot in the past');
+  }
+  const start = toMinutes(startHHMM);
+  const end = start + sessionMinutes;
+  if (start < toMinutes(openTime) || end > toMinutes(closeTime)) {
+    throw new ApiError(422, `Booking must be within opening hours (${openTime}–${closeTime})`);
+  }
+};
 
 export const parseTimeOnDate = (date, timeStr) => {
   const [hours, minutes] = timeStr.split(':').map(Number);

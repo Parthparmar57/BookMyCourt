@@ -16,3 +16,14 @@ export const listOrders = asyncHandler(async (req, res) => {
   const result = await barOrderService.listBarOrders(req.query);
   return success(res, result);
 });
+
+export const updateOrderStatus = asyncHandler(async (req, res) => {
+  const order = await barOrderService.updateOrderStatus(req.params.id, req.body);
+  return success(res, order, 'Order status updated');
+});
+
+export const voidOrder = asyncHandler(async (req, res) => {
+  const order = await barOrderService.voidOrder(req.params.id, req.body, req.user);
+  return success(res, order, 'Order voided and refunded');
+});
+

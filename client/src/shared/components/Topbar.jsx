@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Calendar, Menu, X, CheckCircle2, XCircle, Clock, Check } from 'lucide-react';
+import { Bell, Calendar, Menu, X, CheckCircle2, XCircle, Clock, Check, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
 import { useLeaveRealtime } from '../../hooks/useRealtime';

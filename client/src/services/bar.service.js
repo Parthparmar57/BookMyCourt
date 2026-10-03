@@ -21,6 +21,8 @@ export const barOrdersApi = {
   list: () => apiClient.get('/bar-orders'),
   create: (payload) => apiClient.post('/bar-orders', payload),
   settle: (id, payload) => apiClient.post(`/bar-orders/${id}/settle`, payload),
+  updateStatus: (id, status) => apiClient.patch(`/bar-orders/${id}/status`, { status }),
+  voidOrder: (id, reason) => apiClient.post(`/bar-orders/${id}/void`, { reason }),
 };
 
 /** Member tabs. */

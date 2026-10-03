@@ -13,8 +13,17 @@ export const requestLeave = asyncHandler(async (req, res) => {
 });
 
 export const listLeaves = asyncHandler(async (req, res) => {
-  const query = req.user.role === 'OWNER' ? req.query : { ...req.query, employeeId: req.user.employeeId };
-  const leaves = await leaveService.listLeaveRequests(query);
+  // OWNER sees everything; any other role is scoped to their own employee record.
+  // A non-owner without an employee record must NEVER see other employees' leave
+  // (an empty/undefined employeeId previously fell through to an unfiltered query).
+  if (req.user.role === 'OWNER') {
+    const leaves = await leaveService.listLeaveRequests(req.query);
+    return success(res, leaves);
+  }
+  if (!req.user.employeeId) {
+    return success(res, []);
+  }
+  const leaves = await leaveService.listLeaveRequests({ ...req.query, employeeId: req.user.employeeId });
   return success(res, leaves);
 });
 

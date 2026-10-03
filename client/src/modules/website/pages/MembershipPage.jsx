@@ -33,7 +33,7 @@ export const MembershipPage = () => {
     setPayingId(plan.id);
     try {
       await checkout({
-        amount: Number(plan.price),
+        planId: plan.id,
         description: `${plan.name} membership`,
         source: 'MEMBERSHIP',
         prefill: { name: user?.name, email: user?.email, contact: user?.phone },

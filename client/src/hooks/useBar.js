@@ -68,6 +68,28 @@ export const useSettleBarOrder = () => {
   });
 };
 
+export const useUpdateBarOrderStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }) => barOrdersApi.updateStatus(id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.barOrders.all });
+      qc.invalidateQueries({ queryKey: qk.kitchen.queue });
+    },
+  });
+};
+
+export const useVoidBarOrder = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }) => barOrdersApi.voidOrder(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.barOrders.all });
+      qc.invalidateQueries({ queryKey: qk.barTables.all });
+    },
+  });
+};
+
 /* ---------------- Tabs ---------------- */
 export const useTabs = () =>
   useQuery({ queryKey: qk.tabs.list(), queryFn: tabsApi.list, select: (d) => toCollection(d, 'tabs').items });

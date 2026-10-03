@@ -4,6 +4,8 @@ import {
   useBarTables,
   useCreateBarOrder,
   useBarOrders,
+  useUpdateBarOrderStatus,
+  useVoidBarOrder,
   useTabs,
   useSettleTab,
   useCreateMenuItem,
@@ -34,11 +36,16 @@ import {
   Trash2,
   Sparkles,
   Wallet,
-  LogOut
+  LogOut,
+  Ban,
+  Printer,
+  Search
 } from 'lucide-react';
 import { useMembers } from '../../../hooks/useMembership';
+import { useAuth } from '../../../context/AuthContext';
 
 export const BarPage = () => {
+  const { currentRole } = useAuth();
   const { data: tables = [] } = useBarTables();
   const { data: menu = [] } = useMenu();
   const { data: orders = [] } = useBarOrders();
@@ -47,6 +54,8 @@ export const BarPage = () => {
   const members = membersData?.items || [];
 
   const createBarOrder = useCreateBarOrder();
+  const updateBarOrderStatus = useUpdateBarOrderStatus();
+  const voidBarOrder = useVoidBarOrder();
   const settleTab = useSettleTab();
   const createMenuItem = useCreateMenuItem();
   const updateMenuItem = useUpdateMenuItem();
@@ -65,10 +74,43 @@ export const BarPage = () => {
   // POS State
   const [selectedTable, setSelectedTable] = useState(null);
   const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [cart, setCart] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [paymentMode, setPaymentMode] = useState('cash'); // 'cash' | 'card' | 'upi' | 'tab'
   const [feedback, setFeedback] = useState(null);
+
+  // Receipt & Void Modal States
+  const [receiptOrder, setReceiptOrder] = useState(null);
+  const [voidTargetOrder, setVoidTargetOrder] = useState(null);
+  const [voidReason, setVoidReason] = useState('');
+
+  // Filtered members for POS dropdown search
+  const filteredMembers = useMemo(() => {
+    if (!memberSearchQuery) return members;
+    const q = memberSearchQuery.toLowerCase().trim();
+    return members.filter(
+      (m) =>
+        (m.name || '').toLowerCase().includes(q) ||
+        (m.user?.phone || m.phone || '').toLowerCase().includes(q) ||
+        (m.memberNo || '').toLowerCase().includes(q)
+    );
+  }, [members, memberSearchQuery]);
+
+  // Top selling menu items calculation
+  const topSellingItems = useMemo(() => {
+    const counts = {};
+    orders.forEach((o) => {
+      (o.items || []).forEach((item) => {
+        const name = item.menuItem?.name || 'Item';
+        counts[name] = (counts[name] || 0) + (item.quantity || 1);
+      });
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [orders]);
 
   // Menu Modal State
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
@@ -475,22 +517,35 @@ export const BarPage = () => {
               </div>
 
               {/* Member Selection for Automatic Discount */}
-              <div className="space-y-1.5 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-                <label className="text-[11px] font-extrabold text-slate-700 flex items-center justify-between">
-                  <span>Club Member (Optional)</span>
+              <div className="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-700">
+                  <span>Identify Member (Auto Discount)</span>
                   {memberDiscountPct > 0 && (
                     <span className="text-[10px] font-bold text-[#2e7d32] bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> {memberDiscountPct}% Bar Discount
+                      <Sparkles className="w-3 h-3" /> {memberDiscountPct}% Plan Discount
                     </span>
                   )}
-                </label>
+                </div>
+                
+                {/* Search Box */}
+                <div className="relative">
+                  <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search name, phone, member ID..."
+                    value={memberSearchQuery}
+                    onChange={(e) => setMemberSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium focus:outline-none focus:border-[#2e7d32]"
+                  />
+                </div>
+
                 <select
                   value={selectedMemberId}
                   onChange={(e) => setSelectedMemberId(e.target.value)}
                   className="w-full bg-white border border-slate-200 rounded-xl text-xs font-semibold px-2.5 py-2 text-slate-800 focus:outline-none focus:border-[#2e7d32]"
                 >
                   <option value="">Walk-in Guest / Non-Member</option>
-                  {members.map((m) => (
+                  {filteredMembers.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name} ({m.plan?.name || 'Standard'} • {m.plan?.barDiscount || 0}% OFF)
                     </option>
@@ -600,6 +655,7 @@ export const BarPage = () => {
                   <th className="p-3.5">Payment</th>
                   <th className="p-3.5">Total Amount</th>
                   <th className="p-3.5">Status</th>
+                  <th className="p-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-semibold">
@@ -607,7 +663,7 @@ export const BarPage = () => {
                   <tr key={o.id} className="hover:bg-slate-50">
                     <td className="p-3.5 font-mono font-bold text-slate-900">#{o.id.slice(-6)}</td>
                     <td className="p-3.5 text-slate-800">
-                      {o.table ? `Table ${o.table.number}` : 'Direct POS'}
+                      {o.table ? `Table ${o.table.number}` : (o.barTable ? `Table ${o.barTable.number}` : 'Direct POS')}
                     </td>
                     <td className="p-3.5 text-slate-600">
                       {o.items?.map((i) => `${i.menuItem?.name || 'Item'} (${i.quantity})`).join(', ') || 'Bar Items'}
@@ -620,17 +676,55 @@ export const BarPage = () => {
                     <td className="p-3.5 font-black text-slate-900">{formatCurrency(Number(o.totalAmount || o.total || 0))}</td>
                     <td className="p-3.5">
                       <span className={`px-2.5 py-1 text-[10px] font-black rounded-md ${
-                        o.status === 'SERVED' ? 'bg-emerald-100 text-emerald-800' :
-                        o.status === 'PREPARING' ? 'bg-amber-100 text-amber-900' : 'bg-blue-100 text-blue-900'
+                        o.status === 'SERVED' || o.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
+                        o.status === 'PREPARING' ? 'bg-amber-100 text-amber-900' :
+                        o.status === 'CANCELLED' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-900'
                       }`}>
                         {o.status || 'PENDING'}
                       </span>
+                    </td>
+                    <td className="p-3.5 text-right space-x-1">
+                      {/* Receipt Button */}
+                      <button
+                        onClick={() => setReceiptOrder(o)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-all"
+                        title="Print / View Receipt"
+                      >
+                        Receipt
+                      </button>
+
+                      {/* Mark Served Button */}
+                      {o.status !== 'SERVED' && o.status !== 'COMPLETED' && o.status !== 'CANCELLED' && (
+                        <button
+                          onClick={() => updateBarOrderStatus.mutate({ id: o.id, status: 'SERVED' })}
+                          className="px-2.5 py-1 rounded-lg bg-[#2e7d32] hover:bg-[#236327] text-white text-[11px] font-bold transition-all"
+                        >
+                          Mark Served
+                        </button>
+                      )}
+
+                      {/* Void Button (Owner Only) */}
+                      {o.status !== 'CANCELLED' && (
+                        currentRole === 'OWNER' ? (
+                          <button
+                            onClick={() => { setVoidTargetOrder(o); setVoidReason(''); }}
+                            className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold transition-all"
+                            title="Void Order (Owner Permission)"
+                          >
+                            Void
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 italic px-1" title="Only Owner can void orders">
+                            (Owner Void Only)
+                          </span>
+                        )
+                      )}
                     </td>
                   </tr>
                 ))}
                 {!orders.length && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-400 font-medium">No live bar orders yet today.</td>
+                    <td colSpan={7} className="p-8 text-center text-slate-400 font-medium">No live bar orders yet today.</td>
                   </tr>
                 )}
               </tbody>
@@ -886,6 +980,25 @@ export const BarPage = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Top Selling Items */}
+                <div className="pt-2 border-t border-slate-100">
+                  <div className="text-xs font-bold text-slate-500 uppercase mb-2">Top Selling Bar & Kitchen Items</div>
+                  {topSellingItems.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {topSellingItems.map((item) => (
+                        <div key={item.name} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                          <span className="font-bold text-slate-900 truncate">{item.name}</span>
+                          <span className="font-black text-[#2e7d32] bg-emerald-100 px-2 py-0.5 rounded-md text-[10px] shrink-0 ml-1">
+                            {item.count} sold
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 font-medium">No top items recorded yet today.</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -900,6 +1013,19 @@ export const BarPage = () => {
               <h3 className="font-extrabold text-base text-slate-900">Close Shift & Reconcile</h3>
               <button onClick={() => setShowCloseShift(false)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
+
+            {/* Open Tabs Warning Alert */}
+            {tabs.length > 0 && (
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                  <AlertCircle className="w-4 h-4 text-amber-600" /> Open Member Tabs Alert!
+                </div>
+                <p className="text-[11px] text-amber-700 leading-tight">
+                  There are currently <strong>{tabs.length} open member tab(s)</strong> totaling <strong>{formatCurrency(totalTabsOwed)}</strong>. Ensure all open tabs are verified before completing shift handover.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-1 text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
               <div className="flex justify-between"><span>Opening float</span><span className="font-bold">{formatCurrency(Number(activeShift.openingCash || 0))}</span></div>
               <div className="flex justify-between"><span>Cash sales</span><span className="font-bold">{formatCurrency(Number(cashSales))}</span></div>
@@ -936,6 +1062,133 @@ export const BarPage = () => {
                 Confirm & Close Shift
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: VOID ORDER (OWNER ONLY) */}
+      {voidTargetOrder && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+              <h3 className="font-extrabold text-base text-rose-700 flex items-center gap-2">
+                <Ban className="w-5 h-5 text-rose-600" /> Void & Refund Bar Order
+              </h3>
+              <button onClick={() => setVoidTargetOrder(null)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+            <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1">
+              <div>Order ID: <strong className="text-slate-900">#{voidTargetOrder.id.slice(-6)}</strong></div>
+              <div>Total Amount: <strong className="text-slate-900">{formatCurrency(Number(voidTargetOrder.totalAmount || voidTargetOrder.total || 0))}</strong></div>
+              <p className="text-[11px] text-rose-600 font-bold pt-1">
+                Owner Authorization Required: Voiding will cancel the order and refund ledger entries.
+              </p>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!voidReason.trim()) return alert('Please specify a valid reason to void this order.');
+                try {
+                  await voidBarOrder.mutateAsync({ id: voidTargetOrder.id, reason: voidReason });
+                  setVoidTargetOrder(null);
+                  setVoidReason('');
+                } catch (err) {
+                  alert(err?.message || 'Could not void order');
+                }
+              }}
+              className="space-y-3 text-xs font-semibold"
+            >
+              <div>
+                <label className="block mb-1 text-slate-800">Cancellation / Refund Reason *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={voidReason}
+                  onChange={(e) => setVoidReason(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-slate-900 focus:border-rose-500 focus:outline-none text-xs"
+                  placeholder="e.g. Customer returned dish, billing error..."
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={voidBarOrder.isPending}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs py-3 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {voidBarOrder.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Confirm Void & Refund Order
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DIGITAL RECEIPT */}
+      {receiptOrder && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl font-mono">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+              <div className="flex items-center gap-2">
+                <img src="/bookmycourt_logo.jpg" alt="Logo" className="h-6 w-auto rounded object-contain" />
+                <span className="font-black text-sm text-slate-900 font-sans">CHAMPIONS CLUB CAFETERIA</span>
+              </div>
+              <button onClick={() => setReceiptOrder(null)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            {/* Receipt Body */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 text-xs text-slate-800">
+              <div className="text-center border-b border-dashed border-slate-300 pb-2 space-y-0.5">
+                <div className="font-black text-slate-900 text-sm">BAR RECEIPT</div>
+                <div className="text-[10px] text-slate-500">Order #{receiptOrder.id.slice(-6)} • {new Date(receiptOrder.createdAt || Date.now()).toLocaleString()}</div>
+                <div className="text-[10px] text-slate-600 font-bold uppercase">{receiptOrder.barTable ? `Table ${receiptOrder.barTable.number}` : 'Takeaway POS'}</div>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-1 border-b border-dashed border-slate-300 pb-2">
+                {receiptOrder.items?.map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-[11px]">
+                    <span>{item.quantity}× {item.menuItem?.name || 'Item'}</span>
+                    <span className="font-bold">{formatCurrency(Number(item.unitPrice || item.price || 0) * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pricing Totals */}
+              <div className="space-y-1 text-xs pt-1">
+                {receiptOrder.subtotal && (
+                  <div className="flex justify-between text-slate-600">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(Number(receiptOrder.subtotal))}</span>
+                  </div>
+                )}
+                {Number(receiptOrder.discount || 0) > 0 && (
+                  <div className="flex justify-between text-emerald-700 font-bold">
+                    <span>Member Discount</span>
+                    <span>-{formatCurrency(Number(receiptOrder.discount))}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-black text-slate-900 pt-1 border-t border-slate-200">
+                  <span>TOTAL PAID</span>
+                  <span className="text-[#2e7d32]">{formatCurrency(Number(receiptOrder.totalAmount || receiptOrder.total || 0))}</span>
+                </div>
+                <div className="text-[10px] text-slate-500 text-right uppercase pt-0.5">
+                  Payment Mode: {receiptOrder.paymentMode || 'PAID'}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => window.print()}
+                className="flex-1 bg-slate-900 hover:bg-black text-white font-extrabold text-xs py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer font-sans"
+              >
+                <Printer className="w-4 h-4" /> Print Digital Receipt
+              </button>
+              <button
+                onClick={() => setReceiptOrder(null)}
+                className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs py-3 rounded-xl cursor-pointer font-sans"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -3,6 +3,7 @@ import { isRazorpayConfigured } from '../../../config/env.js';
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { genDocNo } from '../../../utils/ids.js';
+import { round2 } from '../../../utils/money.js';
 import { TRANSACTION_SOURCE, PAYMENT_MODE } from '../../../shared/index.js';
 
 const ensureConfigured = () => {
@@ -11,12 +12,36 @@ const ensureConfigured = () => {
   }
 };
 
-export const createRazorpayOrder = async ({ amount, currency = 'INR', receipt }) => {
+// Resolve the authoritative amount (in rupees) from a server-side source. The
+// client only supplies the reference id; it can never dictate what it pays.
+const resolveOrderAmount = async ({ planId, invoiceId }) => {
+  if (planId) {
+    const plan = await prisma.plan.findUnique({ where: { id: planId } });
+    if (!plan) throw new ApiError(404, 'Plan not found');
+    return { amount: Number(plan.price), receipt: `plan_${planId}` };
+  }
+  if (invoiceId) {
+    const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+    if (!invoice) throw new ApiError(404, 'Invoice not found');
+    // Charge only the outstanding balance (total minus what is already paid).
+    const paid = await prisma.transaction.aggregate({
+      where: { invoiceId },
+      _sum: { amount: true },
+    });
+    const outstanding = round2(Number(invoice.total) - Number(paid._sum.amount || 0));
+    if (outstanding <= 0) throw new ApiError(400, 'This invoice is already fully paid');
+    return { amount: outstanding, receipt: `inv_${invoiceId}` };
+  }
+  throw new ApiError(400, 'A planId or invoiceId is required to create a payment order');
+};
+
+export const createRazorpayOrder = async ({ planId, invoiceId, currency = 'INR', receipt }) => {
   ensureConfigured();
 
-  const paise = Math.round(Number(amount) * 100);
+  const resolved = await resolveOrderAmount({ planId, invoiceId });
+  const paise = Math.round(resolved.amount * 100);
   if (!Number.isFinite(paise) || paise <= 0) {
-    throw new ApiError(400, 'A valid positive amount is required');
+    throw new ApiError(400, 'Computed order amount is invalid');
   }
 
   // No silent mock fallback: a real failure must surface, not route traffic into
@@ -24,7 +49,7 @@ export const createRazorpayOrder = async ({ amount, currency = 'INR', receipt })
   return razorpay.orders.create({
     amount: paise,
     currency,
-    receipt: receipt || `rcpt_${Date.now()}`,
+    receipt: receipt || resolved.receipt || `rcpt_${Date.now()}`,
   });
 };
 

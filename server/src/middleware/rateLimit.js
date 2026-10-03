@@ -22,6 +22,19 @@ export const publicApiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Dedicated limiter for token refresh. More generous than authLimiter because the
+// SPA calls /auth/refresh on every page load and on each 401, but still caps abuse.
+export const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  message: {
+    success: false,
+    message: 'Too many token refresh attempts, please try again later',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Baseline limiter applied to the entire API surface.
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

@@ -28,3 +28,19 @@ DROP INDEX IF EXISTS bartab_one_open_per_member;
 CREATE UNIQUE INDEX bartab_one_open_per_member
   ON "BarTab" ("memberId")
   WHERE status = 'OPEN';
+
+-- Rule 15/33: value invariants the app validates, also guaranteed at the DB level.
+ALTER TABLE "Booking" DROP CONSTRAINT IF EXISTS booking_end_after_start;
+ALTER TABLE "Booking" ADD CONSTRAINT booking_end_after_start CHECK ("endTime" > "startTime");
+
+ALTER TABLE "OrderItem" DROP CONSTRAINT IF EXISTS orderitem_qty_positive;
+ALTER TABLE "OrderItem" ADD CONSTRAINT orderitem_qty_positive CHECK (quantity > 0);
+
+ALTER TABLE "Product" DROP CONSTRAINT IF EXISTS product_price_nonneg;
+ALTER TABLE "Product" ADD CONSTRAINT product_price_nonneg CHECK (price >= 0);
+
+ALTER TABLE "MenuItem" DROP CONSTRAINT IF EXISTS menuitem_price_nonneg;
+ALTER TABLE "MenuItem" ADD CONSTRAINT menuitem_price_nonneg CHECK (price >= 0);
+
+ALTER TABLE "LeaveRequest" DROP CONSTRAINT IF EXISTS leave_end_after_start;
+ALTER TABLE "LeaveRequest" ADD CONSTRAINT leave_end_after_start CHECK ("endDate" >= "startDate");

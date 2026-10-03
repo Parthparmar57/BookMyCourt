@@ -11,6 +11,7 @@ import {
   PAYMENT_STATUS,
   TRANSACTION_SOURCE,
   TABLE_STATUS,
+  TAB_STATUS,
   PAYMENT_MODE,
 } from '../../../shared/index.js';
 
@@ -28,6 +29,14 @@ export const createBarOrder = async (data, user) => {
   const { barDiscountPct } = await getMemberDiscounts(prisma, memberId);
 
   return prisma.$transaction(async (tx) => {
+    // A settled/closed tab must never accept new items (Rule 21).
+    if (onTab) {
+      const tab = await tx.barTab.findUnique({ where: { id: data.barTabId } });
+      if (!tab) throw new ApiError(404, 'Bar tab not found');
+      if (tab.status !== TAB_STATUS.OPEN) {
+        throw new ApiError(409, 'Cannot add items to a tab that is already settled');
+      }
+    }
     let subtotal = 0;
     let totalDiscount = 0;
     let totalTax = 0;
@@ -247,3 +256,58 @@ export const listBarOrders = async ({ tableId, status, page = 1, limit = 50 }) =
 
   return { orders, total, page, totalPages: Math.ceil(total / limit) };
 };
+
+export const updateOrderStatus = async (orderId, { status }) => {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new ApiError(404, 'Order not found');
+
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: { status },
+    include: {
+      items: { include: { menuItem: true } },
+      barTable: true,
+      member: { include: { user: true } },
+    },
+  });
+
+  return updated;
+};
+
+export const voidOrder = async (orderId, { reason }, user) => {
+  if (user?.role !== 'OWNER') {
+    throw new ApiError(403, 'Only Owner / Admin can void or refund orders');
+  }
+  if (!reason || !reason.trim()) {
+    throw new ApiError(400, 'A valid reason is required to void or refund an order');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new ApiError(404, 'Order not found');
+
+    const updated = await tx.order.update({
+      where: { id: orderId },
+      data: {
+        status: ORDER_STATUS.CANCELLED,
+        paymentStatus: PAYMENT_STATUS.REFUNDED,
+        notes: order.notes ? `${order.notes} | VOIDED: ${reason}` : `VOIDED: ${reason}`,
+      },
+      include: {
+        items: { include: { menuItem: true } },
+        barTable: true,
+        member: { include: { user: true } },
+      },
+    });
+
+    if (order.barTableId) {
+      await tx.barTable.update({
+        where: { id: order.barTableId },
+        data: { status: TABLE_STATUS.AVAILABLE },
+      });
+    }
+
+    return updated;
+  });
+};
+

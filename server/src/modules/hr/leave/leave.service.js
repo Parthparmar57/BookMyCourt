@@ -20,6 +20,20 @@ export const requestLeave = async (employeeId, data) => {
     throw new ApiError(400, `Requested ${days} days, but remaining leave balance is only ${employee.leaveBalance} days`);
   }
 
+  // Reject leave that overlaps an existing pending/approved request (Rule 31).
+  // Two ranges overlap when each starts on or before the other ends.
+  const overlap = await prisma.leaveRequest.findFirst({
+    where: {
+      employeeId,
+      status: { in: [LEAVE_STATUS.PENDING, LEAVE_STATUS.APPROVED] },
+      startDate: { lte: new Date(data.endDate) },
+      endDate: { gte: new Date(data.startDate) },
+    },
+  });
+  if (overlap) {
+    throw new ApiError(409, 'This leave overlaps an existing leave request');
+  }
+
   const createdLeave = await prisma.leaveRequest.create({
     data: {
       employeeId,

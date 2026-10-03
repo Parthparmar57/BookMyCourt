@@ -29,4 +29,16 @@ router.post(
   controller.settleOrder
 );
 
+router.patch(
+  '/:id/status',
+  authorize('OWNER', 'BAR_STAFF', 'KITCHEN'),
+  controller.updateOrderStatus
+);
+
+router.post(
+  '/:id/void',
+  authorize('OWNER'),
+  controller.voidOrder
+);
+
 export default router;
