@@ -19,6 +19,7 @@ import { MembersPage } from '../modules/members/pages/MembersPage';
 import { BarPage } from '../modules/bar/pages/BarPage';
 import { KitchenPage } from '../modules/kitchen/pages/KitchenPage';
 import { ShopInventoryPage } from '../modules/shop/pages/ShopInventoryPage';
+import { ShopDashboardPage } from '../modules/shop/pages/ShopDashboardPage';
 
 // Dedicated Member Portal Pages
 import { MemberDashboardPage } from '../modules/members/pages/MemberDashboardPage';
@@ -87,7 +88,7 @@ export const router = createBrowserRouter([
   {
     path: '/staff/shop',
     ...guarded(['OWNER', 'SHOP_STAFF'], <AppLayout />, [
-      { index: true, element: <ShopInventoryPage /> },
+      { index: true, element: <ShopDashboardPage /> },
       { path: 'inventory', element: <ShopInventoryPage /> }
     ])
   },

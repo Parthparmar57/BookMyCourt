@@ -5,6 +5,40 @@ import { formatCurrency } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
 import { ShoppingBag } from 'lucide-react';
 
+const EQUIPMENT_IMAGE_POOL = [
+  'https://images.unsplash.com/photo-1617083934555-ac7d4fed8814?auto=format&fit=crop&q=80&w=600',
+  'https://images.unsplash.com/photo-1530915536647-759c9044a7b7?auto=format&fit=crop&q=80&w=600',
+  'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600',
+  'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600',
+  'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600',
+  'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&q=80&w=600',
+  'https://images.unsplash.com/photo-1592709823125-a191f07a2a5e?auto=format&fit=crop&q=80&w=600',
+  'https://images.unsplash.com/photo-1627627256672-027a4613d028?auto=format&fit=crop&q=80&w=600'
+];
+
+export const SafeProductImage = ({ prod, idx }) => {
+  const name = (prod?.name || '').toLowerCase();
+  const cat = (prod?.category || '').toLowerCase();
+
+  let initialSrc = EQUIPMENT_IMAGE_POOL[idx % EQUIPMENT_IMAGE_POOL.length];
+  if (name.includes('ball') || cat.includes('ball')) initialSrc = EQUIPMENT_IMAGE_POOL[1];
+  else if (name.includes('shoe') || cat.includes('shoe')) initialSrc = EQUIPMENT_IMAGE_POOL[2];
+  else if (name.includes('polo') || cat.includes('apparel')) initialSrc = EQUIPMENT_IMAGE_POOL[3];
+  else if (name.includes('bag') || cat.includes('bag')) initialSrc = EQUIPMENT_IMAGE_POOL[4];
+  else if (name.includes('grip') || cat.includes('accessor')) initialSrc = EQUIPMENT_IMAGE_POOL[5];
+
+  const [src, setSrc] = React.useState(initialSrc);
+
+  return (
+    <img
+      src={src}
+      alt={prod?.name || 'Sports Item'}
+      onError={() => setSrc(`https://picsum.photos/seed/gear-${prod?.id || idx}-safe/600/600`)}
+      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+    />
+  );
+};
+
 export const ShopPage = () => {
   const shopQuery = usePublicShop();
   const fallbackProducts = [
@@ -14,8 +48,7 @@ export const ShopPage = () => {
       category: 'Rackets',
       price: 18499,
       stock: 12,
-      sku: 'WIL-PS14-PRO',
-      imageUrl: '/photo-1622279457486-62dcc4a431d6.avif'
+      sku: 'WIL-PS14-PRO'
     },
     {
       id: 'p2',
@@ -23,8 +56,7 @@ export const ShopPage = () => {
       category: 'Balls',
       price: 649,
       stock: 48,
-      sku: 'BAB-BALL-3P',
-      imageUrl: '/photo-1595435934249-5df7ed86e1c0.avif'
+      sku: 'BAB-BALL-3P'
     },
     {
       id: 'p3',
@@ -32,8 +64,7 @@ export const ShopPage = () => {
       category: 'Padel',
       price: 22999,
       stock: 6,
-      sku: 'BULL-HACK-03',
-      imageUrl: '/photo-1554068865-24cecd4e34b8.avif'
+      sku: 'BULL-HACK-03'
     },
     {
       id: 'p4',
@@ -41,8 +72,7 @@ export const ShopPage = () => {
       category: 'Badminton',
       price: 15999,
       stock: 8,
-      sku: 'YON-AST99-PRO',
-      imageUrl: '/photo-1626248801379-51a0748a5f96.avif'
+      sku: 'YON-AST99-PRO'
     },
     {
       id: 'p6',
@@ -50,8 +80,7 @@ export const ShopPage = () => {
       category: 'Apparel',
       price: 3499,
       stock: 25,
-      sku: 'NIKE-POLO-DF',
-      imageUrl: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600'
+      sku: 'NIKE-POLO-DF'
     },
     {
       id: 'p7',
@@ -59,8 +88,7 @@ export const ShopPage = () => {
       category: 'Bags',
       price: 7499,
       stock: 9,
-      sku: 'HEAD-BAG-12R',
-      imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600'
+      sku: 'HEAD-BAG-12R'
     },
     {
       id: 'p8',
@@ -68,40 +96,10 @@ export const ShopPage = () => {
       category: 'Accessories',
       price: 14999,
       stock: 14,
-      sku: 'LUX-ALU-125',
-      imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&q=80&w=600'
+      sku: 'LUX-ALU-125'
     }
   ];
   const products = (shopQuery.data && shopQuery.data.length > 0) ? shopQuery.data : fallbackProducts;
-
-  const UNIQUE_CARD_IMAGES = [
-    '/photo-1622279457486-62dcc4a431d6.avif',
-    '/photo-1595435934249-5df7ed86e1c0.avif',
-    '/photo-1554068865-24cecd4e34b8.avif',
-    '/photo-1626248801379-51a0748a5f96.avif'
-  ];
-
-  const getProductImage = (prod, idx = 0) => {
-    const url = prod?.imageUrl;
-    if (url && typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')) {
-      if (!url.includes('photo-1622279457486-62dcc4a431d6') || idx === 0) {
-        return url;
-      }
-    }
-    const name = (prod?.name || '').toLowerCase();
-    const cat = (prod?.category || '').toLowerCase();
-
-    if (name.includes('ball') || cat.includes('ball')) {
-      return UNIQUE_CARD_IMAGES[1];
-    }
-    if (name.includes('shoe') || cat.includes('shoe')) {
-      return UNIQUE_CARD_IMAGES[2];
-    }
-    if (name.includes('grip') || cat.includes('accessor') || name.includes('string')) {
-      return UNIQUE_CARD_IMAGES[3];
-    }
-    return UNIQUE_CARD_IMAGES[idx % UNIQUE_CARD_IMAGES.length];
-  };
 
   return (
     <div className="py-12 px-4 max-w-7xl mx-auto space-y-8">
@@ -118,16 +116,14 @@ export const ShopPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map((prod, idx) => {
           const inStock = prod.stock > 0;
-          const imgSrc = getProductImage(prod, idx);
           return (
-            <div key={prod.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div key={prod.id || idx} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div className="relative aspect-square bg-gray-100 overflow-hidden flex items-center justify-center">
-                <img src={imgSrc} alt={prod.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                <SafeProductImage prod={prod} idx={idx} />
                 <span className="absolute top-3 left-3 bg-[#121212] text-white text-[10px] font-black px-2.5 py-1 rounded-md uppercase font-mono shadow-md">
                   {prod.category}
                 </span>
               </div>
-
               <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
                 <div>
                   <span className="text-[10px] font-mono text-gray-400">SKU: {prod.sku}</span>
