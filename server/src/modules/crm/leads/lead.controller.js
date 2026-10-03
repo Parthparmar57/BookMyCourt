@@ -28,7 +28,9 @@ export const addFollowUp = asyncHandler(async (req, res) => {
 });
 
 export const createQuotation = asyncHandler(async (req, res) => {
-  const quotation = await leadService.createQuotation(req.body);
+  // The lead is identified by the URL param; it takes precedence over any
+  // leadId in the body so the two can never disagree.
+  const quotation = await leadService.createQuotation({ ...req.body, leadId: req.params.id });
   return success(res, quotation, 'Quotation generated successfully', 201);
 });
 

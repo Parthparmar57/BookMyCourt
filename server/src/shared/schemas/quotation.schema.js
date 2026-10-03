@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { QUOTATION_STATUS } from '../constants/enums.js';
 
 export const createQuotationSchema = z.object({
-  leadId: z.string().uuid(),
+  // leadId comes from the URL (/leads/:id/quotations); accepted in the body too
+  // for backward compatibility, but the route param is authoritative.
+  leadId: z.string().uuid().optional(),
   planId: z.string().uuid().optional().nullable(),
   amount: z.coerce.number().positive(),
   discount: z.coerce.number().min(0).default(0),

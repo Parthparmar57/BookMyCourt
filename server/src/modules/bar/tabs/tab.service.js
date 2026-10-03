@@ -21,8 +21,11 @@ export const openTab = async ({ memberId, notes }) => {
     where: { memberId, status: TAB_STATUS.OPEN },
   });
 
+  // A member may have at most one open tab (also enforced by the
+  // bartab_one_open_per_member unique index). Surface a clear conflict instead
+  // of silently returning the existing tab with a misleading 201.
   if (existingOpenTab) {
-    return existingOpenTab;
+    throw new ApiError(409, 'This member already has an open tab');
   }
 
   return prisma.barTab.create({
@@ -37,9 +40,9 @@ export const openTab = async ({ memberId, notes }) => {
   });
 };
 
-export const listOpenTabs = async () => {
+export const listOpenTabs = async ({ memberId } = {}) => {
   return prisma.barTab.findMany({
-    where: { status: TAB_STATUS.OPEN },
+    where: { status: TAB_STATUS.OPEN, ...(memberId && { memberId }) },
     include: {
       member: { include: { user: true, plan: true } },
       orders: {

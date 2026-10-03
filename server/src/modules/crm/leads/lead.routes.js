@@ -23,7 +23,7 @@ router.get('/:id', validate({ params: leadIdParamSchema }), controller.getLead);
 router.patch('/:id', validate({ params: leadIdParamSchema, body: updateLeadSchema }), controller.updateLead);
 
 router.post('/:id/follow-ups', validate({ params: leadIdParamSchema, body: createFollowUpSchema }), controller.addFollowUp);
-router.post('/:id/quotations', validate({ body: createQuotationSchema }), controller.createQuotation);
+router.post('/:id/quotations', validate({ params: leadIdParamSchema, body: createQuotationSchema }), controller.createQuotation);
 router.patch('/quotations/:id/status', validate({ body: updateQuotationStatusSchema }), controller.updateQuotationStatus);
 router.post('/:id/convert', validate({ params: leadIdParamSchema, body: convertLeadSchema }), controller.convertLead);
 

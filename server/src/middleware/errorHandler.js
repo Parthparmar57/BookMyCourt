@@ -16,6 +16,11 @@ export const errorHandler = (err, req, res, next) => {
   } else if (err.message && (err.message.includes('no_overlap') || err.message.includes('exclusion constraint'))) {
     statusCode = 409;
     message = 'This court is already booked for that time (overlap detected)';
+  } else if (err.code === 'P2028') {
+    // Interactive transaction timed out / expired — a transient infrastructure
+    // condition the client can safely retry, not a logic error.
+    statusCode = 503;
+    message = 'The request timed out while writing to the database. Please retry.';
   }
 
   if (statusCode >= 500) {
