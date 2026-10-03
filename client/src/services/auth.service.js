@@ -20,6 +20,13 @@ export const authService = {
 
   // -> current user (includes member / employee relations)
   me: () => apiClient.get('/auth/me'),
+
+  // { login (email or phone) } -> { message, emailMasked, resetToken, otpCode }
+  forgotPassword: (payload) => apiClient.post('/auth/forgot-password', payload),
+
+  // { token, otp, newPassword, email } -> { message }
+  resetPassword: (payload) => apiClient.post('/auth/reset-password', payload),
 };
 
 export default authService;
+

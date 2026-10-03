@@ -3,6 +3,8 @@ import { ApiError } from '../../../utils/ApiError.js';
 import { LEAD_STAGE, QUOTATION_STATUS } from '../../../shared/index.js';
 import { genDocNo } from '../../../utils/ids.js';
 import { registerMember } from '../../membership/members/member.service.js';
+import { sendEmail } from '../../../lib/mailer.js';
+import { getQuotationEmailTemplate } from '../../../utils/emailTemplates.js';
 
 export const listLeads = async ({ stage, assignedToId }) => {
   return prisma.lead.findMany({
@@ -111,6 +113,105 @@ export const createQuotation = async (data) => {
   });
 };
 
+export const sendQuotationEmail = async (leadId, data) => {
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    include: { quotations: { include: { plan: true } } },
+  });
+  if (!lead) throw new ApiError(404, 'Lead not found');
+
+  const targetEmail = data.email || lead.email;
+  if (!targetEmail) {
+    throw new ApiError(400, 'Lead does not have an email address to send quotation');
+  }
+
+  // Find or create quotation
+  let quotation = null;
+  if (data.quotationId) {
+    quotation = await prisma.quotation.findUnique({
+      where: { id: data.quotationId },
+      include: { plan: true },
+    });
+  }
+
+  if (!quotation) {
+    const quotationNo = genDocNo('QUO');
+    const amount = Number(data.amount || 5000);
+    const discount = Number(data.discount || 0);
+    const total = Math.max(0, amount - discount);
+    const validUntil = data.validUntil ? new Date(data.validUntil) : new Date(Date.now() + 14 * 86400000);
+
+    quotation = await prisma.quotation.create({
+      data: {
+        quotationNo,
+        leadId,
+        planId: data.planId || null,
+        amount,
+        discount,
+        total,
+        validUntil,
+        status: QUOTATION_STATUS.SENT,
+      },
+      include: { plan: true },
+    });
+  } else {
+    quotation = await prisma.quotation.update({
+      where: { id: quotation.id },
+      data: { status: QUOTATION_STATUS.SENT },
+      include: { plan: true },
+    });
+  }
+
+  // Advance lead stage to QUOTED if still NEW or CONTACTED
+  if ([LEAD_STAGE.NEW, LEAD_STAGE.CONTACTED].includes(lead.stage)) {
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: { stage: LEAD_STAGE.QUOTED },
+    });
+  }
+
+  // Record follow-up entry
+  await prisma.leadFollowUp.create({
+    data: {
+      leadId,
+      date: new Date(),
+      type: 'EMAIL',
+      notes: `Quotation ${quotation.quotationNo} sent via email (Total: ₹${quotation.total})`,
+    },
+  });
+
+  const emailHtml = getQuotationEmailTemplate({
+    leadName: lead.name,
+    quotationNo: quotation.quotationNo,
+    planName: quotation.plan?.name || data.packageName || 'Sports Club Membership Package',
+    amount: quotation.amount,
+    discount: quotation.discount,
+    total: quotation.total,
+    validUntil: new Date(quotation.validUntil).toLocaleDateString('en-GB'),
+    customNotes: data.notes || 'Includes full access to courts, gym, cafeteria discount, and free trial coaching.',
+  });
+
+  const mailResult = await sendEmail({
+    to: targetEmail,
+    subject: `Official Quotation #${quotation.quotationNo} · The Champions Club`,
+    html: emailHtml,
+  });
+
+  if (mailResult && mailResult.success === false) {
+    throw new ApiError(
+      503,
+      `Mail service is unable to dispatch quotation email (${mailResult.error || 'Delivery failed'}). Please verify the recipient email address.`
+    );
+  }
+
+  return {
+    success: true,
+    message: `Quotation #${quotation.quotationNo} successfully sent to ${targetEmail}`,
+    quotation,
+  };
+};
+
+
 // PRD M6: a Won lead converts to a member. Conversion is explicit because a lead
 // does not carry the plan, date of birth (needed for the BR6 age check) or start
 // date that member registration requires.
@@ -174,3 +275,4 @@ export const getQuotationById = async (id) => {
   if (!quotation) throw new ApiError(404, 'Quotation not found');
   return quotation;
 };
+

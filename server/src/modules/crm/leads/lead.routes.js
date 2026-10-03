@@ -24,7 +24,9 @@ router.patch('/:id', validate({ params: leadIdParamSchema, body: updateLeadSchem
 
 router.post('/:id/follow-ups', validate({ params: leadIdParamSchema, body: createFollowUpSchema }), controller.addFollowUp);
 router.post('/:id/quotations', validate({ params: leadIdParamSchema, body: createQuotationSchema }), controller.createQuotation);
+router.post('/:id/send-quote', validate({ params: leadIdParamSchema }), controller.sendQuoteEmail);
 router.patch('/quotations/:id/status', validate({ body: updateQuotationStatusSchema }), controller.updateQuotationStatus);
+
 // G1 — download quotation as PDF
 router.get('/quotations/:id/pdf', controller.downloadQuotationPdf);
 router.post('/:id/convert', validate({ params: leadIdParamSchema, body: convertLeadSchema }), controller.convertLead);

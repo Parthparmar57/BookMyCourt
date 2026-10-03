@@ -13,6 +13,8 @@ import { TrialPage } from '../modules/website/pages/TrialPage';
 import { LoginPage } from '../modules/website/pages/LoginPage';
 import { RegisterPage } from '../modules/website/pages/RegisterPage';
 import { NotFoundPage } from '../modules/website/pages/NotFoundPage';
+import { ResetPasswordPage } from '../modules/website/pages/ResetPasswordPage';
+
 
 import { OwnerDashboardPage } from '../modules/dashboard/pages/OwnerDashboardPage';
 import { BookingsPage } from '../modules/bookings/pages/BookingsPage';
@@ -52,9 +54,11 @@ export const router = createBrowserRouter([
       { path: 'shop', element: <ShopPage /> },
       { path: 'trial', element: <TrialPage /> },
       { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> }
+      { path: 'register', element: <RegisterPage /> },
+      { path: 'reset-password', element: <ResetPasswordPage /> }
     ]
   },
+
 
   // Owner / Admin Executive Suite
   {

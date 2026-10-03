@@ -158,34 +158,41 @@ export const HomePage = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (!formData.name || !formData.phone) {
-      setFormError('Please provide your name and 10-digit phone number.');
+    if (!formData.name?.trim() || !formData.phone?.trim() || !formData.email?.trim()) {
+      setFormError('Please provide your Full Name, 10-digit Phone Number, and Email Address.');
       return;
     }
 
     try {
       if (formType === 'TRIAL') {
         await bookTrial.mutateAsync({
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email.trim(),
           sport: formData.sport,
           preferredDate: formData.preferredDate,
           preferredTime: formData.preferredTime
         });
       } else {
         await submitEnquiry.mutateAsync({
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
-          message: formData.message || `General enquiry regarding ${formData.sport} membership at The Champions Club.`
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email.trim(),
+          interest: formData.sport,
+          message: formData.message?.trim() || `General enquiry regarding ${formData.sport} membership at The Champions Club.`
         });
       }
       setFormSubmitted(true);
+
     } catch (err) {
-      setFormError(err?.message || 'Submission could not be completed. Please check details and try again.');
+      setFormError(
+        err?.response?.data?.message ||
+        err?.message ||
+        'Submission could not be completed. Please check details and try again.'
+      );
     }
   };
+
 
   const ITEM_PRODUCT_IMAGES = {
     racket_tennis: 'https://images.unsplash.com/photo-1617083934555-ac7d4fed8814?auto=format&fit=crop&q=80&w=600',
@@ -866,16 +873,18 @@ export const HomePage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label className="block mb-1.5 font-extrabold text-[#121212]">
-                    Email Address (Optional)
+                    Email Address *
                   </label>
                   <input
                     type="email"
+                    required
                     placeholder="you@example.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
                   />
                 </div>
+
 
                 <div>
                   <label className="block mb-1.5 font-extrabold text-[#121212]">

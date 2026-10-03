@@ -23,7 +23,9 @@ export const leadsApi = {
   update: (id, payload) => apiClient.patch(`/leads/${id}`, payload),
   addFollowUp: (id, payload) => apiClient.post(`/leads/${id}/follow-ups`, payload),
   createQuotation: (id, payload) => apiClient.post(`/leads/${id}/quotations`, payload),
+  sendQuote: (id, payload) => apiClient.post(`/leads/${id}/send-quote`, payload),
   updateQuotationStatus: (quotationId, status) =>
     apiClient.patch(`/leads/quotations/${quotationId}/status`, { status }),
   convert: (id, payload) => apiClient.post(`/leads/${id}/convert`, payload),
 };
+

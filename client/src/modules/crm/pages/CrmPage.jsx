@@ -3,12 +3,13 @@ import {
   useLeads, 
   useCreateLead, 
   useUpdateLead, 
-  useAddFollowUp,
-  useCreateQuotation,
+  useAddFollowUp, 
+  useCreateQuotation, 
+  useSendQuote,
   useUpdateQuotationStatus,
-  useConvertLead,
-  useEnquiries,
-  useUpdateEnquiryStatus
+  useConvertLead, 
+  useEnquiries, 
+  useUpdateEnquiryStatus 
 } from '../../../hooks/useCrm';
 import { usePlans } from '../../../hooks/useMembership';
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
@@ -26,6 +27,7 @@ import {
   Inbox,
   Filter,
   Users,
+  Send,
   FileText,
   IndianRupee
 } from 'lucide-react';
@@ -58,9 +60,21 @@ export const CrmPage = () => {
   const updateLead = useUpdateLead();
   const addFollowUp = useAddFollowUp();
   const createQuotation = useCreateQuotation();
+  const sendQuote = useSendQuote();
   const updateQuotationStatus = useUpdateQuotationStatus();
   const convertLead = useConvertLead();
   const updateEnquiryStatus = useUpdateEnquiryStatus();
+
+  // Quotation Modal State
+  const [quoteForm, setQuoteForm] = useState({
+    email: '',
+    planId: '',
+    packageName: 'Gold Membership Annual Package',
+    amount: '12000',
+    discount: '1200',
+    validUntil: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+    notes: 'Includes full access to indoor courts, gym facility, 10% cafe discount, and 1 free coaching trial.',
+  });
 
   // New Lead Form State
   const [newLead, setNewLead] = useState({
@@ -88,15 +102,6 @@ export const CrmPage = () => {
     emergencyContact: '',
   });
 
-  // Quotation form — validUntil defaults to 14 days out
-  const [quoteForm, setQuoteForm] = useState({
-    planId: '',
-    amount: '',
-    discount: 0,
-    validUntil: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-    notes: '',
-  });
-
   const handleCreateLead = async (e) => {
     e.preventDefault();
     if (!newLead.name.trim() || !newLead.phone.trim()) return;
@@ -106,7 +111,7 @@ export const CrmPage = () => {
       setNewLead({ name: '', phone: '', email: '', sportInterest: 'Badminton', notes: '', source: 'WALK_IN' });
       setFeedback({ type: 'success', message: 'New sales lead added to pipeline.' });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.message || 'Failed to create lead.' });
+      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Failed to create lead.' });
     }
   };
 
@@ -115,7 +120,7 @@ export const CrmPage = () => {
       await updateLead.mutateAsync({ id: leadId, stage: newStage });
       setFeedback({ type: 'success', message: `Lead moved to ${newStage}.` });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.message || 'Could not update lead stage.' });
+      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Could not update lead stage.' });
     }
   };
 
@@ -133,44 +138,52 @@ export const CrmPage = () => {
       setFollowUp({ type: 'CALL', notes: '', date: new Date().toISOString().split('T')[0] });
       setFeedback({ type: 'success', message: 'Follow-up interaction logged.' });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.message || 'Failed to log follow-up.' });
+      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Failed to log follow-up.' });
     }
   };
 
-  // Open the quote builder for a lead, pre-filling amount from the selected plan.
+  // Open the quote builder for a lead
   const openQuoteModal = (lead) => {
     setSelectedLead(lead);
+    const selectedPlan = plans[0];
     setQuoteForm({
-      planId: plans[0]?.id || '',
-      amount: plans[0]?.price ? String(plans[0].price) : '',
-      discount: 0,
+      email: lead.email || '',
+      planId: selectedPlan?.id || '',
+      packageName: selectedPlan ? `${selectedPlan.name} Membership Package` : 'Champions Club Custom Package',
+      amount: selectedPlan ? String(selectedPlan.price) : '10000',
+      discount: '1000',
       validUntil: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-      notes: '',
+      notes: 'Includes unlimited court booking access, gym, member cafeteria discount, and free trial coaching session.',
     });
     setShowQuoteModal(true);
   };
 
-  const handleCreateQuote = async (e) => {
+  const handleSendQuoteSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedLead || !quoteForm.amount) return;
+    if (!selectedLead || !quoteForm.email.trim()) return;
+
     try {
-      await createQuotation.mutateAsync({
+      await sendQuote.mutateAsync({
         id: selectedLead.id,
+        email: quoteForm.email.trim(),
+        planId: quoteForm.planId || undefined,
+        packageName: quoteForm.packageName,
         amount: Number(quoteForm.amount),
-        discount: Number(quoteForm.discount) || 0,
+        discount: Number(quoteForm.discount || 0),
         validUntil: quoteForm.validUntil,
-        planId: quoteForm.planId || null,
-        notes: quoteForm.notes || null,
+        notes: quoteForm.notes,
       });
-      // Advance the lead to the QUOTED stage if it isn't already there.
-      if (selectedLead.stage !== 'QUOTED' && selectedLead.stage !== 'WON') {
-        await updateLead.mutateAsync({ id: selectedLead.id, stage: 'QUOTED' });
-      }
+
       setShowQuoteModal(false);
-      setSelectedLead(null);
-      setFeedback({ type: 'success', message: 'Quotation created and sent to the lead.' });
+      setFeedback({
+        type: 'success',
+        message: `Official Quotation email successfully dispatched to ${quoteForm.email}. Lead stage moved to Quotation Sent.`,
+      });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.message || 'Failed to create quotation.' });
+      setFeedback({
+        type: 'error',
+        message: err?.response?.data?.message || err?.message || 'Failed to send quotation email.',
+      });
     }
   };
 
@@ -179,7 +192,7 @@ export const CrmPage = () => {
       await updateQuotationStatus.mutateAsync({ quotationId, status });
       setFeedback({ type: 'success', message: `Quotation marked ${status}.` });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.message || 'Could not update quotation.' });
+      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Could not update quotation.' });
     }
   };
 
@@ -196,52 +209,66 @@ export const CrmPage = () => {
         emergencyContact: convertForm.emergencyContact,
       });
       setShowConvertModal(false);
-      setSelectedLead(null);
-      setFeedback({ type: 'success', message: 'Lead successfully converted to Active Club Member!' });
+      setFeedback({ type: 'success', message: `Successfully converted ${selectedLead.name} to active Member!` });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.message || 'Conversion failed.' });
+      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Lead conversion failed.' });
+    }
+  };
+
+  const handleEnquiryStatus = async (id, status) => {
+    try {
+      await updateEnquiryStatus.mutateAsync({ id, status });
+      setFeedback({ type: 'success', message: `Enquiry status updated to ${status}.` });
+    } catch (err) {
+      setFeedback({ type: 'error', message: err?.response?.data?.message || err?.message || 'Failed to update enquiry status.' });
     }
   };
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 border-slate-200">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto font-sans space-y-6">
+      {/* PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6 border-slate-200">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">CRM Leads & Sales Pipeline</h1>
-          <p className="text-xs text-slate-500">
-            Track inquiries, log follow-up interactions, and convert leads into active club members.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black uppercase font-mono tracking-wider">
+              CRM & SALES PIPELINE
+            </span>
+            <span className="text-xs text-slate-400 font-medium">Scene 5 · Front Desk & Concierge</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Leads, Enquiries & Quotations
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Track prospective members from website visitor to contacted, formal quote, and won conversion.
           </p>
         </div>
 
+        {/* Tab Switcher & Actions */}
         <div className="flex items-center gap-3">
-          <div className="bg-slate-100 p-1 rounded-xl flex text-xs font-bold">
+          <div className="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200 text-xs font-bold">
             <button
               onClick={() => setActiveTab('pipeline')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                activeTab === 'pipeline' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'pipeline' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Kanban Pipeline
+              <Kanban className="w-4 h-4 text-emerald-600" />
+              <span>Sales Pipeline ({leads.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('enquiries')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                activeTab === 'enquiries' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'enquiries' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>Web Inquiries</span>
-              {enquiries.length > 0 && (
-                <span className="w-4 h-4 bg-emerald-600 text-white rounded-full text-[10px] flex items-center justify-center font-bold">
-                  {enquiries.length}
-                </span>
-              )}
+              <Inbox className="w-4 h-4 text-blue-600" />
+              <span>Web Enquiries ({enquiries.length})</span>
             </button>
           </div>
 
           <button
             onClick={() => setShowAddLeadModal(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-2 transition-all"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-colors flex items-center gap-2 cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>New Lead</span>
@@ -249,15 +276,18 @@ export const CrmPage = () => {
         </div>
       </div>
 
+      {/* FEEDBACK TOAST */}
       {feedback && (
-        <div className={`p-4 rounded-xl text-xs font-bold flex items-center justify-between ${
-          feedback.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'
-        }`}>
+        <div
+          className={`p-4 rounded-xl flex items-center justify-between text-xs font-semibold animate-in fade-in ${
+            feedback.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'
+          }`}
+        >
           <div className="flex items-center gap-2">
             {feedback.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-rose-600" />}
             <span>{feedback.message}</span>
           </div>
-          <button onClick={() => setFeedback(null)}><X className="w-4 h-4" /></button>
+          <button onClick={() => setFeedback(null)} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4" /></button>
         </div>
       )}
 
@@ -302,6 +332,35 @@ export const CrmPage = () => {
                         </p>
                       )}
 
+                      {/* Existing quotations on this lead */}
+                      {Array.isArray(lead.quotations) && lead.quotations.length > 0 && (
+                        <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                          {lead.quotations.map((q) => (
+                            <div key={q.id} className="bg-purple-50/70 border border-purple-100 rounded-lg p-2 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-black text-slate-800 flex items-center gap-1">
+                                  <FileText className="w-3 h-3 text-purple-500" />
+                                  {formatCurrency(Number(q.total || q.amount))}
+                                </span>
+                                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-white text-purple-700 border border-purple-200">
+                                  {q.status || 'DRAFT'}
+                                </span>
+                              </div>
+                              {/* Quick status transitions */}
+                              {q.status !== 'ACCEPTED' && q.status !== 'REJECTED' && (
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold">
+                                  {q.status !== 'SENT' && (
+                                    <button onClick={() => handleUpdateQuoteStatus(q.id, 'SENT')} className="text-blue-600 hover:text-blue-800 cursor-pointer">Mark Sent</button>
+                                  )}
+                                  <button onClick={() => handleUpdateQuoteStatus(q.id, 'ACCEPTED')} className="text-emerald-600 hover:text-emerald-800 cursor-pointer">Accept</button>
+                                  <button onClick={() => handleUpdateQuoteStatus(q.id, 'REJECTED')} className="text-rose-500 hover:text-rose-700 cursor-pointer">Reject</button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Stage Action / Controls */}
                       {lead.stage === 'WON' ? (
                         <div className="pt-2 border-t border-slate-100">
@@ -326,57 +385,28 @@ export const CrmPage = () => {
                         </div>
                       ) : (
                         <>
-                          {/* Existing quotations on this lead */}
-                          {Array.isArray(lead.quotations) && lead.quotations.length > 0 && (
-                            <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                              {lead.quotations.map((q) => (
-                                <div key={q.id} className="bg-purple-50/70 border border-purple-100 rounded-lg p-2 space-y-1">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-black text-slate-800 flex items-center gap-1">
-                                      <FileText className="w-3 h-3 text-purple-500" />
-                                      {formatCurrency(Number(q.amount))}
-                                    </span>
-                                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-white text-purple-700 border border-purple-200">
-                                      {q.status || 'DRAFT'}
-                                    </span>
-                                  </div>
-                                  {/* Quick status transitions */}
-                                  {q.status !== 'ACCEPTED' && q.status !== 'REJECTED' && (
-                                    <div className="flex items-center gap-1.5 text-[9px] font-bold">
-                                      {q.status !== 'SENT' && (
-                                        <button onClick={() => handleUpdateQuoteStatus(q.id, 'SENT')} className="text-blue-600 hover:text-blue-800">Mark Sent</button>
-                                      )}
-                                      <button onClick={() => handleUpdateQuoteStatus(q.id, 'ACCEPTED')} className="text-emerald-600 hover:text-emerald-800">Accept</button>
-                                      <button onClick={() => handleUpdateQuoteStatus(q.id, 'REJECTED')} className="text-rose-500 hover:text-rose-700">Reject</button>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
                           {/* Active Stage Actions */}
-                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap text-[10px] font-medium">
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-medium gap-1 flex-wrap">
                             <button
                               onClick={() => { setSelectedLead(lead); setShowFollowUpModal(true); }}
-                              className="text-slate-600 hover:text-slate-900 flex items-center gap-1.5 py-0.5 cursor-pointer"
+                              className="text-slate-600 hover:text-slate-900 flex items-center gap-1 py-0.5 cursor-pointer"
                             >
-                              <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Log Follow-up</span>
+                              <PhoneCall className="w-3 h-3 text-emerald-600" />
+                              <span>Follow-up</span>
                             </button>
                             <button
                               onClick={() => openQuoteModal(lead)}
-                              className="text-purple-700 hover:text-purple-900 flex items-center gap-1.5 py-0.5 cursor-pointer font-bold"
+                              className="text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer transition-colors border border-purple-200"
+                              title="Send customized formal quote by email"
                             >
-                              <FileText className="w-3.5 h-3.5 text-purple-600" />
+                              <Send className="w-3 h-3 text-purple-600" />
                               <span>Send Quote</span>
                             </button>
-                            {/* Convert the lead into a full member (opens the conversion modal). */}
                             <button
                               onClick={() => { setSelectedLead(lead); setShowConvertModal(true); }}
-                              className="text-emerald-700 hover:text-emerald-900 flex items-center gap-1.5 py-0.5 cursor-pointer font-bold"
+                              className="text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer font-bold border border-emerald-200"
                             >
-                              <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                              <UserCheck className="w-3 h-3 text-emerald-600" />
                               <span>Convert</span>
                             </button>
                           </div>
@@ -444,57 +474,49 @@ export const CrmPage = () => {
                   <th className="p-4">Contact</th>
                   <th className="p-4">Interest / Subject</th>
                   <th className="p-4">Message</th>
+                  <th className="p-4">Date</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {enquiries.map((enq) => (
-                  <tr key={enq.id} className="hover:bg-slate-50/70">
+                  <tr key={enq.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="p-4 font-bold text-slate-900">{enq.name}</td>
-                    <td className="p-4">
+                    <td className="p-4 text-slate-600">
                       <div>{formatPhone(enq.phone)}</div>
-                      <div className="text-[10px] text-slate-400">{enq.email}</div>
+                      {enq.email && <div className="text-[11px] text-slate-400">{enq.email}</div>}
                     </td>
-                    <td className="p-4 font-semibold text-emerald-700">{enq.subject || 'Membership inquiry'}</td>
-                    <td className="p-4 text-slate-600 max-w-xs truncate">{enq.message}</td>
+                    <td className="p-4 font-medium text-slate-700">{enq.interest || 'General'}</td>
+                    <td className="p-4 text-slate-600 max-w-xs">{enq.message || '—'}</td>
+                    <td className="p-4 text-slate-400 text-[11px]">
+                      {enq.createdAt ? new Date(enq.createdAt).toLocaleDateString('en-GB') : 'Today'}
+                    </td>
                     <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        enq.status === 'CONVERTED' ? 'bg-emerald-100 text-emerald-800' :
-                        enq.status === 'CONTACTED' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {enq.status || 'NEW'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right space-x-2">
-                      <button
-                        onClick={() => updateEnquiryStatus.mutate({ id: enq.id, status: 'CONTACTED' })}
-                        className="text-[11px] font-bold text-blue-600 hover:text-blue-800"
+                      <select
+                        value={enq.status}
+                        onChange={(e) => handleEnquiryStatus(enq.id, e.target.value)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border focus:outline-none cursor-pointer ${
+                          enq.status === 'NEW'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : enq.status === 'CONTACTED'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : enq.status === 'CONVERTED'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}
                       >
-                        Mark Contacted
-                      </button>
-                      <button
-                        onClick={() => {
-                          setNewLead({
-                            name: enq.name,
-                            phone: enq.phone,
-                            email: enq.email || '',
-                            sportInterest: enq.subject || 'Badminton',
-                            notes: enq.message || '',
-                            source: 'WEBSITE',
-                          });
-                          setShowAddLeadModal(true);
-                        }}
-                        className="text-[11px] font-bold text-emerald-600 hover:text-emerald-800"
-                      >
-                        Create Lead →
-                      </button>
+                        <option value="NEW">NEW</option>
+                        <option value="CONTACTED">CONTACTED</option>
+                        <option value="CONVERTED">CONVERTED</option>
+                        <option value="CLOSED">CLOSED</option>
+                      </select>
                     </td>
                   </tr>
                 ))}
+
                 {enquiries.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-400">
+                    <td colSpan={6} className="p-12 text-center text-slate-400 font-medium">
                       No inbound inquiries yet.
                     </td>
                   </tr>
@@ -505,72 +527,89 @@ export const CrmPage = () => {
         </div>
       )}
 
-      {/* CREATE LEAD MODAL */}
+      {/* NEW LEAD MODAL */}
       {showAddLeadModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3 border-slate-100">
-              <h3 className="font-extrabold text-base text-slate-900">Add New Lead</h3>
+              <h3 className="font-extrabold text-base text-slate-900">Add Sales Lead</h3>
               <button onClick={() => setShowAddLeadModal(false)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
             </div>
 
             <form onSubmit={handleCreateLead} className="space-y-3 text-xs font-semibold">
               <div>
-                <label className="text-slate-700 block mb-1">Full Name</label>
+                <label className="text-slate-700 block mb-1">Full Name *</label>
                 <input
+                  type="text"
                   required
+                  placeholder="e.g. Vikram Verma"
                   value={newLead.name}
                   onChange={(e) => setNewLead({ ...newLead, name: e.target.value })}
-                  placeholder="e.g. Aryan Malhotra"
                   className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-slate-700 block mb-1">Phone</label>
+                  <label className="text-slate-700 block mb-1">Phone Number (10 Digits) *</label>
                   <input
+                    type="tel"
                     required
+                    placeholder="e.g. 9820011223"
                     value={newLead.phone}
                     onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
-                    placeholder="9876543210"
                     className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
+                <div>
+                  <label className="text-slate-700 block mb-1">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="prospect@example.com"
+                    value={newLead.email}
+                    onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-slate-700 block mb-1">Sport Interest</label>
                   <select
                     value={newLead.sportInterest}
                     onChange={(e) => setNewLead({ ...newLead, sportInterest: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white"
                   >
-                    <option value="Badminton">Badminton</option>
                     <option value="Tennis">Tennis</option>
-                    <option value="Pickleball">Pickleball</option>
-                    <option value="Squash">Squash</option>
-                    <option value="All Sports">All Sports</option>
+                    <option value="Badminton">Badminton</option>
+                    <option value="Padel">Padel</option>
+                    <option value="Cricket">Cricket</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-slate-700 block mb-1">Lead Source</label>
+                  <select
+                    value={newLead.source}
+                    onChange={(e) => setNewLead({ ...newLead, source: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white"
+                  >
+                    <option value="WEBSITE">Website</option>
+                    <option value="WALK_IN">Walk-in</option>
+                    <option value="PHONE">Phone Call</option>
+                    <option value="REFERRAL">Member Referral</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="text-slate-700 block mb-1">Email (Optional)</label>
-                <input
-                  type="email"
-                  value={newLead.email}
-                  onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-                  placeholder="aryan@gmail.com"
-                  className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-slate-700 block mb-1">Notes</label>
+                <label className="text-slate-700 block mb-1">Notes / Requirements</label>
                 <textarea
                   rows={2}
                   value={newLead.notes}
                   onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
-                  placeholder="Interested in evening slots and gold membership"
+                  placeholder="Looking for evening court slots, corporate package..."
                   className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none"
                 />
               </div>
@@ -581,36 +620,42 @@ export const CrmPage = () => {
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 mt-2"
               >
                 {createLead.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Save Lead to Pipeline
+                Add to Sales Pipeline
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* CONVERT LEAD MODAL */}
+      {/* CONVERT TO MEMBER MODAL */}
       {showConvertModal && selectedLead && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3 border-slate-100">
               <div>
-                <h3 className="font-extrabold text-base text-slate-900">Convert Lead to Member</h3>
-                <p className="text-[11px] text-slate-500">Creating member profile for {selectedLead.name}</p>
+                <h3 className="font-extrabold text-base text-slate-900">Convert to Member</h3>
+                <p className="text-xs text-slate-500">Assign membership plan and issue credentials</p>
               </div>
               <button onClick={() => setShowConvertModal(false)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
             </div>
 
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-1">
+              <div className="font-bold text-emerald-900">{selectedLead.name}</div>
+              <div className="text-emerald-700">{formatPhone(selectedLead.phone)} · {selectedLead.email || 'No email provided'}</div>
+            </div>
+
             <form onSubmit={handleConvertLead} className="space-y-3 text-xs font-semibold">
               <div>
-                <label className="text-slate-700 block mb-1">Membership Plan</label>
+                <label className="text-slate-700 block mb-1">Select Membership Plan *</label>
                 <select
                   value={convertForm.planId}
                   onChange={(e) => setConvertForm({ ...convertForm, planId: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white font-bold"
                 >
+                  <option value="">-- Choose Plan --</option>
                   {plans.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} — {formatCurrency(Number(p.price))}
+                      {p.name} ({formatCurrency(Number(p.price))})
                     </option>
                   ))}
                 </select>
@@ -628,7 +673,7 @@ export const CrmPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-700 block mb-1">Start Date</label>
+                  <label className="text-slate-700 block mb-1">Membership Start Date</label>
                   <input
                     type="date"
                     required
@@ -712,7 +757,7 @@ export const CrmPage = () => {
               <button
                 type="submit"
                 disabled={addFollowUp.isPending}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl shadow-xs transition-colors"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 Log Follow-up
               </button>
@@ -721,103 +766,145 @@ export const CrmPage = () => {
         </div>
       )}
 
-      {/* SEND QUOTE MODAL */}
+      {/* SEND QUOTATION MODAL */}
       {showQuoteModal && selectedLead && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-start justify-between border-b pb-3 border-slate-100">
               <div>
-                <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-purple-600" /> Send Quotation
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold uppercase mb-1">
+                  <FileText className="w-3 h-3" />
+                  <span>Formal Quotation Dispatch</span>
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Send Quote to {selectedLead.name}
                 </h3>
-                <p className="text-[11px] text-slate-500">Quote for {selectedLead.name}</p>
               </div>
-              <button onClick={() => setShowQuoteModal(false)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
+              <button
+                onClick={() => setShowQuoteModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <form onSubmit={handleCreateQuote} className="space-y-3 text-xs font-semibold">
-              {/* Optional plan — selecting one pre-fills the amount */}
-              <div>
-                <label className="text-slate-700 block mb-1">Plan (optional)</label>
-                <select
-                  value={quoteForm.planId}
-                  onChange={(e) => {
-                    const plan = plans.find((p) => p.id === e.target.value);
-                    setQuoteForm({
-                      ...quoteForm,
-                      planId: e.target.value,
-                      amount: plan?.price ? String(plan.price) : quoteForm.amount,
-                    });
-                  }}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white focus:border-purple-500 focus:outline-none"
-                >
-                  <option value="">— No specific plan —</option>
-                  {plans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} — {formatCurrency(Number(p.price))}
-                    </option>
-                  ))}
-                </select>
+            <form onSubmit={handleSendQuoteSubmit} className="space-y-3.5 text-xs font-semibold">
+              <div className="space-y-1">
+                <label className="text-slate-700 block">Recipient Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  value={quoteForm.email}
+                  onChange={(e) => setQuoteForm({ ...quoteForm, email: e.target.value })}
+                  placeholder="client@company.com or member@email.com"
+                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50/50 hover:bg-white focus:bg-white focus:border-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-slate-700 block mb-1">Amount (₹)</label>
-                  <div className="relative">
-                    <IndianRupee className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      value={quoteForm.amount}
-                      onChange={(e) => setQuoteForm({ ...quoteForm, amount: e.target.value })}
-                      className="w-full border border-slate-200 rounded-xl p-2.5 pl-8 focus:border-purple-500 focus:outline-none"
-                      placeholder="12000"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-700 block">Package Plan</label>
+                  <select
+                    value={quoteForm.planId}
+                    onChange={(e) => {
+                      const p = plans.find((x) => x.id === e.target.value);
+                      setQuoteForm({
+                        ...quoteForm,
+                        planId: e.target.value,
+                        packageName: p ? `${p.name} Membership Package` : quoteForm.packageName,
+                        amount: p ? String(p.price) : quoteForm.amount,
+                      });
+                    }}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white cursor-pointer"
+                  >
+                    <option value="">Custom Package</option>
+                    {plans.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({formatCurrency(Number(p.price))})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div>
-                  <label className="text-slate-700 block mb-1">Discount (₹)</label>
+
+                <div className="space-y-1">
+                  <label className="text-slate-700 block">Valid Until</label>
+                  <input
+                    type="date"
+                    required
+                    value={quoteForm.validUntil}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, validUntil: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-700 block">Base Amount (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={quoteForm.amount}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, amount: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl p-2.5"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-700 block">Special Discount (₹)</label>
                   <input
                     type="number"
                     min="0"
                     value={quoteForm.discount}
                     onChange={(e) => setQuoteForm({ ...quoteForm, discount: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-purple-500 focus:outline-none"
+                    className="w-full border border-slate-200 rounded-xl p-2.5"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="text-slate-700 block mb-1">Valid Until</label>
-                <input
-                  type="date"
-                  required
-                  value={quoteForm.validUntil}
-                  onChange={(e) => setQuoteForm({ ...quoteForm, validUntil: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-purple-500 focus:outline-none"
-                />
+              {/* Total Calculation Preview */}
+              <div className="bg-purple-50/60 border border-purple-200/80 rounded-xl p-3 flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] text-purple-900 block font-bold">Total Quoted Amount</span>
+                  <span className="text-[10px] text-purple-700 font-normal">Includes taxes & package discounts</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-black text-purple-900 font-mono">
+                    {formatCurrency(Math.max(0, Number(quoteForm.amount || 0) - Number(quoteForm.discount || 0)))}
+                  </span>
+                </div>
               </div>
 
-              <div>
-                <label className="text-slate-700 block mb-1">Notes (optional)</label>
+              <div className="space-y-1">
+                <label className="text-slate-700 block">Custom Notes / Inclusions</label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   value={quoteForm.notes}
                   onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
-                  placeholder="Includes 1 free trial session and racket restring."
-                  className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-purple-500 focus:outline-none"
+                  placeholder="Includes court reservations, complimentary gear rental, personal trainer session..."
+                  className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-purple-600 focus:outline-none"
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={createQuotation.isPending}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold py-3 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 mt-2"
-              >
-                {createQuotation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Create & Send Quote
-              </button>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowQuoteModal(false)}
+                  className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendQuote.isPending}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 px-5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-60 transition-all"
+                >
+                  {sendQuote.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Quotation Email</span>
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -825,3 +912,5 @@ export const CrmPage = () => {
     </div>
   );
 };
+
+export default CrmPage;

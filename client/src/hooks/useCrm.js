@@ -66,7 +66,19 @@ export const useCreateQuotation = () => {
   });
 };
 
+export const useSendQuote = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }) => leadsApi.sendQuote(id, payload),
+    onSuccess: (_d, { id }) => {
+      qc.invalidateQueries({ queryKey: qk.leads.all });
+      qc.invalidateQueries({ queryKey: qk.leads.detail(id) });
+    },
+  });
+};
+
 export const useUpdateQuotationStatus = () => {
+
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ quotationId, status }) => leadsApi.updateQuotationStatus(quotationId, status),

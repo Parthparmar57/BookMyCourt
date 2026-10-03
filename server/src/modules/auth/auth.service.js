@@ -4,6 +4,8 @@ import { prisma } from '../../lib/prisma.js';
 import { env } from '../../config/env.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ROLES } from '../../shared/index.js';
+import { sendEmail } from '../../lib/mailer.js';
+import { getPasswordResetTemplate } from '../../utils/emailTemplates.js';
 
 const formatUserResponse = (user) => {
   if (!user) return null;
@@ -150,6 +152,103 @@ export const getCurrentUser = async (userId) => {
   return formatUserResponse(user);
 };
 
+export const forgotPassword = async ({ login }) => {
+  if (!login || !login.trim()) {
+    throw new ApiError(400, 'Please provide your registered email or phone number');
+  }
+
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [{ email: login.trim() }, { phone: login.trim() }],
+    },
+  });
+
+  if (!user) {
+    throw new ApiError(404, 'No user account found with this email or phone number. Please verify your details.');
+  }
+
+  // Generate numeric 6-digit OTP
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Generate signed JWT reset token valid for 15 minutes
+  const resetToken = jwt.sign(
+    { id: user.id, email: user.email, otp: otpCode, type: 'PASSWORD_RESET' },
+    env.JWT_ACCESS_SECRET,
+    { expiresIn: '15m' }
+  );
+
+  const resetLink = `${env.CLIENT_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+
+  const emailHtml = getPasswordResetTemplate({
+    name: user.name,
+    resetLink,
+    otpCode,
+    expiryMinutes: 15,
+  });
+
+  const mailResult = await sendEmail({
+    to: user.email,
+    subject: 'Password Reset Request · The Champions Club',
+    html: emailHtml,
+  });
+
+  if (mailResult && mailResult.success === false) {
+    throw new ApiError(
+      503,
+      `Mail service is unable to dispatch email at this moment (${mailResult.error || 'SMTP delivery failed'}). Please contact front desk support.`
+    );
+  }
+
+  // Mask email for user privacy (e.g. vi***@gmail.com)
+  const [localPart, domain] = user.email.split('@');
+  const maskedEmail = `${localPart.slice(0, Math.min(2, localPart.length))}***@${domain}`;
+
+  return {
+    message: 'Password reset instructions have been dispatched to your email.',
+    email: user.email,
+    emailMasked: maskedEmail,
+    resetToken,
+    otpCode,
+  };
+};
+
+
+export const resetPassword = async ({ token, otp, newPassword, email }) => {
+  if (!newPassword || newPassword.length < 6) {
+    throw new ApiError(400, 'New password must be at least 6 characters long');
+  }
+
+  let userId = null;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
+      if (decoded.type !== 'PASSWORD_RESET') {
+        throw new ApiError(400, 'Invalid token type');
+      }
+      userId = decoded.id;
+    } catch (err) {
+      throw new ApiError(400, 'Invalid or expired password reset link. Please request a new one.');
+    }
+  } else if (email && otp) {
+    const user = await prisma.user.findFirst({ where: { email } });
+    if (!user) throw new ApiError(404, 'User not found');
+    userId = user.id;
+  } else {
+    throw new ApiError(400, 'A valid reset token or OTP code is required');
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const passwordHash = await bcrypt.hash(newPassword, salt);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash },
+  });
+
+  return { message: 'Password has been successfully updated. You can now login.' };
+};
+
 const generateTokens = (user) => {
   const accessToken = jwt.sign(
     { id: user.id, email: user.email, role: user.role },
@@ -165,3 +264,4 @@ const generateTokens = (user) => {
 
   return { accessToken, refreshToken };
 };
+

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Mirror the backend Zod rules so the client fails fast before the request.
-export const phoneField = z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number');
+export const phoneField = z.string().regex(/^[0-9]{10}$/, 'Enter a valid 10-digit mobile number');
 export const timeSlotField = z.string().regex(/^([01]\d|2[0-3]):(00|30)$/, 'Time must be on :00 or :30');
 
 export const registerSchema = z.object({
@@ -28,11 +28,12 @@ export const memberSchema = z.object({
 export const trialSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: phoneField,
-  email: z.union([z.string().email('Enter a valid email address'), z.literal('')]).optional(),
+  email: z.string().email('Enter a valid email address'),
   sport: z.string().min(2, 'Sport is required'),
   preferredDate: z.string().min(1, 'Pick a date'),
   preferredTime: timeSlotField,
 });
+
 
 /**
  * Map a normalized API error ({ errors: { field: [msg] } }) onto react-hook-form

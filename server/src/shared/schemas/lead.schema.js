@@ -1,10 +1,21 @@
 import { z } from 'zod';
 import { LEAD_STAGE } from '../constants/enums.js';
 
+// Helper for optional string fields that might be passed as empty string ""
+const optionalEmail = z
+  .string()
+  .email('Please enter a valid email address')
+  .optional()
+  .nullable()
+  .or(z.literal(''))
+  .transform((val) => (val && val.trim() ? val.trim() : null));
+
+const phoneRegex = /^[0-9]{10}$/;
+
 export const createLeadSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number'),
-  email: z.string().email().optional().nullable(),
+  phone: z.string().regex(phoneRegex, 'Enter a valid 10-digit phone number'),
+  email: optionalEmail,
   source: z.string().default('WEBSITE'),
   interest: z.string().optional().nullable(),
   stage: z.nativeEnum(LEAD_STAGE).default(LEAD_STAGE.NEW),
@@ -20,9 +31,9 @@ export const convertLeadSchema = z.object({
   planId: z.string().uuid('Invalid plan ID'),
   dob: z.coerce.date().refine((d) => d < new Date(), { message: 'Date of birth must be in the past' }),
   startDate: z.coerce.date().default(() => new Date()),
-  email: z.string().email().optional(),
+  email: optionalEmail,
   password: z.string().min(8).optional(),
-  emergencyContact: z.string().regex(/^[6-9]\d{9}$/).optional().nullable(),
+  emergencyContact: z.string().regex(phoneRegex, 'Enter a valid 10-digit emergency contact').optional().nullable(),
 });
 
 export const createFollowUpSchema = z.object({
@@ -33,8 +44,8 @@ export const createFollowUpSchema = z.object({
 
 export const publicEnquirySchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number'),
-  email: z.string().email().optional().nullable(),
+  phone: z.string().regex(phoneRegex, 'Enter a valid 10-digit phone number'),
+  email: z.string().email('Please enter a valid email address'),
   interest: z.string().optional().nullable(),
   message: z.string().max(1000).optional().nullable(),
 });

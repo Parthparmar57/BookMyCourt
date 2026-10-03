@@ -2,8 +2,7 @@ import nodemailer from 'nodemailer';
 import { env, isMailConfigured } from '../config/env.js';
 import { logger } from './logger.js';
 
-// Only build a transporter when SMTP is actually configured; otherwise email is
-// cleanly disabled instead of attempting to connect to a fake host.
+// Transporter instance when SMTP is configured
 export const transporter = isMailConfigured
   ? nodemailer.createTransport({
       host: env.SMTP_HOST,
@@ -13,16 +12,32 @@ export const transporter = isMailConfigured
   : null;
 
 export const sendEmail = async ({ to, subject, text, html }) => {
+  if (!to) return null;
+
   if (!transporter) {
-    logger.debug({ to, subject }, 'Email skipped — SMTP not configured');
-    return null;
+    logger.info({ to, subject }, '📧 [EMAIL DISPATCHED - SIMULATION] SMTP not configured. Email logged in console.');
+    console.log(`\n================== 📧 OUTGOING EMAIL ==================`);
+    console.log(`TO: ${to}`);
+    console.log(`SUBJECT: ${subject}`);
+    if (text) console.log(`TEXT: ${text}`);
+    console.log(`STATUS: Delivered (Simulated Dev Mode)`);
+    console.log(`=======================================================\n`);
+    return { success: true, simulated: true, to, subject };
   }
+
   try {
-    const info = await transporter.sendMail({ from: env.SMTP_FROM, to, subject, text, html });
-    logger.info({ messageId: info.messageId }, 'Email sent successfully');
-    return info;
+    const info = await transporter.sendMail({
+      from: `"${env.SMTP_FROM_NAME || 'The Champions Club'}" <${env.SMTP_FROM}>`,
+      to,
+      subject,
+      text: text || (html ? html.replace(/<[^>]*>?/gm, '') : ''),
+      html,
+    });
+    logger.info({ messageId: info.messageId, to, subject }, 'Email sent successfully via SMTP');
+    return { success: true, messageId: info.messageId, to, subject };
   } catch (error) {
-    logger.error({ error: error.message, to, subject }, 'Failed to send email');
-    return null;
+    logger.error({ error: error.message, to, subject }, 'Failed to send email via SMTP');
+    return { success: false, error: error.message };
   }
 };
+

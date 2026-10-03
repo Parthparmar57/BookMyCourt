@@ -45,8 +45,14 @@ export const convertLead = asyncHandler(async (req, res) => {
   return success(res, member, 'Lead converted to member successfully', 201);
 });
 
+export const sendQuoteEmail = asyncHandler(async (req, res) => {
+  const result = await leadService.sendQuotationEmail(req.params.id, req.body);
+  return success(res, result, result.message);
+});
+
 // G1 — stream quotation PDF to client; no disk I/O required
 export const downloadQuotationPdf = asyncHandler(async (req, res) => {
   const quotation = await leadService.getQuotationById(req.params.id);
   generateQuotationPDF(quotation, res);
 });
+

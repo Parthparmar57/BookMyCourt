@@ -37,3 +37,14 @@ export const getMe = asyncHandler(async (req, res) => {
   const user = await authService.getCurrentUser(req.user.id);
   return success(res, user, 'Current user profile retrieved');
 });
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const result = await authService.forgotPassword(req.body);
+  return success(res, result, result.message);
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const result = await authService.resetPassword(req.body);
+  return success(res, result, result.message);
+});
+

@@ -3,6 +3,7 @@ import { LEAD_STAGE, ROLES } from '../../../shared/index.js';
 import { sendEmail } from '../../../lib/mailer.js';
 import { logger } from '../../../lib/logger.js';
 import { getAvailability } from '../../courts/bookings/booking.service.js';
+import { getEnquiryAcknowledgmentTemplate } from '../../../utils/emailTemplates.js';
 
 // Notify front-desk/owner staff of a new lead (best-effort; never blocks the request).
 const notifyStaff = async (subject, text) => {
@@ -15,6 +16,21 @@ const notifyStaff = async (subject, text) => {
     if (emails.length > 0) await sendEmail({ to: emails.join(','), subject, text });
   } catch (err) {
     logger.warn({ err: err.message }, 'Failed to notify staff of new lead');
+  }
+};
+
+// Send auto-acknowledgment email to the visitor
+const sendVisitorAcknowledgment = async ({ name, email, interest, message }) => {
+  if (!email) return;
+  try {
+    const html = getEnquiryAcknowledgmentTemplate({ name, interest, message });
+    await sendEmail({
+      to: email,
+      subject: 'Inquiry Received · The Champions Club',
+      html,
+    });
+  } catch (err) {
+    logger.warn({ err: err.message }, 'Failed to send visitor acknowledgment email');
   }
 };
 
@@ -66,6 +82,13 @@ export const submitEnquiry = async (data) => {
   });
 
   await notifyStaff('New website enquiry', `New enquiry from ${data.name} (${data.phone}). Interest: ${data.interest || 'N/A'}`);
+  await sendVisitorAcknowledgment({
+    name: data.name,
+    email: data.email,
+    interest: data.interest || 'General Membership & Court Inquiry',
+    message: data.message,
+  });
+
   return enquiry;
 };
 
@@ -105,5 +128,13 @@ export const bookTrial = async (data) => {
   });
 
   await notifyStaff('New trial booking', `${data.name} (${data.phone}) requested a ${data.sport} trial on ${new Date(data.preferredDate).toDateString()} at ${data.preferredTime}.`);
+  await sendVisitorAcknowledgment({
+    name: data.name,
+    email: data.email,
+    interest: `Free Trial Session in ${data.sport} (${new Date(data.preferredDate).toLocaleDateString('en-GB')} at ${data.preferredTime})`,
+    message: `Trial session booking requested on ${data.sport} court.`,
+  });
+
   return trial;
 };
+

@@ -79,10 +79,11 @@ export const TrialPage = () => {
             </div>
 
             <div>
-              <label className="block mb-1 font-bold text-slate-900">Email (optional)</label>
+              <label className="block mb-1 font-bold text-slate-900">Email Address *</label>
               <input {...register('email')} type="email" placeholder="you@example.com" className={inputCls(err('email'))} />
               {err('email') && <p className="text-[11px] text-rose-600 mt-1">{err('email')}</p>}
             </div>
+
 
             <div>
               <label className="block mb-1 font-bold text-slate-900">Preferred Sport</label>

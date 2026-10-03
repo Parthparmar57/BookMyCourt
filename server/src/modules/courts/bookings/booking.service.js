@@ -13,6 +13,9 @@ import {
   TRANSACTION_SOURCE,
   PAYMENT_MODE,
 } from '../../../shared/index.js';
+import { sendEmail } from '../../../lib/mailer.js';
+import { getBookingConfirmationTemplate } from '../../../utils/emailTemplates.js';
+
 
 // Full refund if cancelled at least this many hours before start time (PRD policy default).
 const REFUND_WINDOW_HOURS = 2;
@@ -207,11 +210,41 @@ export const createBooking = async (data, user) => {
     });
 
     emitBookingUpdate(booking);
+
+    // Asynchronously dispatch branded booking confirmation email (best-effort)
+    const recipientEmail = booking.member?.user?.email || data.email || data.walkIn?.email || (user?.role === 'MEMBER' ? user?.email : null);
+    const recipientName = booking.member?.user?.name || booking.walkInName || user?.name || 'Player';
+
+    if (recipientEmail) {
+      try {
+        const emailHtml = getBookingConfirmationTemplate({
+          bookingId: booking.id.slice(0, 8).toUpperCase(),
+          customerName: recipientName,
+          courtName: court.name,
+          sport: court.sport,
+          date: targetDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }),
+          startTime: data.startTime,
+          endTime: endTime.toTimeString().slice(0, 5),
+          price: booking.price,
+          paymentMode: data.paymentMode || PAYMENT_MODE.UPI,
+        });
+
+        sendEmail({
+          to: recipientEmail,
+          subject: `Booking Confirmed: ${court.name} (${data.startTime}) · The Champions Club`,
+          html: emailHtml,
+        }).catch(() => {});
+      } catch (e) {
+        // Logging or silence — non-blocking
+      }
+    }
+
     return booking;
   });
 };
 
 export const cancelBooking = async (id, user, reason) => {
+
   return prisma.$transaction(async (tx) => {
     const booking = await tx.booking.findUnique({
       where: { id },
