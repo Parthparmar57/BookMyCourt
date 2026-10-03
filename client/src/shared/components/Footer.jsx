@@ -114,10 +114,10 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Column 3: THE CHAMPIONS CLUB */}
+          {/* Column 3: BOOKMYCOURT */}
           <div className="space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-white font-mono">
-              THE CHAMPIONS CLUB
+              BOOKMYCOURT
             </h4>
             <ul className="space-y-2 text-[13px] font-medium text-gray-400">
               <li><a href="#about" className="hover:text-white transition-colors">About the Club</a></li>

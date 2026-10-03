@@ -18,7 +18,7 @@ router.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    service: 'BookMyCourt (The Champions Club Backend)',
+    service: 'BookMyCourt Backend',
   });
 });
 

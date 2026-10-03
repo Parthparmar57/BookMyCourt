@@ -312,7 +312,7 @@ export const BookingPassModal = ({ booking, onClose }) => {
             </div>
           </div>
           <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginTop: '2px' }}>
-            THE CHAMPIONS CLUB · OFFICIAL COURT PASS RECEIPT
+            BOOKMYCOURT · OFFICIAL COURT PASS RECEIPT
           </div>
           
           <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyCenter: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -382,7 +382,7 @@ export const BookingPassModal = ({ booking, onClose }) => {
 
         {/* Footer */}
         <div style={{ textAlign: 'center', fontSize: '9px', color: '#94a3b8', borderTop: '1px dashed #cbd5e1', paddingTop: '12px' }}>
-          <div style={{ fontWeight: '700' }}>Thank you for playing at The Champions Club!</div>
+          <div style={{ fontWeight: '700' }}>Thank you for playing at BookMyCourt!</div>
           <div style={{ fontFamily: 'monospace', marginTop: '2px' }}>bookmycourt.com · Official Digital Pass Receipt</div>
         </div>
       </div>

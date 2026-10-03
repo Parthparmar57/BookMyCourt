@@ -224,7 +224,7 @@ export const HrPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider">
+                <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider whitespace-nowrap">
                   <th className="p-4">Emp No</th>
                   <th className="p-4">Employee</th>
                   <th className="p-4">Role</th>
@@ -238,25 +238,25 @@ export const HrPage = () => {
               <tbody className="divide-y divide-slate-100">
                 {employees.map((emp) => (
                   <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="p-4 font-mono font-bold text-slate-900">{emp.employeeNo}</td>
+                    <td className="p-4 font-mono font-bold text-slate-900 whitespace-nowrap">{emp.employeeNo}</td>
                     <td className="p-4">
-                      <div className="font-bold text-slate-900">{emp.user?.name}</div>
+                      <div className="font-bold text-slate-900 whitespace-nowrap">{emp.user?.name}</div>
                       <div className="text-[10px] text-slate-400">{emp.user?.email}</div>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${ROLE_COLORS[emp.user?.role] || 'bg-slate-100 text-slate-700'}`}>
+                      <span className={`inline-block whitespace-nowrap px-2.5 py-0.5 rounded-full text-[10px] font-bold ${ROLE_COLORS[emp.user?.role] || 'bg-slate-100 text-slate-700'}`}>
                         {emp.user?.role?.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="p-4 font-medium text-slate-700">{emp.designation || 'Staff'}</td>
                     <td className="p-4">
-                      <span className="font-black text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                      <span className="inline-block whitespace-nowrap font-black text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
                         {emp.leaveBalance} days left
                       </span>
                     </td>
-                    <td className="p-4 font-black text-slate-900">{formatCurrency(Number(emp.salary))}/mo</td>
-                    <td className="p-4 text-slate-500">{new Date(emp.joiningDate).toLocaleDateString('en-IN')}</td>
-                    <td className="p-4 text-right font-medium text-slate-600">{formatPhone(emp.user?.phone)}</td>
+                    <td className="p-4 font-black text-slate-900 whitespace-nowrap">{formatCurrency(Number(emp.salary))}/mo</td>
+                    <td className="p-4 text-slate-500 whitespace-nowrap">{new Date(emp.joiningDate).toLocaleDateString('en-IN')}</td>
+                    <td className="p-4 text-right font-medium text-slate-600 whitespace-nowrap">{formatPhone(emp.user?.phone)}</td>
                   </tr>
                 ))}
                 {employees.length === 0 && (
@@ -325,7 +325,7 @@ export const HrPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider">
+                  <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider whitespace-nowrap">
                     <th className="p-4">Employee</th>
                     <th className="p-4">Leave Type</th>
                     <th className="p-4">Duration & Days</th>
@@ -338,9 +338,9 @@ export const HrPage = () => {
                   {filteredLeaves.map((lv) => (
                     <tr key={lv.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="p-4">
-                        <div className="font-extrabold text-slate-900">{lv.employee?.user?.name || 'Staff Member'}</div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className={`px-2 py-0.2 rounded-full text-[9px] font-bold ${ROLE_COLORS[lv.employee?.user?.role] || 'bg-slate-100 text-slate-700'}`}>
+                        <div className="font-extrabold text-slate-900 whitespace-nowrap">{lv.employee?.user?.name || 'Staff Member'}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
+                          <span className={`inline-block whitespace-nowrap px-2 py-0.2 rounded-full text-[9px] font-bold ${ROLE_COLORS[lv.employee?.user?.role] || 'bg-slate-100 text-slate-700'}`}>
                             {lv.employee?.user?.role?.replace('_', ' ')}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">({lv.employee?.employeeNo})</span>
@@ -348,7 +348,7 @@ export const HrPage = () => {
                       </td>
 
                       <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${LEAVE_TYPE_COLORS[lv.type] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                        <span className={`inline-block whitespace-nowrap px-2.5 py-1 rounded-lg text-[10px] font-bold border ${LEAVE_TYPE_COLORS[lv.type] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
                           {lv.type}
                         </span>
                       </td>
@@ -446,7 +446,7 @@ export const HrPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider">
+                <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider whitespace-nowrap">
                   <th className="p-4">Payslip #</th>
                   <th className="p-4">Employee</th>
                   <th className="p-4">Month / Year</th>
@@ -460,14 +460,14 @@ export const HrPage = () => {
               <tbody className="divide-y divide-slate-100">
                 {payrolls.map((pay) => (
                   <tr key={pay.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="p-4 font-mono font-bold text-slate-900">{pay.payrollNo || pay.id.slice(0, 8)}</td>
-                    <td className="p-4 font-bold text-slate-900">{pay.employee?.user?.name || 'Staff'}</td>
-                    <td className="p-4 text-slate-600 font-semibold">{pay.month}/{pay.year}</td>
-                    <td className="p-4 text-slate-700">{formatCurrency(Number(pay.basicSalary))}</td>
-                    <td className="p-4 text-rose-700">-{formatCurrency(Number(pay.deductions || 0))}</td>
-                    <td className="p-4 font-black text-emerald-900">{formatCurrency(Number(pay.netSalary))}</td>
+                    <td className="p-4 font-mono font-bold text-slate-900 whitespace-nowrap">{pay.payrollNo || pay.id.slice(0, 8)}</td>
+                    <td className="p-4 font-bold text-slate-900 whitespace-nowrap">{pay.employee?.user?.name || 'Staff'}</td>
+                    <td className="p-4 text-slate-600 font-semibold whitespace-nowrap">{pay.month}/{pay.year}</td>
+                    <td className="p-4 text-slate-700 whitespace-nowrap">{formatCurrency(Number(pay.basicSalary))}</td>
+                    <td className="p-4 text-rose-700 whitespace-nowrap">-{formatCurrency(Number(pay.deductions || 0))}</td>
+                    <td className="p-4 font-black text-emerald-900 whitespace-nowrap">{formatCurrency(Number(pay.netSalary))}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      <span className={`inline-block whitespace-nowrap px-2 py-0.5 rounded text-[10px] font-bold ${
                         pay.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                       }`}>
                         {pay.status}
@@ -536,7 +536,7 @@ export const HrPage = () => {
                     required
                     value={empForm.email}
                     onChange={(e) => setEmpForm({ ...empForm, email: e.target.value })}
-                    placeholder="vikram@championsclub.com"
+                    placeholder="vikram@bookmycourt.com"
                     className="w-full border border-slate-200 rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none"
                   />
                 </div>

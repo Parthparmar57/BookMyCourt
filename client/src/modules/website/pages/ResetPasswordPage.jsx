@@ -82,7 +82,7 @@ export const ResetPasswordPage = () => {
               Reset Password
             </h1>
             <p className="text-xs text-slate-500 font-medium">
-              Create a new, strong password for your Champions Club account
+              Create a new, strong password for your BookMyCourt account
             </p>
           </div>
         </div>
@@ -127,7 +127,7 @@ export const ResetPasswordPage = () => {
                     required
                     value={form.email}
                     onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-                    placeholder="e.g. member@championsclub.com"
+                    placeholder="e.g. member@bookmycourt.com"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   />
                 </div>

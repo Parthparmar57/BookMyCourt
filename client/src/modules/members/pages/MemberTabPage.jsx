@@ -440,9 +440,9 @@ export const MemberTabPage = () => {
       </div>
 
       <div class="footer-note">
-        <strong>Champions Club Sports Infrastructure • Cafeteria Operations</strong><br/>
+        <strong>BookMyCourt Sports Infrastructure • Cafeteria Operations</strong><br/>
         This is a computer-generated tax invoice & settlement slip.<br/>
-        Thank you for visiting! For queries contact support@championsclub.com
+        Thank you for visiting! For queries contact support@bookmycourt.com
       </div>
     </div>
 
@@ -1229,7 +1229,7 @@ export const MemberTabPage = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-sm text-slate-900">Current Running Bill</h3>
-                    <p className="text-[11px] text-slate-400">The Champions Club Cafeteria</p>
+                    <p className="text-[11px] text-slate-400">BookMyCourt Cafeteria</p>
                   </div>
                 </div>
 

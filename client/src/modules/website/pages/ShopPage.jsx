@@ -195,7 +195,7 @@ const FALLBACK_PRODUCTS = [
 
   // Clothes & Apparel
   { id: 'p6', name: 'NikeCourt Dri-FIT Advantage Tennis Apparel', category: 'Apparel', price: 3499, stock: 25, sku: 'NIKE-POLO-DF' },
-  { id: 'p9', name: 'Champions Club Dry-Fit Match Jersey', category: 'Apparel', price: 1299, stock: 28, sku: 'APP-DRY-01' },
+  { id: 'p9', name: 'BookMyCourt Dry-Fit Match Jersey', category: 'Apparel', price: 1299, stock: 28, sku: 'APP-DRY-01' },
   { id: 'p10', name: 'Nike Court Athletic Pro Shorts', category: 'Apparel', price: 999, stock: 32, sku: 'APP-NIK-02' },
   { id: 'p14', name: 'Pro Arena All-Weather Warmup Tracksuit', category: 'Apparel', price: 4499, stock: 15, sku: 'APP-TRK-03' },
 
@@ -204,7 +204,7 @@ const FALLBACK_PRODUCTS = [
   { id: 'p8', name: 'Luxilon ALU Power 125 Tennis String Reel', category: 'Accessories', price: 14999, stock: 14, sku: 'LUX-ALU-125' },
   { id: 'p11', name: 'Tourna Grip Original Overgrip (Pack of 3)', category: 'Accessories', price: 450, stock: 45, sku: 'ACC-TRN-03' },
   { id: 'p12', name: 'Wilson Sweat Absorption Wristbands (Pair)', category: 'Accessories', price: 299, stock: 35, sku: 'ACC-WIL-WR' },
-  { id: 'p15', name: 'Champions Club Insulated Thermal Bottle (750ml)', category: 'Accessories', price: 899, stock: 20, sku: 'ACC-BOT-01' },
+  { id: 'p15', name: 'BookMyCourt Insulated Thermal Bottle (750ml)', category: 'Accessories', price: 899, stock: 20, sku: 'ACC-BOT-01' },
 
   // Balls & Shuttles
   { id: 'p2', name: 'Babolat Team Championship Tennis Balls (3-Pack)', category: 'Balls', price: 649, stock: 48, sku: 'BAB-BALL-3P' },

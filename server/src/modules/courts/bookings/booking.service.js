@@ -293,7 +293,7 @@ export const createBooking = async (data, user) => {
 
         sendEmail({
           to: recipientEmail,
-          subject: `Booking Confirmed: ${court.name} (${data.startTime}) · The Champions Club`,
+          subject: `Booking Confirmed: ${court.name} (${data.startTime}) · BookMyCourt`,
           html: emailHtml,
         }).catch(() => { });
       } catch (e) {
