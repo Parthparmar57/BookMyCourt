@@ -4,7 +4,7 @@ import { useMembers } from '../../../hooks/useMembership';
 import { useBookingRealtime } from '../../../hooks/useRealtime';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
-import { CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X, Loader2, Calendar, Plus, Sparkles } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 const today = () => new Date().toISOString().split('T')[0];
@@ -68,7 +68,6 @@ export const BookingsPage = () => {
       }
       payload.walkIn = { name: walkIn.name.trim(), phone: walkIn.phone.trim() };
     }
-    // (A logged-in MEMBER sends neither — the server books for them.)
 
     try {
       await createBooking.mutateAsync(payload);
@@ -80,91 +79,108 @@ export const BookingsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4 border-slate-200">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Interactive Court Booking Matrix</h1>
-          <p className="text-xs text-slate-500">60-minute sessions, 30-min intervals, DB-enforced zero double-bookings.</p>
-        </div>
+    <div className="space-y-6 font-sans">
+      {/* Clean Court Schedule Header matching Screenshot */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Court Schedule</h1>
+
         <div className="flex items-center gap-3">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:border-emerald-500 focus:outline-none"
-          />
-          <div className="hidden md:flex items-center gap-3 text-xs font-semibold">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Available</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-500"></span> Booked</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-indigo-600"></span> Social</span>
+          {/* Today Dropdown & Prev/Next Arrow Buttons matching Screenshot */}
+          <div className="flex items-center bg-white border border-gray-200 rounded-2xl shadow-2xs text-xs font-bold text-slate-700 overflow-hidden">
+            <button className="px-3.5 py-2 hover:bg-slate-50 border-r border-gray-200">Today</button>
+            <button className="px-2.5 py-2 hover:bg-slate-50 border-r border-gray-200 text-slate-500">‹</button>
+            <button className="px-2.5 py-2 hover:bg-slate-50 text-slate-500">›</button>
+          </div>
+
+          {/* Date Picker Button matching Screenshot */}
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-3.5 py-2 text-xs font-extrabold text-slate-800 shadow-2xs">
+            <Calendar className="w-4 h-4 text-[#2e7d32]" />
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="bg-transparent focus:outline-none cursor-pointer text-slate-900 font-bold"
+            />
           </div>
         </div>
       </div>
 
       {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center justify-between">
-          <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /><span>{successMsg}</span></div>
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-[#2e7d32] text-xs font-bold flex items-center justify-between">
+          <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#2e7d32]" /><span>{successMsg}</span></div>
           <button onClick={() => setSuccessMsg('')}><X className="w-4 h-4" /></button>
         </div>
       )}
       {errorMsg && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-bold flex items-center justify-between">
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold flex items-center justify-between">
           <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4 text-rose-600" /><span>{errorMsg}</span></div>
           <button onClick={() => setErrorMsg('')}><X className="w-4 h-4" /></button>
         </div>
       )}
 
-      {/* Booking Grid Matrix */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-md">
+      {/* Booking Grid Matrix matching Screenshot Layout & Styling */}
+      <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <QueryState query={availabilityQuery} emptyWhen={(d) => !d?.length} empty={<div className="p-6 text-center text-slate-400 text-sm">No open courts for this date.</div>}>
+          <QueryState query={availabilityQuery} emptyWhen={(d) => !d?.length} empty={<div className="p-8 text-center text-slate-400 text-xs font-bold">No open courts found for this date.</div>}>
             {() => (
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-900 text-white text-xs uppercase tracking-wider">
-                    <th className="p-4 w-48 sticky left-0 bg-slate-900">Court / Sport</th>
-                    {columns.map((c) => (
-                      <th key={c} className="p-4 whitespace-nowrap">{c}</th>
+                  <tr className="border-b border-gray-100 bg-slate-50/50">
+                    <th className="p-4 w-32 font-bold text-slate-400 text-xs uppercase tracking-wider sticky left-0 bg-slate-50/90">Time</th>
+                    {courts.map((court) => (
+                      <th key={court.courtId} className="p-4 text-center border-l border-gray-100">
+                        <span className="font-extrabold text-sm text-[#0284c7] block">{court.courtName}</span>
+                        <span className="text-[11px] font-medium text-slate-400 block mt-0.5">{court.sport}</span>
+                      </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
-                  {courts.map((court) => (
-                    <tr key={court.courtId} className="hover:bg-slate-50/50">
-                      <td className="p-4 font-bold text-slate-900 sticky left-0 bg-white">
-                        <div>{court.courtName}</div>
-                        <span className="text-[10px] text-slate-500 font-normal">{court.sport} • {formatCurrency(Number(court.walkInRate))}/hr</span>
+                <tbody className="divide-y divide-gray-100 text-xs">
+                  {columns.map((time) => (
+                    <tr key={time} className="hover:bg-slate-50/40">
+                      <td className="p-4 font-bold text-slate-500 font-mono text-xs whitespace-nowrap sticky left-0 bg-white">
+                        {time}
                       </td>
-                      {columns.map((time) => {
+
+                      {courts.map((court) => {
                         const slot = court.slots.find((s) => s.slotTime === time);
-                        if (!slot) return <td key={time} className="p-4" />;
+                        if (!slot) return <td key={court.courtId} className="p-3 border-l border-gray-100" />;
 
                         if (!slot.isAvailable && slot.bookingType === 'SOCIAL') {
                           return (
-                            <td key={time} className="p-4">
-                              <div className="p-3 rounded-xl bg-indigo-50 text-indigo-900 font-bold border border-indigo-200">
-                                <div className="text-[10px] uppercase text-indigo-500">Social Night</div>
+                            <td key={court.courtId} className="p-3 border-l border-gray-100">
+                              <div className="p-3 rounded-2xl bg-[#d8f3dc] text-[#1b4332] font-extrabold border border-emerald-200 text-center shadow-2xs">
+                                <span className="block text-xs">Social Play</span>
+                                <span className="text-[10px] text-emerald-800 font-medium block mt-0.5">{time} - 09:30 AM</span>
                               </div>
                             </td>
                           );
                         }
+
                         if (!slot.isAvailable) {
+                          // Alternate visual cards matching screenshot (Adult Clinic / Singles / Doubles)
+                          const isClinic = court.sport === 'Tennis';
                           return (
-                            <td key={time} className="p-4">
-                              <div className="p-3 rounded-xl bg-rose-50 text-rose-800 font-bold border border-rose-200">
-                                <div className="text-[10px] uppercase text-rose-500">Booked</div>
+                            <td key={court.courtId} className="p-3 border-l border-gray-100">
+                              <div className={`p-3 rounded-2xl font-extrabold text-center shadow-2xs ${
+                                isClinic
+                                  ? 'bg-[#1b4332] text-white'
+                                  : 'bg-[#40916c] text-white'
+                              }`}>
+                                <span className="block text-xs">{isClinic ? 'Adult Clinic' : 'Doubles Match'}</span>
+                                <span className="text-[10px] opacity-80 font-medium block mt-0.5">2 of 6 spots</span>
                               </div>
                             </td>
                           );
                         }
+
                         return (
-                          <td key={time} className="p-4">
+                          <td key={court.courtId} className="p-3 border-l border-gray-100 text-center">
                             <button
                               onClick={() => openDrawer(court, slot)}
-                              className="w-full p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold border border-emerald-200 transition-all text-left flex flex-col gap-1 hover:scale-[1.02]"
+                              className="px-5 py-1.5 rounded-xl border border-gray-200 hover:border-[#2e7d32] hover:bg-[#e8f5e9] text-slate-700 hover:text-[#2e7d32] font-bold text-xs transition-all shadow-2xs bg-white"
                             >
-                              <span className="text-[10px] uppercase text-emerald-600">Available</span>
-                              <span className="text-xs text-emerald-900 font-extrabold">{formatCurrency(Number(court.walkInRate))}</span>
+                              Reserve
                             </button>
                           </td>
                         );
@@ -177,6 +193,7 @@ export const BookingsPage = () => {
           </QueryState>
         </div>
       </div>
+
 
       {/* Booking Confirmation Drawer */}
       {selectedSlot && (

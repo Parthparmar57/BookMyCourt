@@ -162,9 +162,9 @@ export const BarPage = () => {
           <button
             disabled={cart.length === 0 || createBarOrder.isPending}
             onClick={sendOrder}
-            className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-[#4A812F] hover:bg-[#3b6725] disabled:bg-slate-300 text-white font-black text-xs py-3.5 rounded-xl shadow-md shadow-[#4A812F]/20 transition-all flex items-center justify-center gap-2"
           >
-            {createBarOrder.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-emerald-400" />}
+            {createBarOrder.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-white" />}
             <span>Send Order to KDS</span>
           </button>
         </div>
@@ -172,3 +172,4 @@ export const BarPage = () => {
     </div>
   );
 };
+
