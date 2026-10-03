@@ -46,6 +46,11 @@ import {
   Phone,
   Sparkles,
   LogOut,
+  LayoutGrid,
+  Sun,
+  Moon,
+  Zap,
+  Target,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { addDays, subDays, format, parseISO, getDay } from 'date-fns';
@@ -590,11 +595,11 @@ export const BookingsPage = () => {
   };
 
   const sportTabs = [
-    { key: 'ALL', label: 'All Courts', count: allCourts.length },
-    { key: 'Tennis', label: 'Tennis', count: allCourts.filter((c) => c.sport.toLowerCase() === 'tennis').length },
-    { key: 'Badminton', label: 'Badminton', count: allCourts.filter((c) => c.sport.toLowerCase() === 'badminton').length },
-    { key: 'Padel', label: 'Padel', count: allCourts.filter((c) => c.sport.toLowerCase() === 'padel').length },
-    { key: 'Cricket', label: 'Cricket Net', count: allCourts.filter((c) => c.sport.toLowerCase() === 'cricket').length },
+    { key: 'ALL', label: 'All Courts', count: allCourts.length, icon: LayoutGrid },
+    { key: 'Tennis', label: 'Tennis', count: allCourts.filter((c) => c.sport.toLowerCase() === 'tennis').length, icon: Activity },
+    { key: 'Badminton', label: 'Badminton', count: allCourts.filter((c) => c.sport.toLowerCase() === 'badminton').length, icon: Zap },
+    { key: 'Padel', label: 'Padel', count: allCourts.filter((c) => c.sport.toLowerCase() === 'padel').length, icon: Target },
+    { key: 'Cricket', label: 'Cricket', count: allCourts.filter((c) => c.sport.toLowerCase() === 'cricket').length, icon: Flame },
   ];
 
   // Filter history logs
@@ -740,132 +745,148 @@ export const BookingsPage = () => {
       {/* ─── TAB 1: MASTER SCHEDULE MATRIX VIEW ─── */}
       {activeMainTab === 'schedule' && (
         <div className="space-y-3">
-          {/* Filter Bar & Date Picker */}
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2.5">
-            {/* Sport Filter Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar w-full lg:w-auto">
-              {sportTabs.map((tab) => {
-                const isSelected = selectedSport === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setSelectedSport(tab.key)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 cursor-pointer border ${isSelected
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
-                        : 'bg-white text-slate-600 border-gray-200 hover:bg-slate-50 hover:text-slate-900'
+          {/* Unified Responsive Controls Header Bar */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-2.5 shadow-2xs">
+            <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-3">
+              {/* Left Side: Sport Category Button Tabs (Responsive, Clean Wrap, React Icons, No Scrollbar) */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {sportTabs.map((tab) => {
+                  const isSelected = selectedSport === tab.key;
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setSelectedSport(tab.key)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-2xs ${
+                        isSelected
+                          ? 'bg-[#2e7d32] text-white border-[#2e7d32] shadow-xs ring-2 ring-emerald-600/20'
+                          : 'bg-white text-slate-700 border-gray-200 hover:border-[#2e7d32] hover:text-[#2e7d32] hover:bg-emerald-50/40'
                       }`}
-                  >
-                    <span>{tab.label}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-md font-medium ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                        }`}
                     >
-                      {tab.count}
-                    </span>
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                      <span>{tab.label}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-md font-extrabold ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Right Side: Timing Shifts & Date Navigator (Synchronized & Aligned, Never Scattered) */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Time Shift Switcher */}
+                <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-xs font-medium border border-gray-200 shadow-2xs h-9">
+                  <button
+                    type="button"
+                    onClick={() => setTimeSessionFilter('SHIFT')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] font-bold flex items-center gap-1.5 h-7.5 ${
+                      timeSessionFilter === 'SHIFT'
+                        ? 'bg-white text-[#2e7d32] shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Morning (6-10 AM) & Evening (5-9 PM) shifts"
+                  >
+                    <Clock className="w-3 h-3 text-[#2e7d32]" />
+                    <span>6-10 AM & 5-9 PM</span>
                   </button>
-                );
-              })}
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => setTimeSessionFilter('MORNING')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] font-bold flex items-center gap-1 h-7.5 ${
+                      timeSessionFilter === 'MORNING'
+                        ? 'bg-white text-amber-700 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Morning slots only"
+                  >
+                    <Sun className="w-3 h-3 text-amber-500" />
+                    <span>Morning</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTimeSessionFilter('EVENING')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] font-bold flex items-center gap-1 h-7.5 ${
+                      timeSessionFilter === 'EVENING'
+                        ? 'bg-white text-indigo-700 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Evening slots only"
+                  >
+                    <Moon className="w-3 h-3 text-indigo-500" />
+                    <span>Evening</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTimeSessionFilter('ALL')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] font-bold flex items-center gap-1 h-7.5 ${
+                      timeSessionFilter === 'ALL'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Full day hours"
+                  >
+                    <span>Full Day</span>
+                  </button>
+                </div>
 
-            {/* Quick Date Switcher, Interval Switcher & Calendar */}
-            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
-              {/* Slot Duration & Shift Switcher */}
-              <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-xs font-medium border border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setTimeSessionFilter('SHIFT')}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
-                    timeSessionFilter === 'SHIFT'
-                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                  title="Show Morning (6-10 AM) & Evening (5-9 PM) shifts"
-                >
-                  6-10 AM & 5-9 PM
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeSessionFilter('MORNING')}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
-                    timeSessionFilter === 'MORNING'
-                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                  title="Show Morning slots only"
-                >
-                  Morning (6-10 AM)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeSessionFilter('EVENING')}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
-                    timeSessionFilter === 'EVENING'
-                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                  title="Show Evening slots only"
-                >
-                  Evening (5-9 PM)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeSessionFilter('ALL')}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
-                    timeSessionFilter === 'ALL'
-                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                  title="Show all available hours"
-                >
-                  Full Day
-                </button>
-              </div>
+                {/* Date Navigator + Unified Integrated Calendar */}
+                <div className="flex items-center bg-white border border-gray-200 rounded-xl shadow-2xs h-9 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={handleToday}
+                    className={`px-3 h-full transition-all cursor-pointer text-xs font-bold ${
+                      date === today() ? 'bg-[#2e7d32] text-white shadow-2xs' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleTomorrow}
+                    className={`px-3 h-full transition-all cursor-pointer text-xs font-bold border-l border-gray-100 ${
+                      date === format(addDays(new Date(), 1), 'yyyy-MM-dd')
+                        ? 'bg-[#2e7d32] text-white shadow-2xs'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    Tomorrow
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePrevDay}
+                    title="Previous Day"
+                    disabled={date <= today()}
+                    className="px-2 h-full hover:bg-slate-50 border-l border-gray-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextDay}
+                    title="Next Day"
+                    className="px-2 h-full hover:bg-slate-50 border-l border-gray-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
 
-              {/* Day Nav */}
-              <div className="flex items-center bg-white border border-gray-200 rounded-xl shadow-2xs text-xs font-medium text-slate-600 overflow-hidden">
-                <button
-                  onClick={handleToday}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    date === today() ? 'bg-[#2e7d32] text-white shadow-2xs font-extrabold' : 'hover:bg-slate-200/80'
-                  }`}
-                >
-                  Today
-                </button>
-                <button
-                  onClick={handleTomorrow}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    date === format(addDays(new Date(), 1), 'yyyy-MM-dd') ? 'bg-[#2e7d32] text-white shadow-2xs font-extrabold' : 'hover:bg-slate-200/80'
-                  }`}
-                >
-                  Tomorrow
-                </button>
-                <button
-                  onClick={handlePrevDay}
-                  title="Previous Day"
-                  disabled={date <= today()}
-                  className="px-2 py-1.5 hover:bg-slate-50 border-r border-gray-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={handleNextDay}
-                  title="Next Day"
-                  className="px-1.5 py-1.5 hover:bg-slate-200/80 rounded-lg text-slate-600 transition-colors cursor-pointer"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Native Calendar Picker Input */}
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 shadow-2xs hover:border-emerald-500 transition-colors">
-                <Calendar className="w-4 h-4 text-[#2e7d32]" />
-                <input
-                  type="date"
-                  value={date}
-                  min={today()}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="bg-transparent focus:outline-none cursor-pointer text-slate-800 font-bold text-xs"
-                />
+                  {/* Date Input cleanly integrated in same pill */}
+                  <label className="flex items-center gap-1.5 px-2.5 h-full bg-slate-50 hover:bg-slate-100/80 border-l border-gray-200 cursor-pointer transition-colors">
+                    <Calendar className="w-3.5 h-3.5 text-[#2e7d32] shrink-0" />
+                    <input
+                      type="date"
+                      value={date}
+                      min={today()}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="bg-transparent focus:outline-none cursor-pointer text-slate-800 font-extrabold text-xs"
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
