@@ -22,8 +22,22 @@ const REFUND_WINDOW_HOURS = 2;
 
 export const getAvailability = async ({ date = new Date(), courtId, sport }) => {
   const targetDate = new Date(date);
-  const start = startOfDay(targetDate);
-  const end = endOfDay(targetDate);
+  const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+  let istYear, istMonth, istDay;
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const parts = date.split('-').map(Number);
+    istYear = parts[0];
+    istMonth = parts[1] - 1;
+    istDay = parts[2];
+  } else {
+    const d = new Date(date);
+    const istDate = new Date(d.getTime() + IST_OFFSET_MS);
+    istYear = istDate.getUTCFullYear();
+    istMonth = istDate.getUTCMonth();
+    istDay = istDate.getUTCDate();
+  }
+  const start = new Date(Date.UTC(istYear, istMonth, istDay, 0, 0, 0, 0) - IST_OFFSET_MS);
+  const end = new Date(Date.UTC(istYear, istMonth, istDay, 23, 59, 59, 999) - IST_OFFSET_MS);
 
   const courts = await prisma.court.findMany({
     where: {
@@ -131,13 +145,26 @@ export const createBooking = async (data, user) => {
         include: { plan: true },
       });
       if (!member) throw new ApiError(404, 'Member not found');
+      if (user?.role === 'MEMBER' && (member.status !== 'ACTIVE' || (member.endDate && new Date() > new Date(member.endDate)))) {
+        throw new ApiError(403, 'Your membership is inactive or has expired. Please renew your membership to book courts.');
+      }
 
       const maxPerDay = member.plan?.maxBookingsDay ?? 2;
+
+      // Asia/Kolkata is UTC+5:30. Calculate IST day start and end to avoid timezone drift (I-15)
+      const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+      const istDate = new Date(startTime.getTime() + IST_OFFSET_MS);
+      const istYear = istDate.getUTCFullYear();
+      const istMonth = istDate.getUTCMonth();
+      const istDay = istDate.getUTCDate();
+      const istDayStart = new Date(Date.UTC(istYear, istMonth, istDay, 0, 0, 0, 0) - IST_OFFSET_MS);
+      const istDayEnd = new Date(Date.UTC(istYear, istMonth, istDay, 23, 59, 59, 999) - IST_OFFSET_MS);
+
       const existingCount = await tx.booking.count({
         where: {
           memberId,
           status: { not: BOOKING_STATUS.CANCELLED },
-          startTime: { gte: startOfDay(startTime), lte: endOfDay(startTime) },
+          startTime: { gte: istDayStart, lte: istDayEnd },
         },
       });
 
@@ -233,7 +260,7 @@ export const createBooking = async (data, user) => {
           to: recipientEmail,
           subject: `Booking Confirmed: ${court.name} (${data.startTime}) · The Champions Club`,
           html: emailHtml,
-        }).catch(() => {});
+        }).catch(() => { });
       } catch (e) {
         // Logging or silence — non-blocking
       }
@@ -256,10 +283,17 @@ export const cancelBooking = async (id, user, reason) => {
       throw new ApiError(400, 'Booking is already cancelled');
     }
 
+    // Prevent cancelling a booking that has already started or finished.
+    // (Admins doing revenue adjustments should edit the DB directly.)
+    if (new Date(booking.startTime) <= new Date()) {
+      throw new ApiError(400, 'Cannot cancel a booking that has already started or passed');
+    }
+
     // Members can only cancel their own bookings.
     if (user.role === 'MEMBER' && booking.memberId !== user.memberId) {
       throw new ApiError(403, 'You can only cancel your own bookings');
     }
+
 
     // Refund policy: full refund if cancelled at least REFUND_WINDOW_HOURS before start.
     const minutesToStart = differenceInMinutes(new Date(booking.startTime), new Date());

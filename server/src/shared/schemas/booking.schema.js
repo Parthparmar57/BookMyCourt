@@ -23,7 +23,7 @@ export const createBookingSchema = z
 // a logged-in MEMBER books for themselves and sends neither field.
 
 export const cancelBookingSchema = z.object({
-  reason: z.string().min(3, 'Cancellation reason is required').optional(),
+  reason: z.string().min(3, 'Cancellation reason is required').optional().or(z.literal('')),
 });
 
 export const bookingIdParamSchema = z.object({
