@@ -28,6 +28,8 @@ import { CrmPage } from '../modules/crm/pages/CrmPage';
 import { AccountingPage } from '../modules/finance/pages/AccountingPage';
 import { HrPage } from '../modules/hr/pages/HrPage';
 
+import { ErrorBoundary } from '../shared/components/ErrorBoundary';
+
 // Dedicated Member Portal Pages
 import { MemberDashboardPage } from '../modules/members/pages/MemberDashboardPage';
 import { MemberBookingsPage } from '../modules/members/pages/MemberBookingsPage';
@@ -35,10 +37,10 @@ import { MemberCardPage } from '../modules/members/pages/MemberCardPage';
 import { MemberTabPage } from '../modules/members/pages/MemberTabPage';
 import { MemberOrdersPage } from '../modules/members/pages/MemberOrdersPage';
 
-// Helper: wrap a layout + its children behind a role guard.
+// Helper: wrap a layout + its children behind a role guard and ErrorBoundary.
 const guarded = (roles, layout, children) => ({
-  element: <ProtectedRoute roles={roles} />,
-  children: [{ element: layout, children }],
+  element: <ErrorBoundary><ProtectedRoute roles={roles} /></ErrorBoundary>,
+  children: [{ element: layout, children: children.map(c => ({ ...c, element: <ErrorBoundary>{c.element}</ErrorBoundary> })) }],
 });
 
 export const router = createBrowserRouter([

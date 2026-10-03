@@ -57,39 +57,45 @@ export const MemberDashboardPage = () => {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto font-sans">
-      {/* Welcome Hero Banner */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 border border-slate-800 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-2xl">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+      {/* Welcome Hero Banner (Light Green Theme Design) */}
+      <div className="relative rounded-3xl p-6 sm:p-8 bg-emerald-50/90 border-2 border-emerald-600/30 text-slate-900 shadow-md overflow-hidden transition-all">
+        {/* Top Accent Line */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-700" />
+        <div className="absolute -right-16 -top-16 w-64 h-64 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none" />
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2.5">
-              <span className="text-[11px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                {memberPlan.name} Tier
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider bg-white text-emerald-800 border border-emerald-300 px-3.5 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+                {memberPlan.name} Member Pass
               </span>
-              <span className="text-xs text-slate-400 font-semibold">• ID: {memberNo}</span>
+              <span className="text-xs text-slate-500 font-bold">• ID: {memberNo}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Welcome back, <span className="text-emerald-400">{user?.name || 'Member'}</span> 👋
+
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Welcome back, <span className="text-emerald-800">{user?.name || 'Member'}</span> 👋
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-              Enjoy your <strong className="text-emerald-300 font-bold">100% Free Court Access</strong>, {memberPlan.shopDiscountPct}% Pro Shop discount, and {memberPlan.barDiscountPct}% Cafeteria perk today.
+
+            <p className="text-xs sm:text-sm text-slate-700 max-w-xl font-medium">
+              Enjoy your <strong className="text-emerald-900 font-black">100% Free Court Access</strong>, {memberPlan.shopDiscountPct}% Pro Shop discount, and {memberPlan.barDiscountPct}% Cafeteria perk today.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Link
               to="/member/book"
-              className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] text-white font-bold text-xs px-5 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/25"
+              className="bg-emerald-700 hover:bg-emerald-800 active:scale-[0.99] text-white font-extrabold text-xs px-5 py-3 rounded-xl flex items-center gap-2 transition-all shadow-md"
             >
               <Calendar className="w-4 h-4" />
               <span>Book a Court</span>
             </Link>
+
             <Link
               to="/member/card"
-              className="bg-slate-800/80 hover:bg-slate-700 text-white font-bold text-xs px-5 py-3 rounded-xl flex items-center gap-2 transition-all border border-slate-700"
+              className="bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs px-5 py-3 rounded-xl flex items-center gap-2 transition-all border border-slate-300 shadow-2xs"
             >
-              <QrCode className="w-4 h-4 text-emerald-400" />
+              <QrCode className="w-4 h-4 text-emerald-700" />
               <span>Digital Pass</span>
             </Link>
           </div>
@@ -228,23 +234,37 @@ export const MemberDashboardPage = () => {
         {/* Right: Friday Social Play & Digital ID Preview */}
         <div className="lg:col-span-4 space-y-6">
           {/* Friday Social Play */}
-          <div className="bg-gradient-to-br from-indigo-900 to-slate-950 border border-indigo-800 rounded-3xl p-6 text-white space-y-4 shadow-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 px-2.5 py-0.5 rounded-full">
+          <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 space-y-4 shadow-sm text-slate-900 overflow-hidden">
+            <div className="relative rounded-2xl overflow-hidden border border-slate-200 aspect-[16/9] bg-slate-100">
+              <img
+                src="/friday_night_play_img.jpg"
+                alt="Friday Night Social Play"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-2 left-2 bg-purple-700 text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">
                 Weekly Event
-              </span>
-              <span className="text-xs font-bold text-indigo-300">Every Friday 7:00 PM</span>
+              </div>
             </div>
-            <h3 className="text-lg font-black text-white">Friday Night Social Play</h3>
-            <p className="text-xs text-indigo-200 leading-relaxed">
-              Share the court with fellow club members in a rotating doubles tournament. Free drinks & snacks included!
-            </p>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs font-black text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-1 rounded-lg">
+                Every Friday 7:00 PM
+              </span>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-black text-slate-900">Friday Night Social Play</h3>
+              <p className="text-xs text-slate-600 leading-relaxed mt-1">
+                Share the court with fellow club members in a rotating doubles tournament. Free drinks & snacks included!
+              </p>
+            </div>
+
             <button
               onClick={() => {
                 if (socialSessions[0]) handleJoinFridaySocial(socialSessions[0].id);
                 else alert('Next Friday session opens for registration this Thursday!');
               }}
-              className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-md shadow-indigo-500/30"
+              className="w-full bg-purple-700 hover:bg-purple-800 text-white font-black text-xs py-3 rounded-xl transition-all shadow-md shadow-purple-200 active:scale-95"
             >
               Join Friday Session
             </button>

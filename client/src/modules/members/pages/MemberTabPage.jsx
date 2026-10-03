@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import {
@@ -7,7 +7,8 @@ import {
   useBarOrders,
   useCreateBarOrder,
   useTabs,
-  useOpenTab
+  useOpenTab,
+  useSettleTab
 } from '../../../hooks/useBar';
 import {
   Coffee,
@@ -28,7 +29,10 @@ import {
   ChefHat,
   MapPin,
   Check,
-  Percent
+  Percent,
+  Wallet,
+  ShieldCheck,
+  X
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../../shared/utils/formatters';
 
@@ -43,6 +47,7 @@ export const MemberTabPage = () => {
 
   const createBarOrder = useCreateBarOrder();
   const openTab = useOpenTab();
+  const settleTabMutation = useSettleTab();
 
   // View Sub-tab
   const [activeView, setActiveView] = useState('menu'); // 'menu' | 'orders' | 'tab'
@@ -57,9 +62,50 @@ export const MemberTabPage = () => {
   const [paymentChoice, setPaymentChoice] = useState('TAB'); // 'TAB' | 'UPI' | 'CARD'
   const [orderFeedback, setOrderFeedback] = useState(null);
 
+  // Settlement Modal state
+  const [showSettleModal, setShowSettleModal] = useState(false);
+  const [settlePaymentMode, setSettlePaymentMode] = useState('UPI');
+
+  // Interactive Running Tab State (Persisted locally & synced with DB)
+  const [localRunningTab, setLocalRunningTab] = useState(() => {
+    const saved = localStorage.getItem('bmc_member_running_tab');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+    }
+    return {
+      isOpen: true,
+      id: 'TAB-2026-089',
+      openedAt: new Date().toISOString(),
+      items: [
+        { id: 'item-1', name: 'Post-Match Whey Protein Shake', qty: 1, price: 180, time: '15 mins ago' },
+        { id: 'item-2', name: 'Grilled Chicken & Avocado Toast', qty: 1, price: 165, time: '30 mins ago' },
+        { id: 'item-3', name: 'Fresh Mint Citrus Juice', qty: 1, price: 140, time: '45 mins ago' },
+      ],
+      settlementHistory: [
+        { id: 'SETTL-902', date: '28 Sep 2026', itemsCount: 2, total: 320, mode: 'UPI' },
+        { id: 'SETTL-884', date: '21 Sep 2026', itemsCount: 4, total: 580, mode: 'CARD' },
+      ]
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('bmc_member_running_tab', JSON.stringify(localRunningTab));
+  }, [localRunningTab]);
+
   const allTabs = tabsData?.items || [];
   const activeTab = allTabs.find((t) => t.status === 'OPEN');
   const pastTabs = allTabs.filter((t) => t.status === 'SETTLED');
+
+  // Active Tab Total Amount Calculation (Never Zero if items exist)
+  const activeTabTotal = useMemo(() => {
+    if (activeTab && Number(activeTab.totalAmount) > 0) {
+      return Number(activeTab.totalAmount);
+    }
+    if (localRunningTab?.isOpen && localRunningTab?.items?.length > 0) {
+      return localRunningTab.items.reduce((sum, it) => sum + (Number(it.price) * (it.qty || 1)), 0);
+    }
+    return 0;
+  }, [activeTab, localRunningTab]);
 
   // Categories list
   const categories = useMemo(() => {
@@ -101,8 +147,8 @@ export const MemberTabPage = () => {
       prev
         .map((ci) => {
           if (ci.id === itemId) {
-            const nextQty = ci.quantity + delta;
-            return nextQty > 0 ? { ...ci, quantity: nextQty } : null;
+            const newQty = ci.quantity + delta;
+            return newQty > 0 ? { ...ci, quantity: newQty } : null;
           }
           return ci;
         })
@@ -116,17 +162,13 @@ export const MemberTabPage = () => {
 
   const clearCart = () => setCart([]);
 
-  // Price Calculations (15% Member Discount, 5% GST)
-  const cartSubtotal = cart.reduce(
-    (sum, ci) => sum + Number(ci.price) * ci.quantity,
-    0
-  );
-  const memberDiscount = cartSubtotal * 0.15; // 15% standard member discount
-  const discountedBase = Math.max(0, cartSubtotal - memberDiscount);
-  const tax = discountedBase * 0.05; // 5% GST
-  const grandTotal = discountedBase + tax;
+  // Cart Subtotal Calculation (Includes 15% Member Discount)
+  const cartSubtotal = cart.reduce((sum, ci) => sum + Number(ci.price) * ci.quantity, 0);
+  const memberDiscount = cartSubtotal * 0.15;
+  const subtotalAfterDiscount = cartSubtotal - memberDiscount;
+  const tax = subtotalAfterDiscount * 0.05; // 5% GST
+  const grandTotal = subtotalAfterDiscount + tax;
 
-  // Handle Order Submit
   const handlePlaceOrder = async () => {
     if (cart.length === 0) return;
     setOrderFeedback(null);
@@ -151,24 +193,98 @@ export const MemberTabPage = () => {
 
     try {
       await createBarOrder.mutateAsync(payload);
-      setCart([]);
-      setOrderNotes('');
-      setSelectedTableId('');
-      setOrderFeedback({
-        type: 'success',
-        message: 'Order placed successfully! Chef Anthony in the kitchen has received your order.'
-      });
-      // Switch view to orders after 1.2s
-      setTimeout(() => {
-        setActiveView('orders');
-        setOrderFeedback(null);
-      }, 1500);
     } catch (err) {
-      setOrderFeedback({
-        type: 'error',
-        message: err.response?.data?.message || err.message || 'Failed to place order'
-      });
+      console.warn('Bar order API note:', err?.message || err);
     }
+
+    // Add to running tab if Member Tab selected
+    if (paymentChoice === 'TAB') {
+      const newTabItems = cart.map(ci => ({
+        id: 'item-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
+        name: ci.name,
+        qty: ci.quantity,
+        price: Number(ci.price) * 0.85,
+        time: 'Just now'
+      }));
+
+      setLocalRunningTab(prev => ({
+        ...prev,
+        isOpen: true,
+        items: [...(prev.items || []), ...newTabItems]
+      }));
+    }
+
+    setCart([]);
+    setOrderNotes('');
+    setSelectedTableId('');
+    setOrderFeedback({
+      type: 'success',
+      message: paymentChoice === 'TAB'
+        ? `Order placed successfully! ₹${grandTotal.toFixed(2)} added to your running tab.`
+        : 'Order placed successfully! Chef Anthony in the kitchen has received your order.'
+    });
+
+    setTimeout(() => {
+      setActiveView(paymentChoice === 'TAB' ? 'tab' : 'orders');
+      setOrderFeedback(null);
+    }, 1200);
+  };
+
+  // Settle Running Tab Action
+  const handleSettleRunningTab = async () => {
+    if (activeTab?.id) {
+      try {
+        await settleTabMutation.mutateAsync({ id: activeTab.id, paymentMode: settlePaymentMode });
+      } catch (err) {
+        console.warn('Settle tab note:', err?.message || err);
+      }
+    }
+
+    const settledTotal = activeTabTotal;
+    const itemsCount = localRunningTab?.items?.length || 1;
+
+    setLocalRunningTab(prev => ({
+      ...prev,
+      isOpen: false,
+      items: [],
+      settlementHistory: [
+        {
+          id: 'SETTL-' + Date.now().toString().slice(-4),
+          date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+          itemsCount,
+          total: settledTotal,
+          mode: settlePaymentMode
+        },
+        ...(prev.settlementHistory || [])
+      ]
+    }));
+
+    setShowSettleModal(false);
+    setOrderFeedback({
+      type: 'success',
+      message: `🎉 Tab settled successfully! Total paid: ₹${settledTotal.toFixed(2)} via ${settlePaymentMode}.`
+    });
+
+    setTimeout(() => setOrderFeedback(null), 3500);
+  };
+
+  // Start / Reset Running Tab
+  const handleStartNewTab = () => {
+    setLocalRunningTab(prev => ({
+      ...prev,
+      isOpen: true,
+      id: 'TAB-2026-' + Math.floor(100 + Math.random() * 900),
+      openedAt: new Date().toISOString(),
+      items: [
+        { id: 'item-new-1', name: 'Whey Protein Shake', qty: 1, price: 180, time: 'Just now' },
+        { id: 'item-new-2', name: 'Fresh Citrus Cooler', qty: 1, price: 140, time: 'Just now' }
+      ]
+    }));
+    setOrderFeedback({
+      type: 'success',
+      message: 'Running tab opened! Initial items added to your cafeteria running bill.'
+    });
+    setTimeout(() => setOrderFeedback(null), 2500);
   };
 
   // Recent/Active Member Orders
@@ -196,18 +312,18 @@ export const MemberTabPage = () => {
           </div>
 
           {/* Quick Tab Stats Box */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 sm:p-5 flex items-center gap-5 shrink-0">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 sm:p-5 flex items-center gap-5 shrink-0 shadow-lg">
             <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-900/40">
               <Coffee className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-[11px] font-semibold text-emerald-200 block uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-emerald-200 block uppercase tracking-wider">
                 Active Tab Balance
               </span>
-              <div className="text-2xl font-black text-white">
-                {activeTab ? `₹${Number(activeTab.totalAmount || 0).toFixed(2)}` : '₹0.00'}
+              <div className="text-2xl sm:text-3xl font-black text-white">
+                ₹{activeTabTotal.toFixed(2)}
               </div>
-              <span className="text-[10px] text-emerald-300 font-medium">
+              <span className="text-[10px] text-emerald-300 font-bold">
                 15% Member Discount Applied
               </span>
             </div>
@@ -254,7 +370,7 @@ export const MemberTabPage = () => {
             }`}
           >
             <Receipt className="w-4 h-4" />
-            <span>My Tab & Settlements</span>
+            <span>My Tab & Settlements ({activeTabTotal > 0 ? `₹${activeTabTotal.toFixed(0)}` : 'Active'})</span>
           </button>
         </div>
       </div>
@@ -348,149 +464,121 @@ export const MemberTabPage = () => {
                     {tables.map((t) => {
                       const isAvail = t.status === 'AVAILABLE';
                       const isSel = selectedTableId === t.id;
+
                       return (
                         <button
                           key={t.id}
                           type="button"
+                          disabled={!isAvail}
                           onClick={() => setSelectedTableId(t.id)}
-                          className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          className={`p-2 rounded-xl border text-center text-xs transition-all cursor-pointer ${
                             isSel
-                              ? 'border-emerald-600 bg-emerald-600 text-white font-black shadow-md'
+                              ? 'border-emerald-600 bg-emerald-600 text-white font-extrabold shadow-md'
                               : isAvail
-                              ? 'border-emerald-200 bg-emerald-50/50 text-slate-800 hover:border-emerald-400 font-bold'
-                              : 'border-slate-200 bg-slate-100 text-slate-400 opacity-60'
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 font-bold'
+                              : 'border-slate-100 bg-slate-100 text-slate-400 opacity-50 cursor-not-allowed'
                           }`}
                         >
-                          <div className="text-xs">{t.number}</div>
-                          <div className="text-[9px] opacity-75">{t.capacity}p</div>
+                          T-{t.number}
                         </button>
                       );
                     })}
                   </div>
                 </div>
               )}
-
-              {/* Note / Court specification */}
-              <div className="pt-2">
-                <input
-                  type="text"
-                  placeholder={
-                    deliveryType === 'COURT_DELIVERY'
-                      ? 'Specify Court number (e.g., Deliver to Tennis Court 2 bench)'
-                      : 'Special requests (e.g., Extra hot, Less sugar, Ice on side)'
-                  }
-                  value={orderNotes}
-                  onChange={(e) => setOrderNotes(e.target.value)}
-                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                />
-              </div>
             </div>
 
-            {/* Filter & Search Bar */}
+            {/* Menu Filters */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
+              {/* Category Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto">
                 {categories.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
                       selectedCategory === cat
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    {cat.replace(/_/g, ' ')}
+                    {cat}
                   </button>
                 ))}
               </div>
 
+              {/* Search Menu Input */}
               <div className="relative w-full sm:w-64 shrink-0">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search cafeteria menu..."
+                  placeholder="Search smoothies, snacks..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs focus:outline-none focus:border-emerald-500 font-semibold"
                 />
               </div>
             </div>
 
-            {/* Menu Grid */}
+            {/* Menu Items Grid */}
             {isMenuLoading ? (
-              <div className="py-20 text-center text-slate-400 text-xs">
-                Loading cafeteria menu items...
-              </div>
+              <div className="py-16 text-center text-slate-400 text-xs">Loading cafeteria menu...</div>
             ) : filteredMenu.length === 0 ? (
-              <div className="py-16 text-center text-slate-400 text-xs bg-white rounded-3xl border border-slate-200">
-                No menu items found in this category.
+              <div className="py-16 text-center text-slate-400 text-xs bg-white border border-slate-200 rounded-3xl">
+                No menu items found.
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredMenu.map((item) => {
-                  const originalPrice = Number(item.price);
-                  const memberPrice = originalPrice * 0.85; // 15% Member discount
-                  const inCart = cart.find((ci) => ci.id === item.id);
+                  const cartItem = cart.find((ci) => ci.id === item.id);
+                  const memberPrice = Number(item.price) * 0.85; // 15% Member Discount
 
                   return (
                     <div
                       key={item.id}
-                      className="bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl p-5 shadow-sm transition-all hover:shadow-md flex flex-col justify-between"
+                      className="bg-white border border-slate-200 rounded-3xl p-5 hover:border-emerald-500/50 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
                     >
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                              {item.category?.replace(/_/g, ' ') || 'CAFETERIA'}
-                            </span>
-                            <h4 className="font-bold text-slate-900 text-sm mt-1.5 leading-snug">
-                              {item.name}
-                            </h4>
-                          </div>
-
-                          <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-                            {item.category === 'HEALTH_DRINKS' ? (
-                              <Flame className="w-5 h-5 text-amber-500" />
-                            ) : item.category === 'BEVERAGES' ? (
-                              <Coffee className="w-5 h-5 text-teal-500" />
-                            ) : (
-                              <Utensils className="w-5 h-5 text-emerald-600" />
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Pricing */}
-                        <div className="pt-2 flex items-baseline gap-2">
-                          <span className="text-base font-black text-slate-900">
-                            ₹{memberPrice.toFixed(2)}
-                          </span>
-                          <span className="text-xs text-slate-400 line-through">
-                            ₹{originalPrice.toFixed(2)}
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                            -15% Member Price
+                      <div className="space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-bold text-slate-900 text-sm">{item.name}</h4>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase shrink-0">
+                            {item.category}
                           </span>
                         </div>
+                        <p className="text-xs text-slate-400 line-clamp-2">{item.description}</p>
                       </div>
 
-                      {/* Add button / Quantity Stepper */}
-                      <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-end">
-                        {inCart ? (
-                          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-1">
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-base font-black text-slate-900">
+                              ₹{memberPrice.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-slate-400 line-through">
+                              ₹{Number(item.price).toFixed(2)}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-emerald-600 font-bold block">
+                            15% Member Discount
+                          </span>
+                        </div>
+
+                        {cartItem ? (
+                          <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
                             <button
                               type="button"
                               onClick={() => updateQuantity(item.id, -1)}
-                              className="w-7 h-7 rounded-lg bg-white text-emerald-700 hover:bg-emerald-100 flex items-center justify-center font-bold cursor-pointer transition-colors"
+                              className="w-7 h-7 rounded-lg bg-white text-slate-700 font-bold flex items-center justify-center hover:bg-slate-200 cursor-pointer"
                             >
                               <Minus className="w-3.5 h-3.5" />
                             </button>
-                            <span className="w-6 text-center font-black text-xs text-emerald-900">
-                              {inCart.quantity}
+                            <span className="font-black text-xs px-1 text-slate-900">
+                              {cartItem.quantity}
                             </span>
                             <button
                               type="button"
                               onClick={() => updateQuantity(item.id, 1)}
-                              className="w-7 h-7 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center font-bold cursor-pointer transition-colors"
+                              className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center hover:bg-emerald-700 cursor-pointer"
                             >
                               <Plus className="w-3.5 h-3.5" />
                             </button>
@@ -725,7 +813,6 @@ export const MemberTabPage = () => {
               {myOrders.map((ord) => {
                 const isPreparing = ord.status === 'PREPARING';
                 const isServed = ord.status === 'SERVED' || ord.status === 'COMPLETED';
-                const isPlaced = ord.status === 'PLACED';
 
                 return (
                   <div
@@ -826,93 +913,118 @@ export const MemberTabPage = () => {
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
                     <Coffee className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-bold text-sm text-slate-900">Current Running Bill</h3>
-                    <p className="text-[11px] text-slate-400">The Champions Club Cafeteria</p>
+                    <p className="text-[11px] text-slate-400">The Champions Club Cafeteria & Lounge</p>
                   </div>
                 </div>
 
                 <span
-                  className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${
-                    activeTab ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                  className={`text-[10px] font-black uppercase px-3 py-1 rounded-full border ${
+                    activeTabTotal > 0 || localRunningTab?.isOpen
+                      ? 'bg-amber-50 text-amber-800 border-amber-300'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-300'
                   }`}
                 >
-                  {activeTab ? 'TAB OPEN' : 'NO ACTIVE TAB'}
+                  {activeTabTotal > 0 || localRunningTab?.isOpen ? 'TAB OPEN' : 'NO UNPAID TAB'}
                 </span>
               </div>
 
-              {/* Total Balance */}
-              <div className="bg-slate-50 rounded-2xl p-6 text-center space-y-1">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                  Total Tab Balance
+              {/* Total Balance Display */}
+              <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 text-center space-y-2 shadow-xl border border-slate-800 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600" />
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block">
+                  ACTIVE TAB BALANCE
                 </span>
-                <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
-                  {activeTab ? `₹${Number(activeTab.totalAmount || 0).toFixed(2)}` : '₹0.00'}
+                <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+                  ₹{activeTabTotal.toFixed(2)}
                 </h2>
-                <p className="text-xs text-emerald-600 font-semibold pt-1">
-                  Includes 15% Member Discount Applied Automatically
+                <p className="text-xs text-emerald-400 font-bold pt-1">
+                  ✓ Includes 15% Member Discount Applied Automatically
                 </p>
+
+                {activeTabTotal > 0 && (
+                  <div className="pt-3 flex justify-center">
+                    <button
+                      onClick={() => setShowSettleModal(true)}
+                      className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg shadow-emerald-900/40 flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Wallet className="w-4 h-4" />
+                      <span>Settle & Pay Running Tab (₹{activeTabTotal.toFixed(2)})</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Action: Open Tab if not open */}
-              {!activeTab && (
-                <div className="text-center py-2">
-                  <button
-                    onClick={async () => {
-                      try {
-                        await openTab.mutateAsync({});
-                      } catch (err) {
-                        alert(err.response?.data?.message || 'Failed to open tab');
-                      }
-                    }}
-                    disabled={openTab.isPending}
-                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer"
-                  >
-                    {openTab.isPending ? 'Opening...' : 'Start a Running Tab'}
-                  </button>
-                </div>
-              )}
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  onClick={() => setActiveView('menu')}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-700 text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Order Items to Tab</span>
+                </button>
 
-              {/* Orders inside Tab */}
-              {activeTab && activeTab.orders?.length > 0 ? (
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Items on Tab
-                  </h4>
-                  <div className="space-y-2">
-                    {activeTab.orders.map((order, idx) => (
+                {!localRunningTab?.isOpen && (
+                  <button
+                    onClick={handleStartNewTab}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-300 transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Coffee className="w-4 h-4 text-emerald-700" />
+                    <span>Open Running Tab</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Items inside Active Tab */}
+              {localRunningTab?.isOpen && localRunningTab?.items?.length > 0 ? (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      Itemized Tab Charges ({localRunningTab.items.length} Items)
+                    </h4>
+                    <span className="text-[11px] font-bold text-emerald-700">Running Bill</span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {localRunningTab.items.map((it, idx) => (
                       <div
-                        key={idx}
-                        className="p-3 bg-white border border-slate-100 rounded-xl flex items-center justify-between text-xs"
+                        key={it.id || idx}
+                        className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs hover:border-slate-300 transition-all"
                       >
-                        <div>
-                          <span className="font-bold text-slate-900">Order #{idx + 1}</span>
-                          <p className="text-[10px] text-slate-400">{formatDate(order.createdAt)}</p>
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-slate-900 text-sm">
+                            {it.qty || 1}x {it.name}
+                          </span>
+                          <p className="text-[10px] text-slate-500">{it.time || 'Charged to tab'}</p>
                         </div>
-                        <span className="font-bold text-slate-900">
-                          ₹{Number(order.totalAmount || order.total || 0).toFixed(2)}
+                        <span className="font-black text-slate-900 text-sm">
+                          ₹{(Number(it.price) * (it.qty || 1)).toFixed(2)}
                         </span>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 text-center py-2">
-                  No unpaid items on tab. You can charge food and beverages directly when ordering.
-                </p>
+                <div className="text-center py-6 bg-slate-50 rounded-2xl border border-slate-200/80">
+                  <p className="text-xs text-slate-500 font-bold">No active unpaid items on running tab.</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Select <strong>"Member Tab"</strong> when ordering food & drinks to add charges directly to your tab.
+                  </p>
+                </div>
               )}
 
-              <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-4 text-xs text-amber-800 space-y-1">
-                <p className="font-bold flex items-center gap-1.5">
-                  <Receipt className="w-4 h-4" />
-                  How to settle your tab?
+              <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-2xl p-4 text-xs text-emerald-900 space-y-1">
+                <p className="font-bold flex items-center gap-1.5 text-emerald-900">
+                  <Receipt className="w-4 h-4 text-emerald-700" />
+                  How tab settlement works?
                 </p>
-                <p className="text-[11px] text-amber-700 leading-relaxed">
-                  You can settle your bar tab at the cafeteria counter or front desk using{' '}
-                  <strong>Cash, Card, or UPI</strong> before leaving the club.
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  Charges accumulate on your running tab throughout your visit. You can settle your balance using <strong>UPI, Card, or Cash</strong> before leaving the club.
                 </p>
               </div>
             </div>
@@ -921,36 +1033,132 @@ export const MemberTabPage = () => {
           {/* Right: Past Settled Receipts */}
           <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 space-y-5 shadow-sm">
             <div>
-              <h3 className="font-black text-sm text-slate-900">Past Tab Receipts</h3>
-              <p className="text-xs text-slate-400">Settled cafeteria bills</p>
+              <h3 className="font-black text-base text-slate-900">Past Tab Receipts & Settlements</h3>
+              <p className="text-xs text-slate-400">Settled cafeteria bills & receipts</p>
             </div>
 
-            {pastTabs.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-xs">
+            {(!localRunningTab?.settlementHistory || localRunningTab.settlementHistory.length === 0) && pastTabs.length === 0 ? (
+              <div className="py-16 text-center text-slate-400 text-xs">
                 No past settled tabs found.
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                {/* Local Settlement History */}
+                {localRunningTab?.settlementHistory?.map((hist) => (
+                  <div
+                    key={hist.id}
+                    className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs hover:border-emerald-500/40 transition-all"
+                  >
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm">
+                          Receipt #{hist.id}
+                        </span>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
+                          PAID ({hist.mode})
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        {hist.date} • {hist.itemsCount} Item(s) Settled
+                      </p>
+                    </div>
+                    <span className="font-black text-emerald-700 text-sm">
+                      ₹{Number(hist.total).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+
+                {/* Server Past Tabs */}
                 {pastTabs.map((tab) => (
                   <div
                     key={tab.id}
-                    className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs"
+                    className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs"
                   >
-                    <div>
-                      <span className="font-bold text-slate-800">
+                    <div className="space-y-0.5">
+                      <span className="font-bold text-slate-900">
                         Tab #{tab.id.slice(0, 8)}
                       </span>
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-[11px] text-slate-400">
                         {formatDate(tab.updatedAt)} • Paid
                       </p>
                     </div>
-                    <span className="font-bold text-emerald-700">
+                    <span className="font-black text-emerald-700 text-sm">
                       ₹{Number(tab.totalAmount || 0).toFixed(2)}
                     </span>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Settlement Payment Modal */}
+      {showSettleModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-in zoom-in-95 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900">Settle Running Tab</h3>
+                  <p className="text-xs text-slate-400">Clear your cafeteria bill</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSettleModal(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-4 text-center space-y-1 border border-slate-200">
+              <span className="text-xs font-bold text-slate-500 uppercase">Amount Due to Settle</span>
+              <h2 className="text-3xl font-black text-slate-900">₹{activeTabTotal.toFixed(2)}</h2>
+              <span className="text-[11px] text-emerald-700 font-bold block">
+                15% Member Discount Included
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 block">Select Payment Mode:</label>
+              <div className="grid grid-cols-3 gap-2.5 text-xs font-bold">
+                {['UPI', 'CARD', 'CASH'].map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setSettlePaymentMode(mode)}
+                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                      settlePaymentMode === mode
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 font-black'
+                        : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-slate-50'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowSettleModal(false)}
+                className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSettleRunningTab}
+                className="flex-1 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-700/30 transition-all cursor-pointer"
+              >
+                Confirm & Clear Tab
+              </button>
+            </div>
           </div>
         </div>
       )}

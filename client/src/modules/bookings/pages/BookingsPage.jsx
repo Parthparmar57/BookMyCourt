@@ -38,6 +38,7 @@ import {
   Filter,
   Check,
   User,
+  Ticket,
   Users,
   UserPlus,
   Plus,
@@ -810,23 +811,26 @@ export const BookingsPage = () => {
                                 );
                               }
 
-                              {/* HIGHLIGHT BOOKED MATCHES WITH EXECUTIVE DARK GREEN COLOR */ }
+                              {/* HIGHLIGHT BOOKED MATCHES WITH VIBRANT GREEN AND CRISP WHITE TEXT */}
+                              const displayName = slot.memberName || 'Reserved Session';
+                              const displayPlan = isVIP ? 'VIP' : (slot.planName || 'GOLD');
+
                               return (
                                 <td key={court.courtId} className="p-1.5 border-l border-gray-100">
                                   <button
                                     onClick={() => handleSlotClick(court, slot)}
-                                    className="w-full p-2.5 rounded-xl font-bold text-center shadow-md hover:shadow-lg transition-all cursor-pointer block border border-emerald-950 bg-[#1b4d2e] hover:bg-[#23633b] text-white group"
+                                    className="w-full p-2.5 rounded-xl font-extrabold text-center shadow-md hover:shadow-lg transition-all cursor-pointer block border-2 border-[#166534] bg-[#15803d] hover:bg-[#166534] text-white group"
                                   >
                                     <div className="text-center">
-                                      <span className="block text-[11px] truncate font-medium text-slate-800">
-                                        {slot.memberName || 'Reserved Session'}
+                                      <span className="block text-xs sm:text-[13px] truncate font-black text-white tracking-tight leading-tight">
+                                        {displayName}
                                       </span>
                                     </div>
-                                    <div className="flex items-center justify-center gap-1 mt-1">
-                                      <span className="text-[8px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-2xs">
-                                        {isVIP ? 'VIP' : slot.planName || 'GOLD'}
+                                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                                      <span className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider bg-amber-300 text-slate-950 shadow-2xs">
+                                        {displayPlan}
                                       </span>
-                                      <span className="text-[9px] text-slate-500 font-normal">Confirmed</span>
+                                      <span className="text-[10px] text-emerald-100 font-bold">Booked</span>
                                     </div>
                                   </button>
                                 </td>
@@ -846,11 +850,11 @@ export const BookingsPage = () => {
                               return (
                                 <td key={court.courtId} className="p-1.5 border-l border-gray-100 text-center">
                                   <div
-                                    className="w-full py-2 px-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 text-slate-400 font-normal text-[11px] flex items-center justify-center gap-1.5 cursor-not-allowed select-none opacity-60"
+                                    className="w-full py-2 px-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 font-medium text-[11px] flex items-center justify-center gap-1.5 cursor-not-allowed select-none opacity-60"
                                     title="This session time has already passed."
                                   >
                                     <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                    <span className="text-[10px] font-medium text-slate-400">Passed</span>
+                                    <span className="text-[10px] font-semibold text-slate-400">Passed</span>
                                   </div>
                                 </td>
                               );
@@ -861,11 +865,11 @@ export const BookingsPage = () => {
                               <td key={court.courtId} className="p-1.5 border-l border-gray-100 text-center">
                                 <button
                                   onClick={() => handleSlotClick(court, slot)}
-                                  className="group w-full py-2 px-2 rounded-xl border border-dashed border-gray-200 hover:border-emerald-500 hover:bg-emerald-50/60 text-slate-400 hover:text-[#2e7d32] font-normal text-[11px] transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-white"
-                                  title="Available slot. Click to book for a member, walk-in, or manage."
+                                  className="group w-full py-2 px-2 rounded-xl border border-emerald-300 hover:border-emerald-600 bg-emerald-50/50 hover:bg-emerald-100 text-emerald-900 font-bold text-[11px] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                  title="Available slot. Click to book."
                                 >
-                                  <span className="w-2 h-2 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform" />
-                                  <span className="text-[10px] font-bold">Available</span>
+                                  <span className="w-2 h-2 rounded-full bg-emerald-600 group-hover:scale-125 transition-transform" />
+                                  <span className="text-[11px] font-extrabold text-emerald-900">Available</span>
                                 </button>
                               </td>
                             );
@@ -882,8 +886,8 @@ export const BookingsPage = () => {
             <div className="bg-slate-50 border-t border-slate-200 p-3 px-4 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex flex-wrap items-center gap-4 text-slate-600">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#1b4d2e] inline-block" />
-                  <span className="font-bold text-slate-800 text-xs">Dark Green: Booked Match</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#15803d] inline-block" />
+                  <span className="font-extrabold text-slate-900 text-xs">Vibrant Green: Booked Match</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />

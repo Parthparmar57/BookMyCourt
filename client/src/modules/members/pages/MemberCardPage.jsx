@@ -16,7 +16,9 @@ import {
   Clock,
   ArrowUpRight,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Crown,
+  Zap
 } from 'lucide-react';
 
 export const MemberCardPage = () => {
@@ -69,6 +71,84 @@ export const MemberCardPage = () => {
   const rawPlanName = approvedTier || realMember?.plan?.name || user?.plan || user?.membershipTier || 'Silver';
   const planName = rawPlanName.replace(/pass|annual|standard|youth/gi, '').trim() || 'Silver';
   const isGold = /gold/i.test(planName);
+  const isJunior = /junior|youth|child/i.test(rawPlanName) || /junior/i.test(planName);
+  const isSilver = !isGold && !isJunior;
+
+  // Dynamic Card Theme Config based on Membership Tier
+  const cardTheme = isGold
+    ? {
+        tierName: 'GOLD',
+        border: 'border-2 border-amber-500 shadow-lg shadow-amber-500/10',
+        topBar: 'bg-amber-500',
+        brandSubtext: 'text-amber-600 font-extrabold',
+        badgeBg: 'bg-amber-100 text-amber-950 border-2 border-amber-500',
+        BadgeIcon: Crown,
+        subtext: 'text-amber-600',
+        memberIdText: 'text-amber-600 font-black',
+        phoneIcon: 'text-amber-600',
+        mailIcon: 'text-amber-600',
+        perksBg: 'bg-amber-50/90 border border-amber-300 text-amber-950',
+        perksHeader: 'text-amber-700',
+        perksText: '✓ 100% Free Court Access  •  ✓ 20% Shop Discount  •  ✓ 15% Bar Discount',
+        qrBorder: 'border-2 border-amber-500',
+        qrSubtext: 'text-amber-700 font-bold',
+        statusDot: 'bg-amber-500',
+        statusText: 'text-amber-700',
+        // Canvas Export Colors
+        canvasPrimary: '#d97706',
+        canvasBorder: '#f59e0b',
+        canvasBgAccent: '#fffbeb',
+        canvasBorderAccent: '#f59e0b',
+      }
+    : isJunior
+    ? {
+        tierName: 'JUNIOR',
+        border: 'border-2 border-sky-500 shadow-lg shadow-sky-500/10',
+        topBar: 'bg-sky-500',
+        brandSubtext: 'text-sky-600 font-extrabold',
+        badgeBg: 'bg-sky-100 text-sky-950 border-2 border-sky-500',
+        BadgeIcon: Zap,
+        subtext: 'text-sky-600',
+        memberIdText: 'text-sky-600 font-black',
+        phoneIcon: 'text-sky-600',
+        mailIcon: 'text-sky-600',
+        perksBg: 'bg-sky-50/90 border border-sky-300 text-sky-950',
+        perksHeader: 'text-sky-700',
+        perksText: '✓ Junior Coaching Pass  •  ✓ 15% Shop Discount  •  ✓ Free Refreshments',
+        qrBorder: 'border-2 border-sky-500',
+        qrSubtext: 'text-sky-700 font-bold',
+        statusDot: 'bg-sky-500',
+        statusText: 'text-sky-700',
+        // Canvas Export Colors
+        canvasPrimary: '#0284c7',
+        canvasBorder: '#0284c7',
+        canvasBgAccent: '#f0f9ff',
+        canvasBorderAccent: '#0284c7',
+      }
+    : {
+        tierName: 'SILVER',
+        border: 'border-2 border-slate-600 shadow-lg shadow-slate-500/10',
+        topBar: 'bg-slate-600',
+        brandSubtext: 'text-slate-600 font-extrabold',
+        badgeBg: 'bg-slate-100 text-slate-900 border-2 border-slate-600',
+        BadgeIcon: ShieldCheck,
+        subtext: 'text-slate-600',
+        memberIdText: 'text-slate-700 font-black',
+        phoneIcon: 'text-slate-600',
+        mailIcon: 'text-slate-600',
+        perksBg: 'bg-slate-50 border border-slate-300 text-slate-900',
+        perksHeader: 'text-slate-700',
+        perksText: '✓ Standard Rate  •  ✓ 10% Shop Discount  •  ✓ 5% Bar Discount',
+        qrBorder: 'border-2 border-slate-900',
+        qrSubtext: 'text-slate-700 font-bold',
+        statusDot: 'bg-slate-600',
+        statusText: 'text-slate-700',
+        // Canvas Export Colors
+        canvasPrimary: '#475569',
+        canvasBorder: '#64748b',
+        canvasBgAccent: '#f8fafc',
+        canvasBorderAccent: '#64748b',
+      };
 
   // Check for pending upgrade request (ignored if already approved as Gold)
   const pendingRequests = JSON.parse(localStorage.getItem('bmc_membership_upgrade_requests') || '[]');
@@ -133,9 +213,8 @@ export const MemberCardPage = () => {
     window.dispatchEvent(new Event('bmc_upgrade_change'));
   };
 
-  const handleToggleDemoTier = async () => {
-    const nextTier = isGold ? 'Silver' : 'Gold';
-    const targetPlan = plans.find(p => p.name.toLowerCase().includes(nextTier.toLowerCase()));
+  const handleSetDemoTier = async (targetTier) => {
+    const targetPlan = plans.find(p => p.name.toLowerCase().includes(targetTier.toLowerCase()));
     const mId = realMember?.id || foundMember?.id;
 
     if (mId && targetPlan?.id) {
@@ -147,12 +226,12 @@ export const MemberCardPage = () => {
     }
 
     const approved = JSON.parse(localStorage.getItem('bmc_approved_upgrades') || '{}');
-    approved[userEmail] = nextTier;
-    if (userEmail) approved[userEmail.toLowerCase()] = nextTier;
-    approved[userPhone] = nextTier;
-    approved[memberNo] = nextTier;
-    approved[userName] = nextTier;
-    approved['GLOBAL_ACTIVE_MEMBER'] = nextTier;
+    approved[userEmail] = targetTier;
+    if (userEmail) approved[userEmail.toLowerCase()] = targetTier;
+    approved[userPhone] = targetTier;
+    approved[memberNo] = targetTier;
+    approved[userName] = targetTier;
+    approved['GLOBAL_ACTIVE_MEMBER'] = targetTier;
     localStorage.setItem('bmc_approved_upgrades', JSON.stringify(approved));
 
     // Clear pending request if toggled manually
@@ -189,16 +268,16 @@ export const MemberCardPage = () => {
       ctx.closePath();
     };
 
-    // Outer Card Frame with Emerald Green Border
+    // Outer Card Frame with Dynamic Tier Border
     drawRoundedRect(20, 20, 1160, 680, 28);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
     ctx.lineWidth = 4;
-    ctx.strokeStyle = '#15803d'; // Green border
+    ctx.strokeStyle = cardTheme.canvasBorder;
     ctx.stroke();
 
-    // Top Green Header Stripe
-    ctx.fillStyle = '#15803d';
+    // Top Header Stripe
+    ctx.fillStyle = cardTheme.canvasBorder;
     ctx.fillRect(20, 20, 1160, 14);
 
     // Load BookMyCourt logo image
@@ -207,34 +286,28 @@ export const MemberCardPage = () => {
     logo.src = '/bookmycourt_logo.png';
 
     logo.onload = () => {
-      // Draw Logo Container & Image
-      drawRoundedRect(60, 60, 150, 54, 12);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.stroke();
-      ctx.drawImage(logo, 65, 65, 140, 44);
+      // Draw Logo Image directly without background container or border
+      ctx.drawImage(logo, 60, 60, 150, 50);
 
       // Header Brand Text
       ctx.fillStyle = '#0f172a'; // Black text
       ctx.font = 'bold 28px sans-serif';
       ctx.fillText('BOOKMYCOURT', 230, 88);
-      ctx.fillStyle = '#15803d'; // Green subtext
+      ctx.fillStyle = cardTheme.canvasPrimary;
       ctx.font = 'bold 15px sans-serif';
       ctx.fillText('OFFICIAL DIGITAL MEMBER PASS', 230, 112);
 
-      // Member Badge (Emerald Green pill)
-      drawRoundedRect(890, 60, 230, 46, 23);
-      ctx.fillStyle = '#f0fdf4';
+      // Member Badge (Dynamic Tier Pill)
+      drawRoundedRect(870, 60, 250, 46, 23);
+      ctx.fillStyle = cardTheme.canvasBgAccent;
       ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#16a34a';
+      ctx.strokeStyle = cardTheme.canvasBorderAccent;
       ctx.stroke();
-      ctx.fillStyle = '#15803d';
+      ctx.fillStyle = cardTheme.canvasPrimary;
       ctx.font = 'bold 17px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`${planName.toUpperCase()} MEMBER`, 1005, 89);
+      ctx.fillText(`${planName.toUpperCase()} MEMBER`, 995, 89);
       ctx.textAlign = 'left';
 
       // Divider Line
@@ -253,11 +326,11 @@ export const MemberCardPage = () => {
       ctx.font = '900 36px sans-serif';
       ctx.fillText(userName, 60, 235);
 
-      // Member ID (Green monospace)
+      // Member ID (Dynamic Tier Color)
       ctx.fillStyle = '#64748b';
       ctx.font = 'bold 14px sans-serif';
       ctx.fillText('MEMBER ID', 60, 290);
-      ctx.fillStyle = '#15803d'; // Emerald green
+      ctx.fillStyle = cardTheme.canvasPrimary;
       ctx.font = 'bold 26px monospace';
       ctx.fillText(memberNo, 60, 325);
 
@@ -277,20 +350,20 @@ export const MemberCardPage = () => {
       ctx.font = '600 20px sans-serif';
       ctx.fillText(`${userPhone}  •  ${userEmail}`, 60, 420);
 
-      // Light Green Perks Container
+      // Dynamic Tier Perks Container
       drawRoundedRect(60, 460, 680, 115, 16);
-      ctx.fillStyle = '#f0fdf4';
+      ctx.fillStyle = cardTheme.canvasBgAccent;
       ctx.fill();
-      ctx.strokeStyle = '#bbf7d0';
+      ctx.strokeStyle = cardTheme.canvasBorderAccent;
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      ctx.fillStyle = '#15803d';
+      ctx.fillStyle = cardTheme.canvasPrimary;
       ctx.font = 'bold 17px sans-serif';
-      ctx.fillText('ACTIVE MEMBER BENEFITS', 85, 495);
+      ctx.fillText(`${cardTheme.tierName} MEMBER BENEFITS`, 85, 495);
       ctx.fillStyle = '#0f172a';
-      ctx.font = '600 17px sans-serif';
-      ctx.fillText('✓ Free Court Access  •  ✓ 20% Shop Discount  •  ✓ 15% Bar Discount', 85, 535);
+      ctx.font = '600 16px sans-serif';
+      ctx.fillText(cardTheme.perksText, 85, 535);
 
       // Draw QR SVG onto Canvas
       const svgElement = document.getElementById('member-qr-code-svg');
@@ -302,12 +375,12 @@ export const MemberCardPage = () => {
 
         const qrImg = new Image();
         qrImg.onload = () => {
-          // White QR container with crisp black border
+          // White QR container with dynamic tier border
           drawRoundedRect(790, 175, 330, 390, 20);
           ctx.fillStyle = '#ffffff';
           ctx.fill();
           ctx.lineWidth = 2.5;
-          ctx.strokeStyle = '#0f172a';
+          ctx.strokeStyle = cardTheme.canvasBorder;
           ctx.stroke();
 
           ctx.drawImage(qrImg, 825, 205, 260, 260);
@@ -317,7 +390,7 @@ export const MemberCardPage = () => {
           ctx.textAlign = 'center';
           ctx.fillText('SCAN FOR VERIFICATION', 955, 505);
           ctx.font = 'bold 13px sans-serif';
-          ctx.fillStyle = '#15803d';
+          ctx.fillStyle = cardTheme.canvasPrimary;
           ctx.fillText('BookMyCourt Front Desk & POS', 955, 530);
           ctx.textAlign = 'left';
 
@@ -330,9 +403,9 @@ export const MemberCardPage = () => {
           ctx.stroke();
 
           // Status & Watermark
-          ctx.fillStyle = '#15803d';
+          ctx.fillStyle = cardTheme.canvasPrimary;
           ctx.font = 'bold 18px sans-serif';
-          ctx.fillText('● STATUS: ACTIVE MEMBER', 60, 650);
+          ctx.fillText(`● STATUS: ACTIVE ${cardTheme.tierName} MEMBER`, 60, 650);
 
           ctx.fillStyle = '#64748b';
           ctx.font = '600 16px sans-serif';
@@ -387,67 +460,11 @@ export const MemberCardPage = () => {
         </p>
       </div>
 
-      {/* Upgrade Request / Approval Banner */}
-      {myPendingRequest ? (
-        <div className="max-w-2xl mx-auto bg-amber-50 border-2 border-amber-400 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-950 shadow-xs">
-          <div className="flex items-center gap-3">
-            <Clock className="w-6 h-6 text-amber-600 shrink-0 animate-pulse" />
-            <div>
-              <h4 className="font-extrabold text-sm">Upgrade Request Pending Front Desk Approval</h4>
-              <p className="text-xs text-amber-900">
-                You requested an upgrade from <strong>{planName}</strong> to <strong>Gold VIP Member Pass</strong>. Front desk staff will approve your request.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleCancelRequest}
-            className="text-xs font-bold px-3 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 rounded-xl transition-all shrink-0 cursor-pointer"
-          >
-            Cancel Request
-          </button>
-        </div>
-      ) : isGold ? (
-        <div className="max-w-2xl mx-auto bg-emerald-50 border border-emerald-300 p-3.5 rounded-2xl flex items-center justify-between gap-3 text-emerald-900 shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span className="text-xs font-bold">You are an active <strong>Gold VIP Member</strong> with full court privileges!</span>
-          </div>
-          <button
-            onClick={handleToggleDemoTier}
-            className="text-[11px] font-semibold text-emerald-700 hover:underline cursor-pointer shrink-0"
-            title="Switch tier for testing"
-          >
-            Switch to Silver Tier (Demo)
-          </button>
-        </div>
-      ) : (
-        <div className="max-w-2xl mx-auto bg-slate-900 text-white p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md border border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold shrink-0">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="font-extrabold text-sm text-white">Upgrade to Gold VIP Pass</h4>
-              <p className="text-xs text-slate-300">
-                Get 100% Free Court Access, 20% Gear Shop discount, and 15% Bar discount. Send approval request to Front Desk.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleRequestGoldUpgrade}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
-          >
-            <span>Request Gold Upgrade</span>
-            <ArrowUpRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
       {/* Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-center gap-3">
+      <div className="flex flex-wrap items-center justify-center gap-2.5">
         <button
           onClick={handleDownloadPNG}
-          className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg flex items-center gap-2 transition-all cursor-pointer text-sm"
+          className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-lg flex items-center gap-2 transition-all cursor-pointer text-xs"
         >
           <Download className="w-4 h-4" />
           <span>Download ID Card (PNG)</span>
@@ -455,7 +472,7 @@ export const MemberCardPage = () => {
 
         <button
           onClick={handlePrint}
-          className="bg-slate-900 hover:bg-black text-white font-bold px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg flex items-center gap-2 transition-all cursor-pointer text-sm"
+          className="bg-slate-900 hover:bg-black text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-lg flex items-center gap-2 transition-all cursor-pointer text-xs"
         >
           <Printer className="w-4 h-4" />
           <span>Print / Save PDF</span>
@@ -463,54 +480,54 @@ export const MemberCardPage = () => {
 
         <button
           onClick={handleCopyId}
-          className="bg-white hover:bg-slate-50 text-slate-800 font-semibold px-4 py-2.5 rounded-xl border border-slate-300 flex items-center gap-2 transition-all cursor-pointer text-sm shadow-2xs"
+          className="bg-white hover:bg-slate-50 text-slate-800 font-semibold px-4 py-2 rounded-xl border border-slate-300 flex items-center gap-2 transition-all cursor-pointer text-xs shadow-2xs"
         >
           {copied ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4 text-slate-500" />}
-          <span>{copied ? 'Copied Member ID!' : 'Copy ID'}</span>
+          <span>{copied ? 'Copied ID!' : 'Copy ID'}</span>
         </button>
 
-        {!isGold && !myPendingRequest && (
-          <button
-            onClick={handleToggleDemoTier}
-            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-4 py-2.5 rounded-xl border border-emerald-300 flex items-center gap-1.5 transition-all cursor-pointer text-xs"
+        {/* Single Relevant Active Membership Tag */}
+        <div className="flex items-center gap-1.5 pl-2 border-l border-slate-300">
+          <div
+            className={`px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 shadow-2xs ${cardTheme.badgeBg}`}
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Instant Switch to Gold (Demo)</span>
-          </button>
-        )}
+            <cardTheme.BadgeIcon className="w-3.5 h-3.5 shrink-0" />
+            <span>{planName} Tier</span>
+          </div>
+        </div>
       </div>
 
-      {/* Official Light Theme Rectangular Member ID Card (White, Black, Green) */}
+      {/* Official Rectangular Member ID Card (Dynamic Tier Theme) */}
       <div
         id="member-id-card-view"
-        className="relative max-w-2xl mx-auto rounded-3xl p-6 sm:p-8 bg-white text-slate-900 shadow-xl border-2 border-emerald-700 overflow-hidden space-y-6 transition-all"
+        className={`relative max-w-2xl mx-auto rounded-3xl p-6 sm:p-8 bg-white text-slate-900 overflow-hidden space-y-6 transition-all ${cardTheme.border}`}
       >
-        {/* Top Green Accent Bar */}
-        <div className="absolute top-0 left-0 right-0 h-2.5 bg-emerald-700" />
+        {/* Top Accent Bar */}
+        <div className={`absolute top-0 left-0 right-0 h-2.5 ${cardTheme.topBar}`} />
 
-        {/* Card Header: Brand Logo & Tier */}
+        {/* Card Header: Brand Logo & Dynamic Tier Badge with Icon */}
         <div className="flex items-center justify-between relative z-10 border-b border-slate-200 pb-5 pt-1">
           <div className="flex items-center gap-3">
             {/* Real BookMyCourt Logo */}
-            <div className="bg-white p-1 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-center shrink-0">
+            <div className="flex items-center justify-center shrink-0">
               <img
                 src="/bookmycourt_logo.png"
                 alt="BookMyCourt Logo"
-                className="h-10 sm:h-12 w-auto object-contain rounded-md"
+                className="h-10 sm:h-12 w-auto object-contain"
               />
             </div>
             <div>
               <h3 className="font-black text-xl sm:text-2xl tracking-tight text-slate-900 leading-none">
                 BOOKMYCOURT
               </h3>
-              <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-widest mt-1">
+              <p className={`text-[11px] uppercase tracking-widest mt-1 ${cardTheme.brandSubtext}`}>
                 Official Digital Member Pass
               </p>
             </div>
           </div>
 
-          <div className="px-4 py-1.5 rounded-full font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-2xs bg-emerald-50 text-emerald-800 border-2 border-emerald-600">
-            <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+          <div className={`px-4 py-1.5 rounded-full font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-2xs ${cardTheme.badgeBg}`}>
+            <cardTheme.BadgeIcon className="w-4 h-4 shrink-0" />
             <span>{planName} Member</span>
           </div>
         </div>
@@ -533,7 +550,7 @@ export const MemberCardPage = () => {
                 <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
                   Member ID
                 </span>
-                <span className="font-mono font-bold text-sm tracking-wide text-emerald-800">
+                <span className={`font-mono text-sm tracking-wide ${cardTheme.memberIdText}`}>
                   {memberNo}
                 </span>
               </div>
@@ -549,24 +566,24 @@ export const MemberCardPage = () => {
 
             <div className="space-y-1.5 text-xs text-slate-700">
               <div className="flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <Phone className={`w-3.5 h-3.5 shrink-0 ${cardTheme.phoneIcon}`} />
                 <span className="font-bold text-slate-900">{userPhone}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <Mail className={`w-3.5 h-3.5 shrink-0 ${cardTheme.mailIcon}`} />
                 <span className="font-medium text-slate-700 truncate">{userEmail}</span>
               </div>
             </div>
 
-            {/* Perks Box */}
-            <div className="pt-1 flex items-center gap-2 text-[11px] text-emerald-900 font-bold bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-700" />
-              <span>{isGold ? 'Free Court Access • 20% Shop • 15% Bar' : 'Standard Rate • 10% Shop • 5% Bar'}</span>
+            {/* Dynamic Perks Box */}
+            <div className={`pt-1 flex items-center gap-2 text-[11px] font-bold px-3.5 py-2 rounded-xl ${cardTheme.perksBg}`}>
+              <cardTheme.BadgeIcon className="w-4 h-4 shrink-0" />
+              <span>{cardTheme.perksText}</span>
             </div>
           </div>
 
           {/* QR Code Container */}
-          <div className="sm:col-span-5 flex flex-col items-center justify-center p-4 bg-white rounded-2xl shadow-sm text-slate-900 border-2 border-slate-900">
+          <div className={`sm:col-span-5 flex flex-col items-center justify-center p-4 bg-white rounded-2xl shadow-sm text-slate-900 ${cardTheme.qrBorder}`}>
             <QRCodeSVG
               id="member-qr-code-svg"
               value={qrPayload}
@@ -578,7 +595,7 @@ export const MemberCardPage = () => {
             <span className="text-[10px] font-mono font-black text-slate-900 mt-2.5 tracking-widest uppercase text-center">
               SCAN FOR VERIFICATION
             </span>
-            <span className="text-[9px] font-bold text-emerald-700">
+            <span className={`text-[9px] ${cardTheme.qrSubtext}`}>
               BookMyCourt Front Desk & POS
             </span>
           </div>
@@ -587,12 +604,105 @@ export const MemberCardPage = () => {
         {/* Card Footer */}
         <div className="flex items-center justify-between text-xs text-slate-500 border-t border-slate-200 pt-4 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
-            <span className="font-bold text-slate-900">Status: <strong className="text-emerald-700 uppercase font-extrabold">● ACTIVE MEMBER</strong></span>
+            <span className={`w-2.5 h-2.5 rounded-full ${cardTheme.statusDot} animate-pulse`} />
+            <span className="font-bold text-slate-900">Status: <strong className={`${cardTheme.statusText} uppercase font-extrabold`}>● ACTIVE {cardTheme.tierName} MEMBER</strong></span>
           </div>
           <span className="font-bold text-slate-500 text-[11px]">Authorized Member Pass • BookMyCourt</span>
         </div>
       </div>
+
+      {/* Reframed Gold VIP Pass Upgrade Section */}
+      {myPendingRequest ? (
+        <div className="max-w-2xl mx-auto bg-amber-50 border-2 border-amber-400 p-5 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-950 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-200/60 border border-amber-400 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 text-amber-700 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-black text-sm text-amber-900">Upgrade Request Sent to Front Desk</h4>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest bg-amber-200 text-amber-900 px-2 py-0.5 rounded-md border border-amber-400">
+                  Pending
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-0.5">
+                You requested an upgrade from <strong>{planName}</strong> to <strong>Gold VIP Member Pass</strong>. Front desk staff will approve your request.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleCancelRequest}
+            className="text-xs font-bold px-4 py-2 bg-white text-amber-900 border border-amber-300 hover:bg-amber-100 rounded-xl transition-all shrink-0 cursor-pointer shadow-2xs"
+          >
+            Cancel Request
+          </button>
+        </div>
+      ) : isGold ? (
+        <div className="max-w-2xl mx-auto bg-emerald-50 border-2 border-emerald-300 p-4 rounded-3xl flex items-center justify-between gap-3 text-emerald-950 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-100 border border-emerald-300 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-emerald-700" />
+            </div>
+            <span className="text-xs font-extrabold text-emerald-900">
+              You are currently enjoying full <strong>Gold VIP Membership Pass</strong> privileges!
+            </span>
+          </div>
+          <button
+            onClick={() => handleSetDemoTier('Silver')}
+            className="text-xs font-bold text-emerald-800 hover:text-emerald-950 bg-white border border-emerald-300 px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 shadow-2xs"
+            title="Switch tier for testing"
+          >
+            Switch to Silver Tier (Demo)
+          </button>
+        </div>
+      ) : (
+        <div className="max-w-2xl mx-auto bg-gradient-to-r from-emerald-50 via-white to-emerald-50/60 border-2 border-emerald-700 rounded-3xl p-5 sm:p-6 text-slate-900 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-700 text-white flex items-center justify-center font-bold shrink-0 shadow-sm mt-0.5">
+                <Sparkles className="w-6 h-6 text-emerald-200" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                    VIP Upgrade Available
+                  </span>
+                </div>
+                <h4 className="text-lg font-black text-slate-900 tracking-tight">
+                  Upgrade to Gold VIP Pass
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Unlock unlimited free court bookings, priority court reservations, gear shop discounts, and cafeteria perks.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleRequestGoldUpgrade}
+              className="bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-extrabold text-xs px-5 py-3 rounded-2xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer"
+            >
+              <span>Request Gold Upgrade</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Perks chips */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-200/80">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 bg-white border border-slate-200 px-3 py-2 rounded-xl">
+              <span className="w-2 h-2 rounded-full bg-emerald-600" />
+              <span>100% Free Court Access</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 bg-white border border-slate-200 px-3 py-2 rounded-xl">
+              <span className="w-2 h-2 rounded-full bg-emerald-600" />
+              <span>20% Gear Shop Discount</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 bg-white border border-slate-200 px-3 py-2 rounded-xl">
+              <span className="w-2 h-2 rounded-full bg-emerald-600" />
+              <span>15% Bar & Cafe Discount</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
