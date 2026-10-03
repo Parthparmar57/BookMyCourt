@@ -3,6 +3,7 @@ import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { writeAudit } from '../../../utils/audit.js';
 import { LEAVE_STATUS } from '../../../shared/index.js';
+import { emitLeaveRequested, emitLeaveStatusUpdated } from '../../../sockets/leave.socket.js';
 
 // Inclusive day count derived from the date range (never from client input).
 const countDays = (startDate, endDate) =>
@@ -19,7 +20,7 @@ export const requestLeave = async (employeeId, data) => {
     throw new ApiError(400, `Requested ${days} days, but remaining leave balance is only ${employee.leaveBalance} days`);
   }
 
-  return prisma.leaveRequest.create({
+  const createdLeave = await prisma.leaveRequest.create({
     data: {
       employeeId,
       type: data.type,
@@ -31,6 +32,9 @@ export const requestLeave = async (employeeId, data) => {
     },
     include: { employee: { include: { user: true } } },
   });
+
+  emitLeaveRequested(createdLeave);
+  return createdLeave;
 };
 
 export const listLeaveRequests = async ({ employeeId, status }) => {
@@ -48,21 +52,19 @@ export const listLeaveRequests = async ({ employeeId, status }) => {
 };
 
 export const updateLeaveStatus = async (leaveId, status, approverUserId) => {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const leave = await tx.leaveRequest.findUnique({
       where: { id: leaveId },
-      include: { employee: true },
+      include: { employee: { include: { user: true } } },
     });
     if (!leave) throw new ApiError(404, 'Leave request not found');
 
-    // Only a PENDING request can be approved/rejected. This blocks re-approving
-    // (which previously decremented the balance twice).
+    // Only a PENDING request can be approved/rejected.
     if (leave.status !== LEAVE_STATUS.PENDING) {
       throw new ApiError(409, `Leave request is already ${leave.status.toLowerCase()}`);
     }
 
-    // Re-validate balance at approval time — several individually-valid pending
-    // requests must not collectively push the balance negative.
+    // Re-validate balance at approval time.
     if (status === LEAVE_STATUS.APPROVED && leave.employee.leaveBalance < leave.days) {
       throw new ApiError(422, `Insufficient leave balance (${leave.employee.leaveBalance}) for ${leave.days} days`);
     }
@@ -70,7 +72,7 @@ export const updateLeaveStatus = async (leaveId, status, approverUserId) => {
     const updated = await tx.leaveRequest.update({
       where: { id: leaveId },
       data: { status, approvedById: approverUserId },
-      include: { employee: true },
+      include: { employee: { include: { user: true } } },
     });
 
     if (status === LEAVE_STATUS.APPROVED) {
@@ -90,4 +92,7 @@ export const updateLeaveStatus = async (leaveId, status, approverUserId) => {
 
     return updated;
   });
+
+  emitLeaveStatusUpdated(result);
+  return result;
 };

@@ -1,13 +1,77 @@
-import React, { useState } from 'react';
-import { Bell, Calendar, Menu, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bell, Calendar, Menu, X, CheckCircle2, XCircle, Clock, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
+import { useLeaveRealtime } from '../../hooks/useRealtime';
 import { ApplyLeaveModal } from './ApplyLeaveModal';
 
 export const Topbar = () => {
   const { currentRole, currentUser } = useAuth();
   const { isOpen, toggleSidebar } = useSidebar();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef(null);
+
+  // Notifications State
+  const [notifications, setNotifications] = useState([
+    {
+      id: 'welcome-notif',
+      title: 'System Online',
+      message: 'Real-time sync connected and active.',
+      time: 'Just now',
+      read: false,
+      type: 'info',
+    },
+  ]);
+
+  // Handle incoming real-time socket events for leaves
+  useLeaveRealtime((data) => {
+    if (!data) return;
+
+    // 1. If staff's leave status was updated by Admin
+    if (data.status && (data.employee?.userId === currentUser?.id || data.employeeId === currentUser?.employee?.id)) {
+      const isApproved = data.status === 'APPROVED';
+      const newNotif = {
+        id: `leave-status-${Date.now()}`,
+        title: isApproved ? 'Leave Request Approved' : 'Leave Request Rejected',
+        message: `Your ${data.type || ''} leave for ${data.days || 1} day(s) was ${data.status.toLowerCase()} by Admin.`,
+        time: 'Just now',
+        read: false,
+        type: isApproved ? 'success' : 'error',
+      };
+      setNotifications((prev) => [newNotif, ...prev]);
+    }
+    // 2. If an Admin receives a new staff leave request
+    else if (currentRole === 'OWNER' && data.status === 'PENDING') {
+      const applicantName = data.employee?.user?.name || 'Staff Member';
+      const newNotif = {
+        id: `leave-req-${Date.now()}`,
+        title: 'New Leave Request',
+        message: `${applicantName} submitted a ${data.type || ''} leave request for ${data.days || 1} day(s).`,
+        time: 'Just now',
+        read: false,
+        type: 'pending',
+      };
+      setNotifications((prev) => [newNotif, ...prev]);
+    }
+  });
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const markAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
 
   const roleTitle =
     currentRole === 'OWNER'
@@ -33,8 +97,8 @@ export const Topbar = () => {
   const firstName = currentUser?.name?.trim()?.split(' ')[0] || 'User';
   const greeting = getGreeting();
 
-  // Any staff role or user with employee record can apply for leave
-  const isStaff = ['FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'].includes(currentRole) || !!currentUser?.employee;
+  // Staff roles can apply for leave — explicitly excluded for OWNER/Admin
+  const isStaff = currentRole !== 'OWNER' && ['FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'].includes(currentRole);
 
   return (
     <>
@@ -70,7 +134,7 @@ export const Topbar = () => {
           )}
         </div>
 
-        {/* Right Actions: Apply Leave (for staff) + Bell + Initial Avatar + Name */}
+        {/* Right Actions: Apply Leave (for staff) + Bell Notifications + Initial Avatar + Name */}
         <div className="flex items-center gap-3 sm:gap-4 text-xs shrink-0 ml-3">
           {isStaff && (
             <button
@@ -82,9 +146,75 @@ export const Topbar = () => {
             </button>
           )}
 
-          <button className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
-            <Bell className="w-4 h-4 text-slate-600" />
-          </button>
+          {/* Notifications Popover */}
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setShowNotifications((prev) => !prev)}
+              aria-label="View Notifications"
+              className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <Bell className="w-4 h-4 text-slate-600" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+              )}
+            </button>
+
+            {/* Notifications Dropdown Panel */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-gray-200 shadow-2xl p-3.5 z-50 space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-between border-b pb-2 border-slate-100">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-xs text-slate-900">Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
+                        {unreadCount} new
+                      </span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllRead}
+                      className="text-[10px] text-slate-400 hover:text-slate-700 font-medium cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1 text-xs">
+                  {notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`p-2.5 rounded-xl transition-all border ${
+                        n.read ? 'bg-white border-slate-100 text-slate-600' : 'bg-slate-50/80 border-slate-200/80 text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        {n.type === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />}
+                        {n.type === 'error' && <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />}
+                        {n.type === 'pending' && <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />}
+                        {n.type === 'info' && <Check className="w-3.5 h-3.5 text-sky-600 shrink-0 mt-0.5" />}
+
+                        <div className="flex-1 space-y-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-[11px] block">{n.title}</span>
+                            <span className="text-[9px] text-slate-400 font-normal">{n.time}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-tight">{n.message}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {notifications.length === 0 && (
+                    <div className="py-6 text-center text-slate-400 text-xs font-normal">
+                      No notifications at this time.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {currentUser && (
             <div className="flex items-center gap-3">
