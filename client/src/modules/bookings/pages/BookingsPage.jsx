@@ -68,10 +68,12 @@ export const BookingsPage = () => {
   const isMember = role === 'MEMBER';
   const currentMemberId = user?.memberId || user?.member?.id || null;
 
+  // Filter states
   const [activeMainTab, setActiveMainTab] = useState('schedule'); // 'schedule' | 'social' | 'history' | 'rules'
   const [date, setDate] = useState(today());
   const [selectedSport, setSelectedSport] = useState('ALL'); // 'ALL' | 'Tennis' | 'Badminton' | 'Padel' | 'Cricket'
   const [slotIntervalFilter, setSlotIntervalFilter] = useState('ALL'); // 'ALL' (30-min slots) | 'HOURLY' (:00 only)
+  const [timeSessionFilter, setTimeSessionFilter] = useState('SHIFT'); // 'SHIFT' (6-10 AM & 5-9 PM) | 'MORNING' | 'EVENING' | 'ALL'
   const [slotStatusFilter, setSlotStatusFilter] = useState('ALL'); // 'ALL' | 'AVAILABLE' | 'BOOKED'
 
   // Drawer / Selection states
@@ -140,6 +142,41 @@ export const BookingsPage = () => {
       ? allCourts
       : allCourts.filter((c) => c.sport.toLowerCase() === selectedSport.toLowerCase());
 
+  // 5-Column Court Pagination (Rule: Show only 5 courts per view)
+  const [courtPage, setCourtPage] = useState(0);
+  const COURTS_PER_PAGE = 5;
+
+  const totalCourtPages = Math.ceil(displayedCourts.length / COURTS_PER_PAGE) || 1;
+
+  const visibleCourts = useMemo(() => {
+    const start = courtPage * COURTS_PER_PAGE;
+    return displayedCourts.slice(start, start + COURTS_PER_PAGE);
+  }, [displayedCourts, courtPage]);
+
+  // Reset page when sport filter changes
+  React.useEffect(() => {
+    setCourtPage(0);
+  }, [selectedSport]);
+
+  // Defined Time Sessions (Morning 6-10 AM & Evening 5-9 PM)
+  const MORNING_SLOTS = ['06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30'];
+  const EVENING_SLOTS = ['17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'];
+  const SHIFT_SLOTS = [...MORNING_SLOTS, ...EVENING_SLOTS];
+
+  // Format HH:mm string into 12-hour AM/PM label (e.g. 09:00 AM)
+  const formatTimeLabel = (timeStr) => {
+    if (!timeStr) return '';
+    const [hStr, mStr] = timeStr.split(':');
+    let h = parseInt(hStr, 10);
+    const m = parseInt(mStr, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    const padH = String(h).padStart(2, '0');
+    const padM = String(m).padStart(2, '0');
+    return `${padH}:${padM} ${ampm}`;
+  };
+
   // Derive unique slot times across all displayed courts
   const allSlotTimes = useMemo(() => {
     const times = new Set();
@@ -150,13 +187,78 @@ export const BookingsPage = () => {
   }, [allCourts]);
 
   const columns = useMemo(() => {
+    if (timeSessionFilter === 'MORNING') return MORNING_SLOTS;
+    if (timeSessionFilter === 'EVENING') return EVENING_SLOTS;
+    if (timeSessionFilter === 'SHIFT') return SHIFT_SLOTS;
     if (slotIntervalFilter === 'HOURLY') {
       return allSlotTimes.filter((t) => t.endsWith(':00'));
     }
-    return allSlotTimes.length > 0
-      ? allSlotTimes
-      : ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
-  }, [allSlotTimes, slotIntervalFilter]);
+    return allSlotTimes.length > 0 ? allSlotTimes : SHIFT_SLOTS;
+  }, [allSlotTimes, slotIntervalFilter, timeSessionFilter]);
+
+  // Multi-hour slot merging helper (continuous span without breaks)
+  const getSlotSpanInfo = (court, cols, timeIndex) => {
+    const time = cols[timeIndex];
+    const currentSlot = court.slots?.find((s) => s.slotTime === time);
+    if (!currentSlot || currentSlot.isAvailable) {
+      return { skip: false, rowSpan: 1, slot: currentSlot, timeRangeText: '' };
+    }
+
+    const bookingKey =
+      currentSlot.bookingId ||
+      (currentSlot.memberName ? `mem-${currentSlot.memberName}` : `type-${currentSlot.bookingType}`);
+
+    // Check if previous slot in columns belongs to the SAME booking key
+    if (timeIndex > 0) {
+      const prevTime = cols[timeIndex - 1];
+      const prevSlot = court.slots?.find((s) => s.slotTime === prevTime);
+      if (prevSlot && !prevSlot.isAvailable) {
+        const prevKey =
+          prevSlot.bookingId ||
+          (prevSlot.memberName ? `mem-${prevSlot.memberName}` : `type-${prevSlot.bookingType}`);
+        if (prevKey === bookingKey) {
+          return { skip: true, rowSpan: 0, slot: currentSlot, timeRangeText: '' };
+        }
+      }
+    }
+
+    // Count consecutive future slots with same booking key
+    let span = 1;
+    for (let i = timeIndex + 1; i < cols.length; i++) {
+      const nextTime = cols[i];
+      const nextSlot = court.slots?.find((s) => s.slotTime === nextTime);
+      if (nextSlot && !nextSlot.isAvailable) {
+        const nextKey =
+          nextSlot.bookingId ||
+          (nextSlot.memberName ? `mem-${nextSlot.memberName}` : `type-${nextSlot.bookingType}`);
+        if (nextKey === bookingKey) {
+          span++;
+        } else {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+
+    // Calculate time duration badge string (e.g., 09:00 AM - 11:00 AM)
+    const startFormatted = formatTimeLabel(time);
+    const lastTimeIndex = timeIndex + span - 1;
+    const [lastH, lastM] = cols[lastTimeIndex].split(':').map(Number);
+    const endTotalMins = lastH * 60 + lastM + 30;
+    const endH = Math.floor(endTotalMins / 60);
+    const endM = endTotalMins % 60;
+    const endFormatted = formatTimeLabel(
+      `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
+    );
+
+    return {
+      skip: false,
+      rowSpan: span,
+      slot: currentSlot,
+      timeRangeText: `${startFormatted} - ${endFormatted}`,
+    };
+  };
 
   // Executive Metric Calculations
   let totalSlotsCount = 0;
@@ -654,29 +756,55 @@ export const BookingsPage = () => {
 
             {/* Quick Date Switcher, Interval Switcher & Calendar */}
             <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
-              {/* Slot Duration Filter Pill (I-10) */}
+              {/* Slot Duration & Shift Switcher */}
               <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-xs font-medium border border-gray-200">
                 <button
                   type="button"
-                  onClick={() => setSlotIntervalFilter('ALL')}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${slotIntervalFilter === 'ALL'
-                      ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                  onClick={() => setTimeSessionFilter('SHIFT')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
+                    timeSessionFilter === 'SHIFT'
+                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
                       : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  title="Show all 30-minute booking intervals"
+                  }`}
+                  title="Show Morning (6-10 AM) & Evening (5-9 PM) shifts"
                 >
-                  All (30m)
+                  6-10 AM & 5-9 PM
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSlotIntervalFilter('HOURLY')}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${slotIntervalFilter === 'HOURLY'
-                      ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                  onClick={() => setTimeSessionFilter('MORNING')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
+                    timeSessionFilter === 'MORNING'
+                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
                       : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  title="Show standard hourly interval slots"
+                  }`}
+                  title="Show Morning slots only"
                 >
-                  Hourly (:00)
+                  Morning (6-10 AM)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeSessionFilter('EVENING')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
+                    timeSessionFilter === 'EVENING'
+                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Show Evening slots only"
+                >
+                  Evening (5-9 PM)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeSessionFilter('ALL')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-[11px] ${
+                    timeSessionFilter === 'ALL'
+                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Show all available hours"
+                >
+                  Full Day
                 </button>
               </div>
 
@@ -684,15 +812,17 @@ export const BookingsPage = () => {
               <div className="flex items-center bg-white border border-gray-200 rounded-xl shadow-2xs text-xs font-medium text-slate-600 overflow-hidden">
                 <button
                   onClick={handleToday}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${date === today() ? 'bg-[#2e7d32] text-white shadow-2xs font-extrabold' : 'hover:bg-slate-200/80'
-                    }`}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    date === today() ? 'bg-[#2e7d32] text-white shadow-2xs font-extrabold' : 'hover:bg-slate-200/80'
+                  }`}
                 >
                   Today
                 </button>
                 <button
                   onClick={handleTomorrow}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${date === format(addDays(new Date(), 1), 'yyyy-MM-dd') ? 'bg-[#2e7d32] text-white shadow-2xs font-extrabold' : 'hover:bg-slate-200/80'
-                    }`}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    date === format(addDays(new Date(), 1), 'yyyy-MM-dd') ? 'bg-[#2e7d32] text-white shadow-2xs font-extrabold' : 'hover:bg-slate-200/80'
+                  }`}
                 >
                   Tomorrow
                 </button>
@@ -727,9 +857,37 @@ export const BookingsPage = () => {
             </div>
           </div>
 
-          {/* Matrix Grid Container - Fully Utilizes Bottom Space */}
+          {/* Matrix Grid Container - 5 Court Columns per view */}
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-2xs flex flex-col">
-            <div className="overflow-x-auto max-h-[calc(100vh-250px)] min-h-[440px] overflow-y-auto">
+            {/* Top 5-Court Pagination Bar */}
+            {displayedCourts.length > 5 && (
+              <div className="flex flex-wrap items-center justify-between bg-slate-50 px-4 py-2 border-b border-gray-200 text-xs font-bold text-slate-700 gap-2">
+                <span className="text-slate-700 font-extrabold">
+                  Showing Courts {courtPage * COURTS_PER_PAGE + 1} – {Math.min((courtPage + 1) * COURTS_PER_PAGE, displayedCourts.length)} of {displayedCourts.length} Courts
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={courtPage === 0}
+                    onClick={() => setCourtPage((p) => Math.max(0, p - 1))}
+                    className="px-3 py-1 rounded-xl bg-white border border-slate-300 text-slate-800 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-bold text-xs cursor-pointer shadow-2xs"
+                  >
+                    ‹ Prev 5 Courts
+                  </button>
+                  <span className="text-slate-500 font-bold">Page {courtPage + 1} / {totalCourtPages}</span>
+                  <button
+                    type="button"
+                    disabled={courtPage >= totalCourtPages - 1}
+                    onClick={() => setCourtPage((p) => Math.min(totalCourtPages - 1, p + 1))}
+                    className="px-3 py-1 rounded-xl bg-white border border-slate-300 text-slate-800 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-bold text-xs cursor-pointer shadow-2xs"
+                  >
+                    Next 5 Courts ›
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto max-h-[calc(100vh-250px)] min-h-[480px] overflow-y-auto">
               <QueryState
                 query={availabilityQuery}
                 emptyWhen={(d) => !d?.length}
@@ -737,145 +895,146 @@ export const BookingsPage = () => {
               >
                 {() => (
                   <table className="w-full text-left border-collapse table-fixed">
-                    <thead className="sticky top-0 z-20 bg-slate-50 border-b border-gray-200 shadow-2xs">
+                    <thead className="sticky top-0 z-20 bg-white text-slate-800 text-xs font-bold border-b border-gray-200 shadow-2xs">
                       <tr>
-                        <th className="p-3 w-20 sm:w-24 font-bold text-slate-500 text-[11px] uppercase tracking-wider sticky left-0 bg-slate-100 z-30 border-r border-gray-200">
+                        <th className="p-3.5 w-24 text-center font-bold text-slate-400 text-xs uppercase tracking-wider sticky left-0 bg-white z-30 border-r border-gray-200">
                           Time
                         </th>
-                        {displayedCourts.map((court) => (
-                          <th key={court.courtId} className="p-3 text-center border-l border-gray-200">
-                            <span className="font-bold text-xs text-slate-900 block truncate">{court.courtName}</span>
-                            <span className="text-[10px] font-extrabold text-[#2e7d32] block uppercase tracking-wider mt-0.5">
-                              {court.sport} · {formatCurrency(court.walkInRate)}/hr
+                        {visibleCourts.map((court, idx) => (
+                          <th key={court.courtId} className="p-3.5 text-center border-l border-gray-200 bg-white">
+                            <span className="font-extrabold text-sm text-sky-600 block truncate">
+                              Court #{courtPage * COURTS_PER_PAGE + idx + 1}
+                            </span>
+                            <span className="text-[11px] font-medium text-slate-500 block truncate mt-0.5">
+                              {court.courtName}
                             </span>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-xs">
-                      {columns.map((time) => (
-                        <tr key={time} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="p-3 font-semibold text-slate-600 font-mono text-[11px] whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-100 shadow-2xs">
-                            {time}
-                          </td>
+                      {columns.map((time, timeIdx) => {
+                        // Check if transitioning from Morning (09:30) to Evening (17:00) in SHIFT mode
+                        const isEveningStart = timeSessionFilter === 'SHIFT' && time === '17:00';
 
-                          {displayedCourts.map((court) => {
-                            const slot = court.slots.find((s) => s.slotTime === time);
-                            if (!slot) return <td key={court.courtId} className="p-2 border-l border-gray-100" />;
-
-                            // Filter by Slot Status if filter active
-                            if (slotStatusFilter === 'AVAILABLE' && !slot.isAvailable) {
-                              return <td key={court.courtId} className="p-1 border-l border-gray-100 bg-slate-50/40" />;
-                            }
-                            if (slotStatusFilter === 'BOOKED' && slot.isAvailable) {
-                              return <td key={court.courtId} className="p-1 border-l border-gray-100 bg-slate-50/40" />;
-                            }
-
-                            // 1. Social Play Session
-                            if (!slot.isAvailable && slot.bookingType === 'SOCIAL') {
-                              return (
-                                <td key={court.courtId} className="p-1.5 border-l border-gray-100">
-                                  <button
-                                    onClick={() => handleSlotClick(court, slot)}
-                                    className="w-full p-2.5 rounded-xl bg-sky-50/90 hover:bg-sky-100 text-sky-950 font-normal border border-sky-200 text-center shadow-2xs hover:shadow-xs transition-all cursor-pointer block"
-                                  >
-                                    <div className="flex items-center justify-center gap-1 text-sky-900">
-                                      <Trophy className="w-3 h-3 text-sky-700" />
-                                      <span className="block text-[11px] truncate font-medium text-sky-900">{slot.memberName || 'Friday Social Play'}</span>
-                                    </div>
-                                    <span className="text-[9px] text-sky-700 font-normal block mt-0.5">Community Session · Manage</span>
-                                  </button>
+                        return (
+                          <React.Fragment key={time}>
+                            {isEveningStart && (
+                              <tr className="bg-slate-100/80 text-slate-600 font-extrabold text-[11px] uppercase tracking-wider">
+                                <td colSpan={visibleCourts.length + 1} className="py-2.5 px-4 text-center border-y border-slate-200 shadow-2xs">
+                                  Evening Session (05:00 PM – 09:00 PM)
                                 </td>
-                              );
-                            }
+                              </tr>
+                            )}
+                            <tr className="h-16 hover:bg-slate-50/40 transition-colors">
+                              {/* Left Time Label */}
+                              <td className="p-2 font-bold text-slate-600 text-xs text-center whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200 shadow-2xs">
+                                {formatTimeLabel(time)}
+                              </td>
 
-                            // 2. Booked Match or Maintenance Block
-                            if (!slot.isAvailable) {
-                              const isMaintenance = slot.memberName?.includes('[MAINTENANCE]');
-                              const isVIP = slot.memberName?.includes('[VIP]');
+                              {/* Visible Courts Cells */}
+                              {visibleCourts.map((court) => {
+                                const spanInfo = getSlotSpanInfo(court, columns, timeIdx);
+                                if (spanInfo.skip) return null; // Skip rendering cell because it's merged into an earlier rowSpan!
 
-                              if (isMaintenance) {
-                                return (
-                                  <td key={court.courtId} className="p-1.5 border-l border-gray-100">
-                                    <button
-                                      onClick={() => handleSlotClick(court, slot)}
-                                      className="w-full p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-200 font-normal text-center shadow-2xs hover:shadow-xs transition-all cursor-pointer block"
+                                const slot = spanInfo.slot;
+                                const rowSpan = spanInfo.rowSpan;
+
+                                if (!slot) {
+                                  return (
+                                    <td key={court.courtId} rowSpan={rowSpan} className="p-1 border-l border-gray-100 bg-white" />
+                                  );
+                                }
+
+                                // 1. BOOKED / RESERVED SLOT CARD (Lime / Medium Green continuous highlight)
+                                if (!slot.isAvailable) {
+                                  const rawName = slot.memberName || 'Reserved Player';
+                                  const isMaintenance = rawName.includes('[MAINTENANCE]');
+                                  const isSocial = slot.bookingType === 'SOCIAL';
+                                  const cleanName = rawName.replace('[MAINTENANCE] ', '').replace('[EVENT] ', '');
+
+                                  return (
+                                    <td
+                                      key={court.courtId}
+                                      rowSpan={rowSpan}
+                                      className="p-1.5 border-l border-gray-100 align-top h-full"
                                     >
-                                      <div className="flex items-center justify-center gap-1">
-                                        <ShieldAlert className="w-3 h-3 text-amber-700" />
-                                        <span className="block text-[11px] truncate font-bold text-amber-900">Maintenance</span>
+                                      <div
+                                        onClick={() => handleSlotClick(court, slot)}
+                                        className={`w-full h-full rounded-2xl p-3 flex flex-col justify-between cursor-pointer transition-all shadow-sm hover:shadow-md border relative group overflow-hidden ${
+                                          isMaintenance
+                                            ? 'bg-amber-500 border-amber-600 text-white'
+                                            : isSocial
+                                            ? 'bg-slate-800 border-slate-900 text-white'
+                                            : 'bg-[#70B42C] hover:bg-[#62a024] border-[#5a9321] text-white'
+                                        }`}
+                                      >
+                                        {/* Info Circle Icon in top right corner */}
+                                        <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-white/25 group-hover:bg-white/40 flex items-center justify-center text-[10px] font-bold text-white transition-colors">
+                                          i
+                                        </div>
+
+                                        <div className="space-y-1">
+                                          <span className="font-extrabold text-sm text-white block leading-tight truncate pr-4">
+                                            {cleanName}
+                                          </span>
+                                          <span className="text-[11px] font-medium text-white/90 block">
+                                            {spanInfo.timeRangeText || `${formatTimeLabel(slot.slotTime)} - ${formatTimeLabel(slot.slotTime)}`}
+                                          </span>
+                                        </div>
                                       </div>
-                                      <span className="text-[9px] text-amber-700 block truncate mt-0.5 font-normal">Blocked · Click to inspect</span>
-                                    </button>
+                                    </td>
+                                  );
+                                }
+
+                                // 2. PAST SLOT (DISABLED)
+                                const isToday = date === today();
+                                const isPast = isToday && (() => {
+                                  const [h, m] = slot.slotTime.split(':').map(Number);
+                                  const slotDate = new Date();
+                                  slotDate.setHours(h, m, 0, 0);
+                                  return slotDate < new Date();
+                                })();
+
+                                if (isPast) {
+                                  return (
+                                    <td key={court.courtId} rowSpan={rowSpan} className="p-1.5 border-l border-gray-100 text-center align-middle bg-slate-50/50">
+                                      <div className="w-full h-10 rounded-xl border border-slate-200 bg-slate-100/70 text-slate-400 font-medium text-xs flex items-center justify-center select-none">
+                                        Passed
+                                      </div>
+                                    </td>
+                                  );
+                                }
+
+                                // 3. AVAILABLE SLOT (White cell with clean pill "Reserve" button)
+                                const isSelectedByForm = selectedSlot?.courtId === court.courtId && selectedSlot?.slotTime === slot.slotTime;
+
+                                return (
+                                  <td
+                                    key={court.courtId}
+                                    rowSpan={rowSpan}
+                                    className="p-1.5 border-l border-gray-100 text-center align-middle bg-white hover:bg-slate-50/60 transition-colors"
+                                  >
+                                    <div className="w-full h-full min-h-[48px] flex items-center justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSlotClick(court, slot)}
+                                        className={`px-4 py-1.5 rounded-xl font-semibold text-xs transition-all cursor-pointer border shadow-2xs ${
+                                          isSelectedByForm
+                                            ? 'bg-emerald-600 text-white border-emerald-700 shadow-md ring-2 ring-emerald-300 font-extrabold'
+                                            : 'bg-white text-slate-700 border-gray-200 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/40'
+                                        }`}
+                                      >
+                                        {isSelectedByForm ? 'Selected' : 'Reserve'}
+                                      </button>
+                                    </div>
                                   </td>
                                 );
-                              }
-
-                              {/* HIGHLIGHT BOOKED MATCHES WITH VIBRANT GREEN AND CRISP WHITE TEXT */}
-                              const displayName = slot.memberName || 'Reserved Session';
-                              const displayPlan = isVIP ? 'VIP' : (slot.planName || 'GOLD');
-
-                              return (
-                                <td key={court.courtId} className="p-1.5 border-l border-gray-100">
-                                  <button
-                                    onClick={() => handleSlotClick(court, slot)}
-                                    className="w-full p-2.5 rounded-xl font-extrabold text-center shadow-md hover:shadow-lg transition-all cursor-pointer block border-2 border-[#166534] bg-[#15803d] hover:bg-[#166534] text-white group"
-                                  >
-                                    <div className="text-center">
-                                      <span className="block text-xs sm:text-[13px] truncate font-black text-white tracking-tight leading-tight">
-                                        {displayName}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center justify-center gap-1.5 mt-1">
-                                      <span className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider bg-amber-300 text-slate-950 shadow-2xs">
-                                        {displayPlan}
-                                      </span>
-                                      <span className="text-[10px] text-emerald-100 font-bold">Booked</span>
-                                    </div>
-                                  </button>
-                                </td>
-                              );
-                            }
-
-                            // 3. Past slot on today's schedule (I-8)
-                            const isToday = date === today();
-                            const isPast = isToday && (() => {
-                              const [h, m] = slot.slotTime.split(':').map(Number);
-                              const slotDate = new Date();
-                              slotDate.setHours(h, m, 0, 0);
-                              return slotDate < new Date();
-                            })();
-
-                            if (isPast) {
-                              return (
-                                <td key={court.courtId} className="p-1.5 border-l border-gray-100 text-center">
-                                  <div
-                                    className="w-full py-2 px-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 font-medium text-[11px] flex items-center justify-center gap-1.5 cursor-not-allowed select-none opacity-60"
-                                    title="This session time has already passed."
-                                  >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                    <span className="text-[10px] font-semibold text-slate-400">Passed</span>
-                                  </div>
-                                </td>
-                              );
-                            }
-
-                            // 4. Available Empty Slot (Click to Book Member, Walk-in, or Block)
-                            return (
-                              <td key={court.courtId} className="p-1.5 border-l border-gray-100 text-center">
-                                <button
-                                  onClick={() => handleSlotClick(court, slot)}
-                                  className="group w-full py-2 px-2 rounded-xl border border-emerald-300 hover:border-emerald-600 bg-emerald-50/50 hover:bg-emerald-100 text-emerald-900 font-bold text-[11px] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                                  title="Available slot. Click to book."
-                                >
-                                  <span className="w-2 h-2 rounded-full bg-emerald-600 group-hover:scale-125 transition-transform" />
-                                  <span className="text-[11px] font-extrabold text-emerald-900">Available</span>
-                                </button>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
+                              })}
+                            </tr>
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 )}
@@ -886,24 +1045,24 @@ export const BookingsPage = () => {
             <div className="bg-slate-50 border-t border-slate-200 p-3 px-4 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex flex-wrap items-center gap-4 text-slate-600">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#15803d] inline-block" />
-                  <span className="font-extrabold text-slate-900 text-xs">Vibrant Green: Booked Match</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-white border-2 border-slate-400 inline-block" />
+                  <span className="font-semibold text-slate-700 text-xs">White: Available Slot (Reserve)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-                  <span className="font-bold text-slate-800 text-xs">Emerald: Available Slot</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#70B42C] inline-block" />
+                  <span className="font-semibold text-slate-900 text-xs">Green: Booked (Player Name & Duration)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-                  <span className="font-bold text-slate-800 text-xs">Amber: Maintenance</span>
+                  <span className="font-medium text-slate-700 text-xs">Amber: Maintenance</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
-                  <span className="font-bold text-slate-800 text-xs">Sky Blue: Event Session</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-800 inline-block" />
+                  <span className="font-medium text-slate-700 text-xs">Dark: Social Event</span>
                 </div>
               </div>
-              <div className="text-slate-500 font-bold text-xs">
-                Showing {displayedCourts.length} active facilities · {columns.length} time windows
+              <div className="text-slate-500 font-medium text-xs">
+                Showing 5 courts per view · Morning (6–10 AM) & Evening (5–9 PM)
               </div>
             </div>
           </div>

@@ -333,57 +333,52 @@ export const MembersPage = () => {
                 <th className="p-4">Plan Tier</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Bar Tab Balance</th>
-                <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
               <QueryState
                 query={membersQuery}
-                loading={<tr><td colSpan={7} className="p-6 text-center text-slate-400"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading members…</td></tr>}
-                empty={<tr><td colSpan={7} className="p-6 text-center text-slate-400">No members found.</td></tr>}
+                loading={<tr><td colSpan={6} className="p-6 text-center text-slate-400"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading members…</td></tr>}
+                empty={<tr><td colSpan={6} className="p-6 text-center text-slate-400">No members found.</td></tr>}
                 emptyWhen={(d) => !d?.items?.length}
               >
                 {(data) => data.items.map(toView).map((m) => {
                   const approved = JSON.parse(localStorage.getItem('bmc_approved_upgrades') || '{}');
                   const currentTier = approved[m.email] || approved[m.phone] || approved[m.memberNo] || m.planName;
                   const isGold = /gold/i.test(currentTier);
+                  const isJunior = /junior|youth|child/i.test(currentTier);
 
                   return (
-                    <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-4 font-mono font-bold text-slate-900">{m.memberNo}</td>
+                    <tr
+                      key={m.id}
+                      onClick={() => setSelectedMember(m)}
+                      className="hover:bg-emerald-50/60 transition-all cursor-pointer group select-none"
+                    >
+                      <td className="p-4 font-mono font-bold text-slate-900 group-hover:text-emerald-900 transition-colors">{m.memberNo}</td>
                       <td className="p-4 font-bold text-slate-900 flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-[#e8f5e9] text-[#2e7d32] font-black flex items-center justify-center text-xs shrink-0 border border-emerald-200">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 font-black flex items-center justify-center text-xs shrink-0 border border-emerald-300 shadow-2xs">
                           {m.name.charAt(0).toUpperCase()}
                         </div>
-                        <span>{m.name}</span>
+                        <span className="group-hover:text-emerald-950 transition-colors">{m.name}</span>
                       </td>
-                      <td className="p-4 font-medium text-slate-600">{formatPhone(m.phone)}</td>
+                      <td className="p-4 font-semibold text-slate-600">{formatPhone(m.phone)}</td>
                       <td className="p-4">
-                        <span className={`px-2.5 py-1 text-[10px] font-extrabold rounded-full ${
-                          isGold ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-slate-100 text-slate-700'
+                        <span className={`px-2.5 py-1 text-[10px] font-black rounded-full border shadow-2xs ${
+                          isGold
+                            ? 'bg-amber-100 text-amber-950 border-amber-400'
+                            : isJunior
+                            ? 'bg-sky-100 text-sky-950 border-sky-400'
+                            : 'bg-slate-100 text-slate-800 border-slate-300'
                         }`}>
                           {currentTier}
                         </span>
                       </td>
                       <td className="p-4">
-                        <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded">{m.status}</span>
+                        <span className="px-2.5 py-0.5 text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-full uppercase">
+                          {m.status || 'ACTIVE'}
+                        </span>
                       </td>
-                      <td className="p-4 font-semibold text-slate-900">{formatCurrency(m.tabBalance || 0)}</td>
-                      <td className="p-4 text-right space-x-2">
-                        <button
-                          onClick={() => handleDirectUpgradeMember(m)}
-                          className={`text-[11px] font-extrabold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                            isGold
-                              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                              : 'bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-800 shadow-2xs'
-                          }`}
-                        >
-                          {isGold ? 'Set Silver' : '⚡ Upgrade Gold'}
-                        </button>
-                        <button onClick={() => setSelectedMember(m)} className="text-xs font-bold text-[#2e7d32] hover:underline cursor-pointer">
-                          View Profile →
-                        </button>
-                      </td>
+                      <td className="p-4 font-extrabold text-slate-900">{formatCurrency(m.tabBalance || 0)}</td>
                     </tr>
                   );
                 })}
