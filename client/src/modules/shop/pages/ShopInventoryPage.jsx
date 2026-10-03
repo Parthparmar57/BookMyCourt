@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useProducts, useStockIn } from '../../../hooks/useShop';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
-import { ShoppingBag, AlertTriangle, Plus, Loader2, X } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Plus, Loader2, X, CheckCircle2 } from 'lucide-react';
 
 export const ShopInventoryPage = () => {
   const productsQuery = useProducts();
@@ -34,23 +34,33 @@ export const ShopInventoryPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between border-b pb-4 border-slate-200">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Retail Shop & Shared Inventory Pool</h1>
-          <p className="text-xs text-slate-500">Omnichannel stock pool synchronized live between counter POS and online member shop.</p>
+    <div className="space-y-6 font-sans">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-gray-200 p-6 rounded-3xl shadow-xs">
+        <div className="space-y-1">
+          <div className="text-xs font-mono font-black tracking-widest uppercase text-[#4A812F] flex items-center gap-2">
+            <span>RETAIL INVENTORY</span>
+            <span>•</span>
+            <span>SHARED STOCK POOL</span>
+          </div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            Pro Shop Inventory & <span className="text-[#4A812F]">Stock Audit</span>
+          </h1>
+          <p className="text-xs text-slate-600 font-semibold">
+            Omnichannel stock pool synchronized live between counter POS and online member shop.
+          </p>
         </div>
-        <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
-          <ShoppingBag className="w-4 h-4" />
-          Omnichannel Shared Pool Active
+
+        <span className="bg-emerald-50 text-[#4A812F] border border-emerald-200 text-xs font-extrabold px-4 py-2 rounded-2xl flex items-center gap-2 shadow-2xs shrink-0">
+          <ShoppingBag className="w-4 h-4 text-[#4A812F]" />
+          OMNICHANNEL POOL ACTIVE
         </span>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-900 text-white text-xs uppercase tracking-wider">
+              <tr className="bg-slate-950 text-white text-xs font-mono uppercase tracking-wider">
                 <th className="p-4">SKU</th>
                 <th className="p-4">Product Name</th>
                 <th className="p-4">Category</th>

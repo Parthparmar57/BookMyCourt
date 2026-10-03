@@ -95,26 +95,24 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const navItems = getNavItems();
+  const rawNavItems = getNavItems();
+  const navItems = rawNavItems.filter((item, index, self) =>
+    index === self.findIndex((t) => t.path === item.path || t.label.toLowerCase() === item.label.toLowerCase())
+  );
 
   return (
-    <aside className="w-64 bg-surface text-foreground border-r border-border flex flex-col h-screen sticky top-0 shrink-0 select-none z-20">
+    <aside className="w-64 bg-surface text-foreground border-r border-border flex flex-col h-screen sticky top-0 shrink-0 select-none z-20 overflow-hidden">
       {/* Brand Header */}
-      <div className="h-16 px-4 border-b border-border flex items-center justify-between bg-white">
+      <div className="p-6 border-b border-border flex items-center justify-between bg-white shrink-0">
         <img
           src="/bookmycourt_logo.jpg"
           alt="BookMyCourt"
-          className="h-9 w-auto object-contain max-w-[170px]"
-        />
-        <img
-          src="/my_fevicon_logo.png"
-          alt="BookMyCourt"
-          className="h-7 w-7 object-contain hidden"
+          className="h-14 sm:h-16 w-auto object-contain max-w-[200px]"
         />
       </div>
 
       {/* Role Access Scope Badge */}
-      <div className="p-4 border-b border-border/60 bg-surface-muted/50">
+      <div className="p-4 border-b border-border/60 bg-surface-muted/50 shrink-0">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Access Level</span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
@@ -124,7 +122,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+      <nav className="flex-1 overflow-hidden p-3 space-y-1">
         {navItems.map(item => {
           const Icon = item.icon;
           return (
@@ -149,7 +147,7 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* Footer info */}
-      <div className="p-4 border-t border-border bg-white text-xs text-text-muted">
+      <div className="p-4 border-t border-border bg-white text-xs text-text-muted shrink-0">
         <div className="flex items-center justify-between">
           <span>Version 1.0.0</span>
           <span className="font-mono text-[10px] bg-surface-muted px-1.5 py-0.5 rounded">PERN Stack</span>

@@ -20,6 +20,12 @@ import { BarPage } from '../modules/bar/pages/BarPage';
 import { KitchenPage } from '../modules/kitchen/pages/KitchenPage';
 import { ShopInventoryPage } from '../modules/shop/pages/ShopInventoryPage';
 
+// Dedicated Member Portal Pages
+import { MemberDashboardPage } from '../modules/members/pages/MemberDashboardPage';
+import { MemberBookingsPage } from '../modules/members/pages/MemberBookingsPage';
+import { MemberCardPage } from '../modules/members/pages/MemberCardPage';
+import { MemberTabPage } from '../modules/members/pages/MemberTabPage';
+
 // Helper: wrap a layout + its children behind a role guard.
 const guarded = (roles, layout, children) => ({
   element: <ProtectedRoute roles={roles} />,
@@ -94,16 +100,16 @@ export const router = createBrowserRouter([
     ])
   },
 
-  // Member Portal
+  // Member Portal — Dedicated Views per Navigation Tab
   {
     path: '/member',
     ...guarded(['MEMBER'], <AppLayout />, [
-      { index: true, element: <BookingsPage /> },
+      { index: true, element: <MemberDashboardPage /> },
       { path: 'book', element: <BookingsPage /> },
-      { path: 'bookings', element: <BookingsPage /> },
+      { path: 'bookings', element: <MemberBookingsPage /> },
       { path: 'shop', element: <ShopPage /> },
-      { path: 'tab', element: <BarPage /> },
-      { path: 'card', element: <MembersPage /> }
+      { path: 'tab', element: <MemberTabPage /> },
+      { path: 'card', element: <MemberCardPage /> }
     ])
   }
 ]);
