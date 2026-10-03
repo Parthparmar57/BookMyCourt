@@ -129,10 +129,10 @@ test('4. Refund/void reduces revenue; unpaid tab excluded from earnings', async 
 
     // Check transaction ledger for negative reversal transaction
     const refTxn = await prisma.transaction.findFirst({
-      where: { orderId: order.id, amount: { lt: 0 } }
+      where: { reference: `VOID-${order.orderNo}`, amount: { lt: 0 } }
     });
     assert.ok(refTxn !== null, 'Negative refund transaction must be posted to ledger when voiding a paid order');
-    assert.equal(Number(refTxn.amount), -Number(order.total), 'Reversal transaction amount must equal negative order total');
+    assert.equal(Number(refTxn.amount), -Number(order.totalAmount || order.total), 'Reversal transaction amount must equal negative order total');
   }
 });
 

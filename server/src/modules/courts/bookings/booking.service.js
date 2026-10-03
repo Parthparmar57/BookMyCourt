@@ -168,8 +168,23 @@ export const createBooking = async (data, user) => {
         },
       });
 
-      if (existingCount >= maxPerDay) {
+      const role = user?.role;
+      if (data.overrideLimit && !['OWNER', 'FRONT_DESK'].includes(role)) {
+        throw new ApiError(403, 'Only staff (Owner / Front Desk) can override daily booking limits');
+      }
+
+      const isStaffOverride = data.overrideLimit && ['OWNER', 'FRONT_DESK'].includes(role);
+      if (existingCount >= maxPerDay && !isStaffOverride) {
         throw new ApiError(422, `Daily booking limit reached (${maxPerDay} per day for this plan).`);
+      }
+      if (existingCount >= maxPerDay && isStaffOverride) {
+        await writeAudit(tx, {
+          actorId: user?.id || null,
+          action: 'BOOKING_LIMIT_OVERRIDE',
+          entity: 'Booking',
+          entityId: member.id,
+          meta: { memberId: member.id, count: existingCount, maxPerDay },
+        });
       }
     }
 

@@ -4,6 +4,7 @@ import { authorize } from '../../../middleware/authorize.js';
 import { validate } from '../../../middleware/validate.js';
 import {
   registerMemberSchema,
+  updateMemberSchema,
   renewMemberSchema,
   memberIdParamSchema,
   memberSearchQuerySchema,
@@ -40,6 +41,20 @@ router.get(
   '/:id',
   authorize('OWNER', 'FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'MEMBER'),
   controller.getMemberProfile
+);
+
+router.patch(
+  '/:id',
+  authorize('OWNER', 'FRONT_DESK'),
+  validate({ params: memberIdParamSchema, body: updateMemberSchema }),
+  controller.updateMember
+);
+
+router.patch(
+  '/:id/deactivate',
+  authorize('OWNER', 'FRONT_DESK'),
+  validate({ params: memberIdParamSchema }),
+  controller.deactivateMember
 );
 
 router.post(
