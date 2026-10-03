@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
-import { ApplyLeaveModal } from './ApplyLeaveModal';
 import { 
   CheckCircle2, 
   LayoutDashboard, 
@@ -24,10 +23,6 @@ export const Sidebar = () => {
   const { currentRole, currentUser, logout } = useAuth();
   const { isOpen, closeSidebar } = useSidebar();
   const location = useLocation();
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
-
-  // Staff roles can apply for leave — explicitly excluded for OWNER/Admin
-  const isStaff = currentRole !== 'OWNER' && ['FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'].includes(currentRole);
 
   const getNavLinks = () => {
     const roleUpper = (currentRole || '').toUpperCase();
@@ -128,16 +123,6 @@ export const Sidebar = () => {
 
       {/* Footer Actions */}
       <div className="pt-4 border-t border-gray-100 shrink-0 space-y-2">
-        {isStaff && (
-          <button
-            onClick={() => setShowLeaveModal(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors cursor-pointer"
-          >
-            <Calendar className="w-4 h-4 text-emerald-600" />
-            <span>Apply for Leave</span>
-          </button>
-        )}
-
         <button
           onClick={logout}
           className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-rose-100 bg-white cursor-pointer"
@@ -172,8 +157,6 @@ export const Sidebar = () => {
       >
         {navContent}
       </aside>
-
-      <ApplyLeaveModal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} />
     </>
   );
 };

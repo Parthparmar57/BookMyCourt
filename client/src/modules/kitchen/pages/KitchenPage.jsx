@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useKitchenQueue, useUpdateKitchenStatus } from '../../../hooks/useBar';
 import { useKitchenRealtime } from '../../../hooks/useRealtime';
-import { Utensils, Clock, CheckCircle2, ArrowRight, Loader2, Calendar } from 'lucide-react';
-import { ApplyLeaveModal } from '../../../shared/components/ApplyLeaveModal';
+import { Utensils, Clock, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 
 const minsAgo = (iso) => {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -22,7 +21,6 @@ export const KitchenPage = () => {
   useKitchenRealtime(); // push updates; the 30s poll below is just a fallback
   const queueQuery = useKitchenQueue({ refetchInterval: 30000 });
   const updateStatus = useUpdateKitchenStatus();
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const tickets = (queueQuery.data || []).map(toTicket);
   const newTickets = tickets.filter((t) => t.status === 'PLACED');
@@ -43,14 +41,6 @@ export const KitchenPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowLeaveModal(true)}
-            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
-          >
-            <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Apply Leave</span>
-          </button>
-
           <div className="flex items-center gap-2">
             {queueQuery.isFetching ? (
               <Loader2 className="w-4 h-4 text-[#4A812F] animate-spin" />

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMembers, usePlans, useCreateMember } from '../../../hooks/useMembership';
@@ -73,6 +75,10 @@ const toView = (m) => ({
 });
 
 export const MembersPage = () => {
+  const location = useLocation();
+  const { currentRole } = useAuth();
+  const isFrontDesk = location.pathname.startsWith('/staff/frontdesk') || currentRole === 'FRONT_DESK';
+
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 350);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -133,13 +139,15 @@ export const MembersPage = () => {
           <p className="text-xs text-slate-500">Fast search by Name, Phone, Member No. or QR code scan.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setShowQRScanner(true)}
-            className="bg-[#1f2125] hover:bg-black text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
-          >
-            <QrCode className="w-4 h-4 text-emerald-400" />
-            <span>Scan Member QR Code</span>
-          </button>
+          {isFrontDesk && (
+            <button
+              onClick={() => setShowQRScanner(true)}
+              className="bg-[#1f2125] hover:bg-black text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+            >
+              <QrCode className="w-4 h-4 text-emerald-400" />
+              <span>Scan Member QR Code</span>
+            </button>
+          )}
           <button
             onClick={() => setShowAddModal(true)}
             className="bg-[#2e7d32] hover:bg-[#236327] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer"
