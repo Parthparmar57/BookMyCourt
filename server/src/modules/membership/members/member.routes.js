@@ -64,4 +64,22 @@ router.post(
   controller.renewMembership
 );
 
+router.patch(
+  '/:id/deactivate',
+  authorize('OWNER', 'FRONT_DESK'),
+  controller.deactivateMember
+);
+
+router.post(
+  '/:id/deactivate',
+  authorize('OWNER', 'FRONT_DESK'),
+  controller.deactivateMember
+);
+
+router.patch(
+  '/:id',
+  authorize('OWNER', 'FRONT_DESK'),
+  controller.updateMember
+);
+
 export default router;
