@@ -408,10 +408,11 @@ export const MembersPage = () => {
                         <span>{m.name}</span>
                       </td>
                       <td className="p-4 font-medium text-slate-600">{formatPhone(m.phone)}</td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 text-[10px] font-extrabold rounded-full ${isGold ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-slate-100 text-slate-700'
-                          }`}>
-                          {currentTier}
+                      <td className="p-4 whitespace-nowrap">
+                        <span className={`px-2.5 py-1 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1 whitespace-nowrap shadow-2xs ${
+                          isGold ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}>
+                          {isGold ? '👑 Gold VIP' : currentTier}
                         </span>
                       </td>
                       <td className="p-4">

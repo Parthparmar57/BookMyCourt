@@ -41,11 +41,11 @@ export const createLead = async (data) => {
 };
 
 const ALLOWED_STAGE_TRANSITIONS = {
-  NEW: ['CONTACTED', 'LOST'],
-  CONTACTED: ['QUOTED', 'LOST'],
+  NEW: ['CONTACTED', 'QUOTED', 'WON', 'LOST'],
+  CONTACTED: ['QUOTED', 'WON', 'LOST'],
   QUOTED: ['WON', 'LOST'],
   WON: [], // Terminal — converted to member
-  LOST: ['CONTACTED'], // Reopen lead
+  LOST: ['NEW', 'CONTACTED', 'QUOTED', 'WON'], // Reopen lead
 };
 
 export const updateLead = async (id, data) => {

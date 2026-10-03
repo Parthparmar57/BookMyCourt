@@ -2,59 +2,32 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Calendar, Menu, X, CheckCircle2, XCircle, Clock, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
-import { useLeaveRealtime } from '../../hooks/useRealtime';
+import { useNotifications } from '../../context/NotificationContext';
 import { ApplyLeaveModal } from './ApplyLeaveModal';
+
+// Turn a stored timestamp into a short relative label ("Just now", "5m ago", …).
+const formatRelativeTime = (time) => {
+  if (!time) return '';
+  const then = typeof time === 'number' ? time : new Date(time).getTime();
+  if (Number.isNaN(then)) return typeof time === 'string' ? time : '';
+  const diff = Date.now() - then;
+  if (diff < 60_000) return 'Just now';
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(then).toLocaleDateString();
+};
 
 export const Topbar = () => {
   const { currentRole, currentUser } = useAuth();
   const { isOpen, toggleSidebar } = useSidebar();
+  const { notifications, unreadCount, markAllRead, clearAll } = useNotifications();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
-
-  // Notifications State
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'welcome-notif',
-      title: 'System Online',
-      message: 'Real-time sync connected and active.',
-      time: 'Just now',
-      read: false,
-      type: 'info',
-    },
-  ]);
-
-  // Handle incoming real-time socket events for leaves
-  useLeaveRealtime((data) => {
-    if (!data) return;
-
-    // 1. If staff's leave status was updated by Admin
-    if (data.status && (data.employee?.userId === currentUser?.id || data.employeeId === currentUser?.employee?.id)) {
-      const isApproved = data.status === 'APPROVED';
-      const newNotif = {
-        id: `leave-status-${Date.now()}`,
-        title: isApproved ? 'Leave Request Approved' : 'Leave Request Rejected',
-        message: `Your ${data.type || ''} leave for ${data.days || 1} day(s) was ${data.status.toLowerCase()} by Admin.`,
-        time: 'Just now',
-        read: false,
-        type: isApproved ? 'success' : 'error',
-      };
-      setNotifications((prev) => [newNotif, ...prev]);
-    }
-    // 2. If an Admin receives a new staff leave request
-    else if (currentRole === 'OWNER' && data.status === 'PENDING') {
-      const applicantName = data.employee?.user?.name || 'Staff Member';
-      const newNotif = {
-        id: `leave-req-${Date.now()}`,
-        title: 'New Leave Request',
-        message: `${applicantName} submitted a ${data.type || ''} leave request for ${data.days || 1} day(s).`,
-        time: 'Just now',
-        read: false,
-        type: 'pending',
-      };
-      setNotifications((prev) => [newNotif, ...prev]);
-    }
-  });
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -66,12 +39,6 @@ export const Topbar = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
 
   const roleTitle =
     currentRole === 'OWNER'
@@ -156,17 +123,27 @@ export const Topbar = () => {
                     </span>
                   )}
                 </div>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={markAllRead}
-                    className="text-[10px] text-slate-400 hover:text-slate-700 font-medium cursor-pointer"
-                  >
-                    Mark all read
-                  </button>
-                )}
+                <div className="flex items-center gap-3">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllRead}
+                      className="text-[10px] text-slate-400 hover:text-slate-700 font-medium cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={clearAll}
+                      className="text-[10px] text-slate-400 hover:text-rose-600 font-medium cursor-pointer"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1 text-xs">
+              <div className="space-y-2 max-h-96 overflow-y-auto pr-1 text-xs">
                 {notifications.map((n) => (
                   <div
                     key={n.id}
@@ -182,7 +159,7 @@ export const Topbar = () => {
                       <div className="flex-1 space-y-0.5">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-[11px] block">{n.title}</span>
-                          <span className="text-[9px] text-slate-400 font-normal">{n.time}</span>
+                          <span className="text-[9px] text-slate-400 font-normal">{formatRelativeTime(n.time)}</span>
                         </div>
                         <p className="text-[11px] text-slate-600 leading-tight">{n.message}</p>
                       </div>

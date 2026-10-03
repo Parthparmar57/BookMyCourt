@@ -10,6 +10,7 @@ import {
   useOpenTab,
   useSettleTab
 } from '../../../hooks/useBar';
+import { useBarOrderRealtime } from '../../../hooks/useRealtime';
 import {
   Coffee,
   Utensils,
@@ -52,6 +53,10 @@ export const MemberTabPage = () => {
   const createBarOrder = useCreateBarOrder();
   const openTab = useOpenTab();
   const settleTab = useSettleTab();
+
+  // Live sync: refresh orders the moment the kitchen advances a ticket's status
+  // (e.g. CHEF PREPARING → READY / SERVED) without a manual page refresh.
+  useBarOrderRealtime();
 
   // View Sub-tab
   const [activeView, setActiveView] = useState('menu'); // 'menu' | 'orders' | 'tab'
