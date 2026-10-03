@@ -21,3 +21,9 @@ export const renewMembership = asyncHandler(async (req, res) => {
   const member = await memberService.renewMembership(req.params.id, req.body, req.user);
   return success(res, member, 'Membership renewed successfully');
 });
+
+// G3 — resolve a full member profile from a scanned QR payload
+export const scanMember = asyncHandler(async (req, res) => {
+  const member = await memberService.scanMember(req.body.payload);
+  return success(res, member);
+});

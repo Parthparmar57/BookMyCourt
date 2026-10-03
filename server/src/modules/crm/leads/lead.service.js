@@ -143,3 +143,13 @@ export const updateQuotationStatus = async (id, status) => {
     return quotation;
   });
 };
+
+// ─── G1: Quotation PDF helper ─────────────────────────────────────────────────
+export const getQuotationById = async (id) => {
+  const quotation = await prisma.quotation.findUnique({
+    where: { id },
+    include: { lead: true, plan: true },
+  });
+  if (!quotation) throw new ApiError(404, 'Quotation not found');
+  return quotation;
+};

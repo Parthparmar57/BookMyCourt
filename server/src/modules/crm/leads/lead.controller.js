@@ -1,6 +1,7 @@
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { success } from '../../../utils/response.js';
 import * as leadService from './lead.service.js';
+import { generateQuotationPDF } from '../../../lib/pdf.js';
 
 export const listLeads = asyncHandler(async (req, res) => {
   const leads = await leadService.listLeads(req.query);
@@ -42,4 +43,10 @@ export const updateQuotationStatus = asyncHandler(async (req, res) => {
 export const convertLead = asyncHandler(async (req, res) => {
   const member = await leadService.convertLeadToMember(req.params.id, req.body, req.user?.id);
   return success(res, member, 'Lead converted to member successfully', 201);
+});
+
+// G1 — stream quotation PDF to client; no disk I/O required
+export const downloadQuotationPdf = asyncHandler(async (req, res) => {
+  const quotation = await leadService.getQuotationById(req.params.id);
+  generateQuotationPDF(quotation, res);
 });
