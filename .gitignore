@@ -7,22 +7,49 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Diagnostic data
-.tmp
+# Environment variables - NEVER commit these
+.env
+.env.*
+!.env.example
 
 # Dependencies
-node_modules
-dist
-dist-ssr
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
 *.local
+
+# Diagnostic / temp data
+.tmp/
+*.tmp
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+!.vscode/settings.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+
+# Runtime / uploads
+uploads/
+*.pid
+*.seed
+*.pid.lock
