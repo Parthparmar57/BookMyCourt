@@ -22,13 +22,24 @@ export const Topbar = () => {
       ? 'Kitchen Staff'
       : 'Member';
 
+  // Dynamic time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Good Morning';
+    if (hour >= 12 && hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const firstName = currentUser?.name?.trim()?.split(' ')[0] || 'User';
+  const greeting = getGreeting();
+
   // Any staff role or user with employee record can apply for leave
   const isStaff = ['FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'KITCHEN'].includes(currentRole) || !!currentUser?.employee;
 
   return (
     <>
       <header className="bg-white border-b border-gray-100 px-4 sm:px-8 py-3.5 flex items-center justify-between font-sans sticky top-0 z-20 shadow-2xs">
-        {/* Left Area: Responsive Hamburger / Cross Toggle Button */}
+        {/* Left Area: Responsive Hamburger / Cross Toggle Button + Dynamic Greeting */}
         <div className="flex items-center gap-3 sm:gap-4">
           {/* Toggle Button at fixed place: Switches between Hamburger (☰) and Cross (✕) */}
           <button
@@ -43,6 +54,20 @@ export const Topbar = () => {
               <Menu className="w-4 h-4 text-slate-700 transition-transform duration-200 hover:scale-110" />
             )}
           </button>
+
+          {/* Dynamic Personalized Greeting */}
+          {currentUser && (
+            <div className="flex items-center gap-2 select-none">
+              <span className="text-xs sm:text-sm font-medium text-slate-700">
+                {greeting},{' '}
+                <span className="font-semibold text-slate-900">{firstName}</span>
+              </span>
+              <span className="hidden sm:inline text-xs text-slate-300 font-normal">·</span>
+              <span className="hidden md:inline text-[11px] text-emerald-800 font-medium bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/70">
+                {roleTitle}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Right Actions: Apply Leave (for staff) + Bell + Initial Avatar + Name */}
