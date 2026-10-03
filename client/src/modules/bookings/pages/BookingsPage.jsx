@@ -241,22 +241,35 @@ export const BookingsPage = () => {
       }
     }
 
-    // Calculate time duration badge string (e.g., 09:00 AM - 11:00 AM)
-    const startFormatted = formatTimeLabel(time);
-    const lastTimeIndex = timeIndex + span - 1;
-    const [lastH, lastM] = cols[lastTimeIndex].split(':').map(Number);
-    const endTotalMins = lastH * 60 + lastM + 30;
-    const endH = Math.floor(endTotalMins / 60);
-    const endM = endTotalMins % 60;
-    const endFormatted = formatTimeLabel(
-      `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
-    );
+    // Calculate time duration badge string (e.g., 07:00 PM - 08:00 PM)
+    let timeRangeText = '';
+    if (currentSlot.bookingStartTime && currentSlot.bookingEndTime) {
+      const bStartDate = new Date(currentSlot.bookingStartTime);
+      const bEndDate = new Date(currentSlot.bookingEndTime);
+      const bStartH = String(bStartDate.getHours()).padStart(2, '0');
+      const bStartM = String(bStartDate.getMinutes()).padStart(2, '0');
+      const bEndH = String(bEndDate.getHours()).padStart(2, '0');
+      const bEndM = String(bEndDate.getMinutes()).padStart(2, '0');
+      timeRangeText = `${formatTimeLabel(`${bStartH}:${bStartM}`)} - ${formatTimeLabel(`${bEndH}:${bEndM}`)}`;
+    } else {
+      const stepMins = slotIntervalFilter === 'HOURLY' ? 60 : 30;
+      const startFormatted = formatTimeLabel(time);
+      const lastTimeIndex = timeIndex + span - 1;
+      const [lastH, lastM] = cols[lastTimeIndex].split(':').map(Number);
+      const endTotalMins = lastH * 60 + lastM + stepMins;
+      const endH = Math.floor(endTotalMins / 60);
+      const endM = endTotalMins % 60;
+      const endFormatted = formatTimeLabel(
+        `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
+      );
+      timeRangeText = `${startFormatted} - ${endFormatted}`;
+    }
 
     return {
       skip: false,
       rowSpan: span,
       slot: currentSlot,
-      timeRangeText: `${startFormatted} - ${endFormatted}`,
+      timeRangeText,
     };
   };
 
@@ -945,28 +958,32 @@ export const BookingsPage = () => {
                                     <td key={court.courtId} rowSpan={rowSpan} className="p-1 border-l border-gray-100 bg-white" />
                                   );
                                 }
-
-                                // 1. BOOKED / RESERVED SLOT CARD (Lime / Medium Green continuous highlight)
-                                if (!slot.isAvailable) {
+                                // 1. BOOKED / RESERVED SLOT CARD (Full Span with distinct border)
+                                if (slot.bookingId) {
                                   const rawName = slot.memberName || 'Reserved Player';
                                   const isMaintenance = rawName.includes('[MAINTENANCE]');
                                   const isSocial = slot.bookingType === 'SOCIAL';
+                                  const isWalkIn = slot.planName === 'Walk-in' || (!isMaintenance && !isSocial && !slot.planName);
                                   const cleanName = rawName.replace('[MAINTENANCE] ', '').replace('[EVENT] ', '');
 
                                   return (
                                     <td
                                       key={court.courtId}
                                       rowSpan={rowSpan}
-                                      className="p-1.5 border-l border-gray-100 align-top h-full"
+                                      className="p-1.5 border-l border-gray-100 align-top"
+                                      style={{ height: `${rowSpan * 64}px` }}
                                     >
                                       <div
                                         onClick={() => handleSlotClick(court, slot)}
-                                        className={`w-full h-full rounded-2xl p-3 flex flex-col justify-between cursor-pointer transition-all shadow-sm hover:shadow-md border relative group overflow-hidden ${
+                                        style={{ minHeight: `${rowSpan * 64 - 12}px` }}
+                                        className={`w-full h-full rounded-2xl p-3 flex flex-col justify-between cursor-pointer transition-all shadow-sm hover:shadow-md border-2 relative group overflow-hidden ${
                                           isMaintenance
-                                            ? 'bg-amber-500 border-amber-600 text-white'
+                                            ? 'bg-amber-500 hover:bg-amber-600 border-amber-700 text-white'
                                             : isSocial
-                                            ? 'bg-slate-800 border-slate-900 text-white'
-                                            : 'bg-[#70B42C] hover:bg-[#62a024] border-[#5a9321] text-white'
+                                            ? 'bg-indigo-700 hover:bg-indigo-800 border-indigo-950 text-white'
+                                            : isWalkIn
+                                            ? 'bg-sky-600 hover:bg-sky-700 border-sky-800 text-white'
+                                            : 'bg-[#4A812F] hover:bg-[#3d6e25] border-[#264516] text-white shadow-emerald-900/10'
                                         }`}
                                       >
                                         {/* Info Circle Icon in top right corner */}
@@ -975,13 +992,31 @@ export const BookingsPage = () => {
                                         </div>
 
                                         <div className="space-y-1">
-                                          <span className="font-extrabold text-sm text-white block leading-tight truncate pr-4">
-                                            {cleanName}
-                                          </span>
-                                          <span className="text-[11px] font-medium text-white/90 block">
-                                            {spanInfo.timeRangeText || `${formatTimeLabel(slot.slotTime)} - ${formatTimeLabel(slot.slotTime)}`}
-                                          </span>
+                                          <div className="flex items-center justify-between gap-1 pr-4">
+                                            <span className="font-extrabold text-sm text-white block leading-tight truncate">
+                                              {cleanName}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-white/95">
+                                            <Clock className="w-3.5 h-3.5 shrink-0 opacity-80" />
+                                            <span>
+                                              {spanInfo.timeRangeText || `${formatTimeLabel(slot.slotTime)} - ${formatTimeLabel(slot.slotTime)}`}
+                                            </span>
+                                          </div>
+                                          {slot.planName && (
+                                            <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-black/20 text-white/90">
+                                              {slot.planName}
+                                            </span>
+                                          )}
                                         </div>
+
+                                        {/* Two 30-min segment indicators for 1-hour span */}
+                                        {rowSpan >= 2 && (
+                                          <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px] text-white/80 font-bold">
+                                            <span className="bg-black/20 px-2 py-0.5 rounded">00-30 min</span>
+                                            <span className="bg-black/20 px-2 py-0.5 rounded">30-60 min</span>
+                                          </div>
+                                        )}
                                       </div>
                                     </td>
                                   );
@@ -1006,7 +1041,18 @@ export const BookingsPage = () => {
                                   );
                                 }
 
-                                // 3. AVAILABLE SLOT (White cell with clean pill "Reserve" button)
+                                // 3. GAP SLOT (Cannot fit full 60-min session)
+                                if (!slot.isAvailable) {
+                                  return (
+                                    <td key={court.courtId} rowSpan={rowSpan} className="p-1.5 border-l border-gray-100 text-center align-middle bg-slate-50/30">
+                                      <div className="w-full h-10 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-slate-400 font-semibold text-[11px] flex items-center justify-center select-none">
+                                        Unavailable
+                                      </div>
+                                    </td>
+                                  );
+                                }
+
+                                // 4. AVAILABLE SLOT (White cell with clean pill "Reserve" button)
                                 const isSelectedByForm = selectedSlot?.courtId === court.courtId && selectedSlot?.slotTime === slot.slotTime;
 
                                 return (

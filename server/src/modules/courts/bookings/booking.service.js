@@ -1,4 +1,4 @@
-import { addMinutes, startOfDay, endOfDay, isBefore, isAfter, differenceInMinutes } from 'date-fns';
+import { addMinutes, format, startOfDay, endOfDay, isBefore, isAfter, differenceInMinutes } from 'date-fns';
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { calculateCourtPrice } from '../../../utils/pricing.js';
@@ -64,26 +64,46 @@ export const getAvailability = async ({ date = new Date(), courtId, sport }) => 
   });
 
   return courts.map((court) => {
-    const slots = generateDailySlots(targetDate, court.openTime, court.closeTime, SESSION_MINUTES, 30);
+    // Generate 30-minute intervals covering the court's operating hours
+    const slots = generateDailySlots(targetDate, court.openTime, court.closeTime, 30, 30);
 
     const slotAvailability = slots.map((slot) => {
-      // Check if any booking on this court overlaps with this 60-min slot
-      const overlappingBooking = court.bookings.find((b) => {
+      // 1. Check if this exact 30-min interval is occupied by an active booking
+      const activeBooking = court.bookings.find((b) => {
         const bStart = new Date(b.startTime);
         const bEnd = new Date(b.endTime);
         return isBefore(bStart, slot.endTime) && isAfter(bEnd, slot.startTime);
       });
 
+      // 2. Check if a new 60-minute session starting at this time would conflict with any booking
+      const sessionEnd = addMinutes(slot.startTime, SESSION_MINUTES);
+      const closeDate = parseTimeOnDate(targetDate, court.closeTime);
+      const exceedsClosing = isAfter(sessionEnd, closeDate);
+
+      const hasConflictForSession = court.bookings.some((b) => {
+        const bStart = new Date(b.startTime);
+        const bEnd = new Date(b.endTime);
+        return isBefore(bStart, sessionEnd) && isAfter(bEnd, slot.startTime);
+      });
+
+      const isAvailable = !activeBooking && !hasConflictForSession && !exceedsClosing;
+
+      const memberName = activeBooking?.member?.user?.name || activeBooking?.walkInName || null;
+      const memberPhone = activeBooking?.member?.user?.phone || activeBooking?.walkInPhone || null;
+
       return {
         ...slot,
-        isAvailable: !overlappingBooking,
-        bookingType: overlappingBooking ? overlappingBooking.type : null,
-        bookingId: overlappingBooking ? overlappingBooking.id : null,
-        bookingStatus: overlappingBooking ? overlappingBooking.status : null,
-        memberName: overlappingBooking?.member?.user?.name || null,
-        memberPhone: overlappingBooking?.member?.user?.phone || null,
-        planName: overlappingBooking?.member?.plan?.name || null,
-        bookingPrice: overlappingBooking ? Number(overlappingBooking.price) : null,
+        timeLabel: `${format(slot.startTime, 'HH:mm')} - ${format(addMinutes(slot.startTime, SESSION_MINUTES), 'HH:mm')}`,
+        isAvailable,
+        bookingType: activeBooking ? activeBooking.type : null,
+        bookingId: activeBooking ? activeBooking.id : null,
+        bookingStatus: activeBooking ? activeBooking.status : null,
+        memberName,
+        memberPhone,
+        planName: activeBooking?.member?.plan?.name || (activeBooking?.walkInName ? 'Walk-in' : null),
+        bookingPrice: activeBooking ? Number(activeBooking.price) : null,
+        bookingStartTime: activeBooking ? activeBooking.startTime : null,
+        bookingEndTime: activeBooking ? activeBooking.endTime : null,
       };
     });
 
@@ -149,7 +169,7 @@ export const createBooking = async (data, user) => {
         throw new ApiError(403, 'Your membership is inactive or has expired. Please renew your membership to book courts.');
       }
 
-      const maxPerDay = member.plan?.maxBookingsDay ?? 2;
+      const maxPerDay = Math.min(member.plan?.maxBookingsDay ?? 2, 2);
 
       // Asia/Kolkata is UTC+5:30. Calculate IST day start and end to avoid timezone drift (I-15)
       const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;

@@ -140,7 +140,7 @@ async function main() {
       freeSessions: 12,
       shopDiscountPct: 20,
       barDiscountPct: 15,
-      maxBookingsDay: 3,
+      maxBookingsDay: 2,
     },
   });
 
