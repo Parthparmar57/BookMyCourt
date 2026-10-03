@@ -13,6 +13,7 @@ import {
 } from '../../../hooks/useCrm';
 import { usePlans } from '../../../hooks/useMembership';
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 import { 
   Kanban, 
   Plus, 
@@ -595,33 +596,33 @@ export const CrmPage = () => {
 
                           {/* Forward-only Move Stage Selector */}
                           <div className="pt-1">
-                            <select
+                            <CustomSelect
                               value=""
+                              placeholder="Move forward to..."
                               onChange={(e) => {
                                 if (e.target.value) handleStageMove(lead.id, e.target.value);
                               }}
-                              className="w-full text-[10px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md px-2 py-1.5 text-slate-700 focus:outline-none cursor-pointer"
-                            >
-                              <option value="" disabled>Move forward to...</option>
-                              {lead.stage === 'NEW' && (
-                                <>
-                                  <option value="CONTACTED">Move to: Contacted</option>
-                                  <option value="LOST">Mark as: Lost / Closed</option>
-                                </>
-                              )}
-                              {lead.stage === 'CONTACTED' && (
-                                <>
-                                  <option value="QUOTED">Move to: Quotation Sent</option>
-                                  <option value="LOST">Mark as: Lost / Closed</option>
-                                </>
-                              )}
-                              {lead.stage === 'QUOTED' && (
-                                <>
-                                  <option value="WON">Move to: Won / Converted</option>
-                                  <option value="LOST">Mark as: Lost / Closed</option>
-                                </>
-                              )}
-                            </select>
+                              options={[
+                                ...(lead.stage === 'NEW'
+                                  ? [
+                                      { value: 'CONTACTED', label: 'Move to: Contacted' },
+                                      { value: 'LOST', label: 'Mark as: Lost / Closed' },
+                                    ]
+                                  : []),
+                                ...(lead.stage === 'CONTACTED'
+                                  ? [
+                                      { value: 'QUOTED', label: 'Move to: Quotation Sent' },
+                                      { value: 'LOST', label: 'Mark as: Lost / Closed' },
+                                    ]
+                                  : []),
+                                ...(lead.stage === 'QUOTED'
+                                  ? [
+                                      { value: 'WON', label: 'Move to: Won / Converted' },
+                                      { value: 'LOST', label: 'Mark as: Lost / Closed' },
+                                    ]
+                                  : []),
+                              ]}
+                            />
                           </div>
                         </>
                       )}
@@ -693,25 +694,17 @@ export const CrmPage = () => {
                     <td className="p-4 text-slate-400 text-[11px]">
                       {enq.createdAt ? new Date(enq.createdAt).toLocaleDateString('en-GB') : 'Today'}
                     </td>
-                    <td className="p-4">
-                      <select
+                    <td className="p-4 w-40">
+                      <CustomSelect
                         value={enq.status}
                         onChange={(e) => handleEnquiryStatus(enq.id, e.target.value)}
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border focus:outline-none cursor-pointer ${
-                          enq.status === 'NEW'
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : enq.status === 'CONTACTED'
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : enq.status === 'CONVERTED'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                            : 'bg-slate-100 text-slate-600 border-slate-200'
-                        }`}
-                      >
-                        <option value="NEW">NEW</option>
-                        <option value="CONTACTED">CONTACTED</option>
-                        <option value="CONVERTED">CONVERTED</option>
-                        <option value="CLOSED">CLOSED</option>
-                      </select>
+                        options={[
+                          { value: 'NEW', label: 'NEW' },
+                          { value: 'CONTACTED', label: 'CONTACTED' },
+                          { value: 'CONVERTED', label: 'CONVERTED' },
+                          { value: 'CLOSED', label: 'CLOSED' },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -786,29 +779,29 @@ export const CrmPage = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-slate-700 block mb-1">Sport Interest</label>
-                  <select
+                  <CustomSelect
                     value={newLead.interest}
                     onChange={(e) => setNewLead({ ...newLead, interest: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white"
-                  >
-                    <option value="Tennis">Tennis</option>
-                    <option value="Badminton">Badminton</option>
-                    <option value="Padel">Padel</option>
-                    <option value="Cricket">Cricket</option>
-                  </select>
+                    options={[
+                      { value: 'Tennis', label: 'Tennis' },
+                      { value: 'Badminton', label: 'Badminton' },
+                      { value: 'Padel', label: 'Padel' },
+                      { value: 'Cricket', label: 'Cricket' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="text-slate-700 block mb-1">Lead Source</label>
-                  <select
+                  <CustomSelect
                     value={newLead.source}
                     onChange={(e) => setNewLead({ ...newLead, source: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white"
-                  >
-                    <option value="WEBSITE">Website</option>
-                    <option value="WALK_IN">Walk-in</option>
-                    <option value="PHONE">Phone Call</option>
-                    <option value="REFERRAL">Member Referral</option>
-                  </select>
+                    options={[
+                      { value: 'WEBSITE', label: 'Website' },
+                      { value: 'WALK_IN', label: 'Walk-in' },
+                      { value: 'PHONE', label: 'Phone Call' },
+                      { value: 'REFERRAL', label: 'Member Referral' },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -872,18 +865,15 @@ export const CrmPage = () => {
             <form onSubmit={handleConvertLead} className="space-y-3 text-xs font-semibold">
               <div>
                 <label className="text-slate-700 block mb-1">Select Membership Plan *</label>
-                <select
+                <CustomSelect
                   value={convertForm.planId}
                   onChange={(e) => setConvertForm({ ...convertForm, planId: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white font-bold text-slate-800 focus:border-emerald-600 focus:outline-none"
-                >
-                  <option value="">-- Choose Plan --</option>
-                  {plans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({formatCurrency(Number(p.price))})
-                    </option>
-                  ))}
-                </select>
+                  placeholder="-- Choose Plan --"
+                  options={plans.map((p) => ({
+                    value: p.id,
+                    label: `${p.name} (${formatCurrency(Number(p.price))})`,
+                  }))}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -967,16 +957,16 @@ export const CrmPage = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-slate-700 block mb-1">Type</label>
-                  <select
+                  <CustomSelect
                     value={followUp.type}
                     onChange={(e) => setFollowUp({ ...followUp, type: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2 bg-white"
-                  >
-                    <option value="CALL">Phone Call</option>
-                    <option value="WHATSAPP">WhatsApp</option>
-                    <option value="VISIT">Club Visit</option>
-                    <option value="EMAIL">Email</option>
-                  </select>
+                    options={[
+                      { value: 'CALL', label: 'Phone Call' },
+                      { value: 'WHATSAPP', label: 'WhatsApp' },
+                      { value: 'VISIT', label: 'Club Visit' },
+                      { value: 'EMAIL', label: 'Email' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="text-slate-700 block mb-1">Date</label>
@@ -1058,7 +1048,7 @@ export const CrmPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-slate-700 block">Package Plan</label>
-                  <select
+                  <CustomSelect
                     value={quoteForm.planId}
                     onChange={(e) => {
                       const p = plans.find((x) => x.id === e.target.value);
@@ -1069,15 +1059,12 @@ export const CrmPage = () => {
                         amount: p ? String(p.price) : quoteForm.amount,
                       });
                     }}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white cursor-pointer"
-                  >
-                    <option value="">Custom Package</option>
-                    {plans.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({formatCurrency(Number(p.price))})
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Custom Package"
+                    options={plans.map((p) => ({
+                      value: p.id,
+                      label: `${p.name} (${formatCurrency(Number(p.price))})`,
+                    }))}
+                  />
                 </div>
 
                 <div className="space-y-1">

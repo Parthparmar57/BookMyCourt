@@ -13,6 +13,7 @@ import { useRevenueReport } from '../../../hooks/useDashboard';
 import { invoicesApi } from '../../../services/finance.service';
 import { reportsApi } from '../../../services/dashboard.service';
 import { formatCurrency } from '../../../shared/utils/formatters';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 import { 
   Receipt, 
   Download, 
@@ -304,17 +305,17 @@ export const AccountingPage = () => {
             <h3 className="font-extrabold text-sm text-slate-900">Transaction Audit Ledger</h3>
             <div className="flex items-center gap-2">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <select
+              <CustomSelect
                 value={sourceFilter}
                 onChange={(e) => setSourceFilter(e.target.value)}
-                className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 font-semibold text-slate-700 bg-white focus:outline-none"
-              >
-                <option value="">All Revenue Streams</option>
-                <option value="COURT">Courts</option>
-                <option value="SHOP">Pro Shop</option>
-                <option value="BAR">Bar & Cafe</option>
-                <option value="MEMBERSHIP">Membership</option>
-              </select>
+                options={[
+                  { value: '', label: 'All Revenue Streams' },
+                  { value: 'COURT', label: 'Courts' },
+                  { value: 'SHOP', label: 'Pro Shop' },
+                  { value: 'BAR', label: 'Bar & Cafe' },
+                  { value: 'MEMBERSHIP', label: 'Membership' },
+                ]}
+              />
             </div>
           </div>
 
@@ -745,18 +746,18 @@ export const AccountingPage = () => {
             <form onSubmit={handleCreateExpense} className="space-y-3 text-xs font-semibold">
               <div>
                 <label className="text-slate-700 block mb-1">Expense Category</label>
-                <select
+                <CustomSelect
                   value={expenseForm.category}
                   onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white focus:border-emerald-600 focus:outline-none"
-                >
-                  <option value="MAINTENANCE">Facility Maintenance & Cleaning</option>
-                  <option value="EQUIPMENT">Sports Gear & Court Equipment</option>
-                  <option value="UTILITIES">Electricity, Water & AC</option>
-                  <option value="KITCHEN_STOCK">Cafeteria Raw Materials</option>
-                  <option value="SALARY">Staff Wages & Payroll</option>
-                  <option value="OTHER">General Miscellaneous</option>
-                </select>
+                  options={[
+                    { value: 'MAINTENANCE', label: 'Facility Maintenance & Cleaning' },
+                    { value: 'EQUIPMENT', label: 'Sports Gear & Court Equipment' },
+                    { value: 'UTILITIES', label: 'Electricity, Water & AC' },
+                    { value: 'KITCHEN_STOCK', label: 'Cafeteria Raw Materials' },
+                    { value: 'SALARY', label: 'Staff Wages & Payroll' },
+                    { value: 'OTHER', label: 'General Miscellaneous' },
+                  ]}
+                />
               </div>
 
               <div>

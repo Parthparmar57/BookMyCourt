@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRequestLeave, useLeaves } from '../../hooks/useHr';
 import { useLeaveRealtime } from '../../hooks/useRealtime';
+import { CustomSelect } from './CustomSelect';
 import { Calendar, AlertCircle, CheckCircle2, Loader2, X, Clock, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { differenceInCalendarDays, format } from 'date-fns';
 
@@ -178,15 +179,15 @@ export const ApplyLeaveModal = ({ isOpen = true, onClose }) => {
           <form onSubmit={handleSubmit} className="space-y-3.5 text-xs font-medium">
             <div>
               <label className="text-slate-700 block mb-1">Leave Category</label>
-              <select
+              <CustomSelect
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:border-emerald-600 focus:outline-none transition-colors"
-              >
-                <option value="CASUAL">Casual Leave (Short absence / personal)</option>
-                <option value="SICK">Medical / Sick Leave</option>
-                <option value="VACATION">Vacation / Annual Planned Leave</option>
-              </select>
+                options={[
+                  { value: 'CASUAL', label: 'Casual Leave (Short absence / personal)' },
+                  { value: 'SICK', label: 'Medical / Sick Leave' },
+                  { value: 'VACATION', label: 'Vacation / Annual Planned Leave' },
+                ]}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

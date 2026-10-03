@@ -33,6 +33,7 @@ import {
   useSubmitEnquiry
 } from '../../../hooks/useCrm';
 import { formatCurrency } from '../../../shared/utils/formatters';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 
 export const HomePage = () => {
   // Section 4: Public Plans Data
@@ -890,16 +891,16 @@ export const HomePage = () => {
                   <label className="block mb-1.5 font-extrabold text-[#121212]">
                     Preferred Sport
                   </label>
-                  <select
+                  <CustomSelect
                     value={formData.sport}
                     onChange={(e) => setFormData({ ...formData, sport: e.target.value })}
-                    className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
-                  >
-                    <option value="Tennis">Tennis</option>
-                    <option value="Padel">Padel</option>
-                    <option value="Badminton">Badminton</option>
-                    <option value="Pickleball">Pickleball</option>
-                  </select>
+                    options={[
+                      { value: 'Tennis', label: 'Tennis' },
+                      { value: 'Padel', label: 'Padel' },
+                      { value: 'Badminton', label: 'Badminton' },
+                      { value: 'Pickleball', label: 'Pickleball' },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -921,17 +922,17 @@ export const HomePage = () => {
                     <label className="block mb-1.5 font-extrabold text-[#121212]">
                       Preferred Time Slot *
                     </label>
-                    <select
+                    <CustomSelect
                       value={formData.preferredTime}
                       onChange={(e) => setFormData({ ...formData, preferredTime: e.target.value })}
-                      className="w-full border border-gray-300 px-4 py-3 focus:border-[#4A812F] focus:outline-none bg-white text-sm"
-                    >
-                      <option value="07:00">07:00 AM Morning</option>
-                      <option value="09:00">09:00 AM Morning</option>
-                      <option value="17:00">05:00 PM Evening</option>
-                      <option value="18:00">06:00 PM Evening</option>
-                      <option value="19:00">07:00 PM Evening</option>
-                    </select>
+                      options={[
+                        { value: '07:00', label: '07:00 AM Morning' },
+                        { value: '09:00', label: '09:00 AM Morning' },
+                        { value: '17:00', label: '05:00 PM Evening' },
+                        { value: '18:00', label: '06:00 PM Evening' },
+                        { value: '19:00', label: '07:00 PM Evening' },
+                      ]}
+                    />
                   </div>
                 </div>
               ) : (

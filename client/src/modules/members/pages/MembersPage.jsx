@@ -12,6 +12,7 @@ import { memberSchema, applyServerErrors } from '../../../shared/validation/sche
 import { Search, UserPlus, AlertCircle, X, Loader2, QrCode, Phone, Mail, ShieldCheck, Sparkles, CheckCircle2, Clock, Edit3, UserX } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QRScannerModal } from '../../../components/member/QRScannerModal';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 
 // Light-Theme First Letter Avatar Fallback Component
 const MemberAvatar = ({ name, photoUrl, size = "w-16 h-16 text-2xl" }) => {
@@ -461,13 +462,14 @@ export const MembersPage = () => {
 
               <div>
                 <label className="block mb-1">Membership Plan Tier</label>
-                <select {...register('planId')} className={selectCls(fieldErr('planId'))}>
-                  {plans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} — {formatCurrency(p.price)}/{p.durationMonths}mo{p.maxAge ? ` (Age < ${p.maxAge})` : ''}
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={watch('planId') || plans[0]?.id || ''}
+                  onChange={(e) => setValue('planId', e.target.value)}
+                  options={plans.map((p) => ({
+                    value: p.id,
+                    label: `${p.name} — ${formatCurrency(p.price)}/${p.durationMonths}mo${p.maxAge ? ` (Age < ${p.maxAge})` : ''}`,
+                  }))}
+                />
                 {fieldErr('planId') && <p className="text-[11px] text-rose-600 mt-1">{fieldErr('planId')}</p>}
               </div>
 
@@ -547,16 +549,16 @@ export const MembersPage = () => {
 
               <div>
                 <label className="block mb-1 text-slate-700 font-bold">Account Status</label>
-                <select
+                <CustomSelect
                   value={editFormData.status}
                   onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2e7d32] bg-white font-bold"
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="EXPIRED">EXPIRED</option>
-                  <option value="SUSPENDED">SUSPENDED</option>
-                  <option value="CANCELLED">CANCELLED</option>
-                </select>
+                  options={[
+                    { value: 'ACTIVE', label: 'ACTIVE' },
+                    { value: 'EXPIRED', label: 'EXPIRED' },
+                    { value: 'SUSPENDED', label: 'SUSPENDED' },
+                    { value: 'CANCELLED', label: 'CANCELLED' },
+                  ]}
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3">
