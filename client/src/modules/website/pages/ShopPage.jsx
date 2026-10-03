@@ -153,6 +153,18 @@ export const ShopPage = () => {
         <p className="text-sm text-gray-600">
           Shared stock pool synchronized live between counter retail POS and online member store.
         </p>
+
+        {canOrder && (
+          <div className="pt-2">
+            <Link
+              to="/member/orders"
+              className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold px-4 py-2 rounded-xl transition-colors border border-slate-200"
+            >
+              <ShoppingBag className="w-4 h-4 text-[#4A812F]" />
+              <span>View My Shop Orders & Tracking</span>
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -242,12 +254,20 @@ export const ShopPage = () => {
                   Your order <span className="font-mono font-bold">{placedOrderNo}</span> is confirmed.
                   {fulfilment === 'DELIVERY' ? ' We will deliver it to your address.' : ' Collect it at the club front desk.'}
                 </p>
-                <button
-                  onClick={() => { setPlacedOrderNo(''); setCartOpen(false); }}
-                  className="mt-2 bg-slate-900 hover:bg-black text-white text-sm font-bold px-6 py-2.5 rounded-xl"
-                >
-                  Continue Shopping
-                </button>
+                <div className="flex items-center gap-3 pt-2">
+                  <Link
+                    to="/member/orders"
+                    className="bg-[#4A812F] hover:bg-[#3b6725] text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-xs"
+                  >
+                    View My Shop Orders →
+                  </Link>
+                  <button
+                    onClick={() => { setPlacedOrderNo(''); setCartOpen(false); }}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-4 py-2.5 rounded-xl"
+                  >
+                    Continue Shopping
+                  </button>
+                </div>
               </div>
             ) : cart.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">

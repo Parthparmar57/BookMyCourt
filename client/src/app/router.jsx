@@ -20,6 +20,7 @@ import { BarPage } from '../modules/bar/pages/BarPage';
 import { KitchenPage } from '../modules/kitchen/pages/KitchenPage';
 import { ShopInventoryPage } from '../modules/shop/pages/ShopInventoryPage';
 import { ShopDashboardPage } from '../modules/shop/pages/ShopDashboardPage';
+import { ShopOrdersPage } from '../modules/shop/pages/ShopOrdersPage';
 import { CrmPage } from '../modules/crm/pages/CrmPage';
 import { AccountingPage } from '../modules/finance/pages/AccountingPage';
 import { HrPage } from '../modules/hr/pages/HrPage';
@@ -29,6 +30,7 @@ import { MemberDashboardPage } from '../modules/members/pages/MemberDashboardPag
 import { MemberBookingsPage } from '../modules/members/pages/MemberBookingsPage';
 import { MemberCardPage } from '../modules/members/pages/MemberCardPage';
 import { MemberTabPage } from '../modules/members/pages/MemberTabPage';
+import { MemberOrdersPage } from '../modules/members/pages/MemberOrdersPage';
 
 // Helper: wrap a layout + its children behind a role guard.
 const guarded = (roles, layout, children) => ({
@@ -62,6 +64,7 @@ export const router = createBrowserRouter([
       { path: 'bookings', element: <BookingsPage /> },
       { path: 'bar', element: <BarPage /> },
       { path: 'shop', element: <ShopInventoryPage /> },
+      { path: 'shop/orders', element: <ShopOrdersPage /> },
       { path: 'crm', element: <CrmPage /> },
       { path: 'accounting', element: <AccountingPage /> },
       { path: 'hr', element: <HrPage /> }
@@ -87,11 +90,12 @@ export const router = createBrowserRouter([
     ])
   },
 
-  // Shop Staff POS
+  // Shop Staff POS & Fulfillment
   {
     path: '/staff/shop',
     ...guarded(['OWNER', 'SHOP_STAFF'], <AppLayout />, [
       { index: true, element: <ShopDashboardPage /> },
+      { path: 'orders', element: <ShopOrdersPage /> },
       { path: 'inventory', element: <ShopInventoryPage /> }
     ])
   },
@@ -112,6 +116,7 @@ export const router = createBrowserRouter([
       { path: 'book', element: <BookingsPage /> },
       { path: 'bookings', element: <MemberBookingsPage /> },
       { path: 'shop', element: <ShopPage /> },
+      { path: 'orders', element: <MemberOrdersPage /> },
       { path: 'tab', element: <MemberTabPage /> },
       { path: 'card', element: <MemberCardPage /> }
     ])
