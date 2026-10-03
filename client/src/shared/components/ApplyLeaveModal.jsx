@@ -5,7 +5,7 @@ import { useLeaveRealtime } from '../../hooks/useRealtime';
 import { Calendar, AlertCircle, CheckCircle2, Loader2, X, Clock, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { differenceInCalendarDays, format } from 'date-fns';
 
-export const ApplyLeaveModal = ({ isOpen, onClose }) => {
+export const ApplyLeaveModal = ({ isOpen = true, onClose }) => {
   const { currentUser, currentRole } = useAuth();
   const requestLeave = useRequestLeave();
   const { data: allLeaves = [], isLoading: leavesLoading } = useLeaves();

@@ -27,3 +27,13 @@ export const scanMember = asyncHandler(async (req, res) => {
   const member = await memberService.scanMember(req.body.payload);
   return success(res, member);
 });
+
+export const updateMember = asyncHandler(async (req, res) => {
+  const member = await memberService.updateMember(req.params.id, req.body, req.user?.id);
+  return success(res, member, 'Member updated successfully');
+});
+
+export const deactivateMember = asyncHandler(async (req, res) => {
+  const member = await memberService.deactivateMember(req.params.id, req.user?.id);
+  return success(res, member, 'Member deactivated successfully');
+});

@@ -218,10 +218,20 @@ export const sendQuotationEmail = async (leadId, data) => {
 export const convertLeadToMember = async (leadId, data, actorId) => {
   const lead = await prisma.lead.findUnique({ where: { id: leadId } });
   if (!lead) throw new ApiError(404, 'Lead not found');
+  if (lead.stage === LEAD_STAGE.WON) {
+    throw new ApiError(400, 'This lead has already been converted into a member');
+  }
 
   const email = data.email || lead.email;
   if (!email) {
     throw new ApiError(400, 'An email address is required to create a member account');
+  }
+
+  const existingUser = await prisma.user.findFirst({
+    where: { OR: [{ email }, { phone: lead.phone }] },
+  });
+  if (existingUser) {
+    throw new ApiError(400, 'This lead has already been converted into a member');
   }
 
   const member = await registerMember(

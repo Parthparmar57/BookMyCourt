@@ -40,9 +40,12 @@ export const openTab = async ({ memberId, notes }) => {
   });
 };
 
-export const listOpenTabs = async ({ memberId } = {}) => {
+export const listTabs = async ({ memberId, status } = {}) => {
   return prisma.barTab.findMany({
-    where: { status: TAB_STATUS.OPEN, ...(memberId && { memberId }) },
+    where: {
+      ...(status && { status }),
+      ...(memberId && { memberId }),
+    },
     include: {
       member: { include: { user: true, plan: true } },
       orders: {
@@ -52,6 +55,7 @@ export const listOpenTabs = async ({ memberId } = {}) => {
     orderBy: { openedAt: 'desc' },
   });
 };
+export const listOpenTabs = listTabs;
 
 export const getTabById = async (id) => {
   const tab = await prisma.barTab.findUnique({
@@ -105,6 +109,12 @@ export const settleTab = async (tabId, { paymentMode = PAYMENT_MODE.UPI, notes }
         settledAt: new Date(),
         totalAmount: amount,
         notes: notes || tab.notes,
+      },
+      include: {
+        member: { include: { user: true, plan: true } },
+        orders: {
+          include: { items: { include: { menuItem: true } } },
+        },
       },
     });
 
