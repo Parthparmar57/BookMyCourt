@@ -1,5 +1,7 @@
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
+import { genDocNo } from '../../../utils/ids.js';
+import { round2 } from '../../../utils/money.js';
 import {
   TAB_STATUS,
   PAYMENT_STATUS,
@@ -73,8 +75,13 @@ export const settleTab = async (tabId, { paymentMode = PAYMENT_MODE.UPI, notes }
     throw new ApiError(400, 'Tab is already settled');
   }
 
+  // Amount and tax come from the tab's own orders (authoritative), not the
+  // cached totalAmount, so the ledger carries the correct GST.
+  const amount = round2(tab.orders.reduce((s, o) => s + Number(o.total), 0));
+  const tax = round2(tab.orders.reduce((s, o) => s + Number(o.tax), 0));
+
   return prisma.$transaction(async (tx) => {
-    // 1. Mark all pending orders under this tab as completed and paid
+    // 1. Mark all orders under this tab as completed and paid.
     await tx.order.updateMany({
       where: { barTabId: tabId },
       data: {
@@ -84,24 +91,26 @@ export const settleTab = async (tabId, { paymentMode = PAYMENT_MODE.UPI, notes }
       },
     });
 
-    // 2. Mark tab as settled (Rule BR12)
+    // 2. Mark tab as settled (Rule BR12).
     const settledTab = await tx.barTab.update({
       where: { id: tabId },
       data: {
         status: TAB_STATUS.SETTLED,
         settledAt: new Date(),
+        totalAmount: amount,
         notes: notes || tab.notes,
       },
     });
 
-    // 3. Post to Transaction Ledger (Rule BR11)
-    if (Number(tab.totalAmount) > 0) {
+    // 3. Post a single ledger entry for the whole tab (Rule BR11). The individual
+    //    orders were never posted immediately, so there is no double counting.
+    if (amount > 0) {
       await tx.transaction.create({
         data: {
-          transactionNo: `TXN-TAB-${Date.now().toString().slice(-6)}`,
+          transactionNo: genDocNo('TXN-TAB'),
           source: TRANSACTION_SOURCE.BAR,
-          amount: tab.totalAmount,
-          tax: 0,
+          amount,
+          tax,
           paymentMode,
           reference: `TAB-${tab.id}`,
           memberId: tab.memberId,

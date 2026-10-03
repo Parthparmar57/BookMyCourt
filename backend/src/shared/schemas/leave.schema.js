@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { LEAVE_STATUS, LEAVE_TYPE } from '../constants/enums.js';
 
+// `days` is intentionally NOT accepted from the client — it is always derived
+// from the date range server-side so the leave balance cannot be gamed.
 export const createLeaveRequestSchema = z.object({
   type: z.nativeEnum(LEAVE_TYPE).default(LEAVE_TYPE.CASUAL),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
-  days: z.coerce.number().int().positive().default(1),
   reason: z.string().min(3, 'Reason is required'),
 }).refine(d => d.endDate >= d.startDate, {
   message: 'End date must be on or after start date',

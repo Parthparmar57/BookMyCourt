@@ -1,10 +1,46 @@
 import { prisma } from '../../../lib/prisma.js';
-import { LEAD_STAGE } from '../../../shared/index.js';
+import { LEAD_STAGE, ROLES } from '../../../shared/index.js';
+import { sendEmail } from '../../../lib/mailer.js';
+import { logger } from '../../../lib/logger.js';
+import { getAvailability } from '../../courts/bookings/booking.service.js';
+
+// Notify front-desk/owner staff of a new lead (best-effort; never blocks the request).
+const notifyStaff = async (subject, text) => {
+  try {
+    const staff = await prisma.user.findMany({
+      where: { role: { in: [ROLES.OWNER, ROLES.FRONT_DESK] } },
+      select: { email: true },
+    });
+    const emails = staff.map((s) => s.email).filter(Boolean);
+    if (emails.length > 0) await sendEmail({ to: emails.join(','), subject, text });
+  } catch (err) {
+    logger.warn({ err: err.message }, 'Failed to notify staff of new lead');
+  }
+};
+
+// --- Public read endpoints (PRD M5) ---
+
+export const getPublicPlans = async () => {
+  return prisma.plan.findMany({ orderBy: { price: 'asc' } });
+};
+
+export const getPublicAvailability = async ({ date, sport }) => {
+  return getAvailability({ date: date ? new Date(date) : new Date(), sport });
+};
+
+export const getPublicShop = async () => {
+  // Only show items that can actually be ordered.
+  return prisma.product.findMany({
+    where: { stock: { gt: 0 } },
+    select: { id: true, name: true, category: true, brand: true, variant: true, price: true, imageUrl: true, stock: true },
+    orderBy: { category: 'asc' },
+  });
+};
 
 export const submitEnquiry = async (data) => {
-  return prisma.$transaction(async (tx) => {
+  const enquiry = await prisma.$transaction(async (tx) => {
     // 1. Create Enquiry record
-    const enquiry = await tx.enquiry.create({
+    const created = await tx.enquiry.create({
       data: {
         name: data.name,
         phone: data.phone,
@@ -26,14 +62,17 @@ export const submitEnquiry = async (data) => {
       },
     });
 
-    return enquiry;
+    return created;
   });
+
+  await notifyStaff('New website enquiry', `New enquiry from ${data.name} (${data.phone}). Interest: ${data.interest || 'N/A'}`);
+  return enquiry;
 };
 
 export const bookTrial = async (data) => {
-  return prisma.$transaction(async (tx) => {
+  const trial = await prisma.$transaction(async (tx) => {
     // 1. Create TrialBooking
-    const trial = await tx.trialBooking.create({
+    const created = await tx.trialBooking.create({
       data: {
         name: data.name,
         phone: data.phone,
@@ -58,10 +97,13 @@ export const bookTrial = async (data) => {
     });
 
     await tx.trialBooking.update({
-      where: { id: trial.id },
+      where: { id: created.id },
       data: { leadId: lead.id },
     });
 
-    return trial;
+    return created;
   });
+
+  await notifyStaff('New trial booking', `${data.name} (${data.phone}) requested a ${data.sport} trial on ${new Date(data.preferredDate).toDateString()} at ${data.preferredTime}.`);
+  return trial;
 };

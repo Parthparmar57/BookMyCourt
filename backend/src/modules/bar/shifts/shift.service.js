@@ -1,6 +1,21 @@
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
-import { SHIFT_STATUS } from '../../../shared/index.js';
+import { round2 } from '../../../utils/money.js';
+import { SHIFT_STATUS, PAYMENT_STATUS } from '../../../shared/index.js';
+
+/**
+ * Resolve the employee's currently-open shift id so orders can be attributed to
+ * it. Returns null for users who are not clocked in (or not employees).
+ * Accepts a Prisma client or an interactive transaction client.
+ */
+export const findOpenShiftId = async (client, employeeId) => {
+  if (!employeeId) return null;
+  const shift = await client.shift.findFirst({
+    where: { employeeId, status: SHIFT_STATUS.OPEN },
+    select: { id: true },
+  });
+  return shift?.id || null;
+};
 
 export const openShift = async (employeeId, { openingCash = 0, notes }) => {
   const activeShift = await prisma.shift.findFirst({
@@ -75,10 +90,12 @@ export const getShiftReport = async (shiftId) => {
 
   if (!shift) throw new ApiError(404, 'Shift not found');
 
-  const totalSales = shift.orders.reduce((sum, o) => sum + Number(o.total), 0);
-  const byMode = shift.orders.reduce((acc, o) => {
-    const mode = o.paymentMode || 'UNPAID';
-    acc[mode] = (acc[mode] || 0) + Number(o.total);
+  // Only PAID orders count as sales — pending tab orders must not inflate the total.
+  const paidOrders = shift.orders.filter((o) => o.paymentStatus === PAYMENT_STATUS.PAID);
+  const totalSales = round2(paidOrders.reduce((sum, o) => sum + Number(o.total), 0));
+  const byMode = paidOrders.reduce((acc, o) => {
+    const mode = o.paymentMode || 'UNKNOWN';
+    acc[mode] = round2((acc[mode] || 0) + Number(o.total));
     return acc;
   }, {});
 
@@ -86,6 +103,7 @@ export const getShiftReport = async (shiftId) => {
     shift,
     summary: {
       totalOrders: shift.orders.length,
+      paidOrders: paidOrders.length,
       totalSales,
       paymentBreakdown: byMode,
       openingCash: shift.openingCash,

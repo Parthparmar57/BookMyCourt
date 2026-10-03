@@ -1,9 +1,12 @@
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
+import { genDocNo } from '../../../utils/ids.js';
+import { round2 } from '../../../utils/money.js';
+import { writeAudit } from '../../../utils/audit.js';
 import { INVOICE_STATUS, TRANSACTION_SOURCE, PAYMENT_MODE } from '../../../shared/index.js';
 
 export const createInvoice = async (data) => {
-  const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
+  const invoiceNo = genDocNo('INV');
 
   let amount = 0;
   let tax = 0;
@@ -12,22 +15,22 @@ export const createInvoice = async (data) => {
     const unitPrice = Number(item.unitPrice);
     const quantity = Number(item.quantity || 1);
     const taxPct = Number(item.taxPct || 0);
-    const lineSubtotal = unitPrice * quantity;
-    const lineTax = (lineSubtotal * taxPct) / 100;
+    const lineSubtotal = round2(unitPrice * quantity);
+    const lineTax = round2((lineSubtotal * taxPct) / 100);
 
-    amount += lineSubtotal;
-    tax += lineTax;
+    amount = round2(amount + lineSubtotal);
+    tax = round2(tax + lineTax);
 
     return {
       description: item.description,
       quantity,
       unitPrice,
       taxPct,
-      total: lineSubtotal + lineTax,
+      total: round2(lineSubtotal + lineTax),
     };
   });
 
-  const total = amount + tax;
+  const total = round2(amount + tax);
 
   return prisma.invoice.create({
     data: {
@@ -50,10 +53,13 @@ export const createInvoice = async (data) => {
   });
 };
 
-export const listInvoices = async ({ status, memberId, page = 1, limit = 20 }) => {
+export const listInvoices = async ({ status, memberId, page = 1, limit = 20 }, actor) => {
+  // A MEMBER may only ever see their own invoices, regardless of query params.
+  const scopedMemberId = actor && actor.role === 'MEMBER' ? actor.memberId || '__none__' : memberId;
+
   const where = {
     ...(status && { status }),
-    ...(memberId && { memberId }),
+    ...(scopedMemberId && { memberId: scopedMemberId }),
   };
 
   const [total, invoices] = await Promise.all([
@@ -73,7 +79,7 @@ export const listInvoices = async ({ status, memberId, page = 1, limit = 20 }) =
   return { invoices, total, page, totalPages: Math.ceil(total / limit) };
 };
 
-export const getInvoiceById = async (id) => {
+export const getInvoiceById = async (id, actor) => {
   const invoice = await prisma.invoice.findUnique({
     where: { id },
     include: {
@@ -83,28 +89,52 @@ export const getInvoiceById = async (id) => {
     },
   });
   if (!invoice) throw new ApiError(404, 'Invoice not found');
+
+  // A MEMBER may only access their own invoice.
+  if (actor && actor.role === 'MEMBER' && invoice.memberId !== actor.memberId) {
+    throw new ApiError(403, 'You can only access your own invoices');
+  }
+
   return invoice;
 };
 
 export const recordInvoicePayment = async (invoiceId, { amount, paymentMode = PAYMENT_MODE.UPI, reference, notes }) => {
-  const invoice = await prisma.invoice.findUnique({
-    where: { id: invoiceId },
-  });
-  if (!invoice) throw new ApiError(404, 'Invoice not found');
-
   return prisma.$transaction(async (tx) => {
-    const updatedInvoice = await tx.invoice.update({
-      where: { id: invoiceId },
-      data: { status: INVOICE_STATUS.PAID },
-      include: { items: true, member: true },
+    const invoice = await tx.invoice.findUnique({ where: { id: invoiceId } });
+    if (!invoice) throw new ApiError(404, 'Invoice not found');
+    if (invoice.status === INVOICE_STATUS.PAID) {
+      throw new ApiError(409, 'Invoice is already fully paid');
+    }
+    if (invoice.status === INVOICE_STATUS.CANCELLED) {
+      throw new ApiError(409, 'Cannot record payment on a cancelled invoice');
+    }
+
+    const total = Number(invoice.total);
+    const invoiceTax = Number(invoice.tax);
+
+    // How much has already been paid against this invoice.
+    const paidAgg = await tx.transaction.aggregate({
+      where: { invoiceId: invoice.id },
+      _sum: { amount: true },
     });
+    const alreadyPaid = Number(paidAgg._sum.amount || 0);
+    const remaining = round2(total - alreadyPaid);
+
+    const payAmount = round2(amount);
+    if (payAmount <= 0) throw new ApiError(400, 'Payment amount must be positive');
+    if (payAmount > remaining) {
+      throw new ApiError(422, `Payment exceeds the remaining balance of ${remaining}`);
+    }
+
+    // Post tax proportionally to the amount paid so the ledger's tax total stays correct.
+    const taxPortion = total > 0 ? round2((invoiceTax * payAmount) / total) : 0;
 
     await tx.transaction.create({
       data: {
-        transactionNo: `TXN-INV-${Date.now().toString().slice(-6)}`,
+        transactionNo: genDocNo('TXN-INV'),
         source: invoice.type === 'MEMBERSHIP' ? TRANSACTION_SOURCE.MEMBERSHIP : TRANSACTION_SOURCE.OTHER,
-        amount: Number(amount || invoice.total),
-        tax: Number(invoice.tax || 0),
+        amount: payAmount,
+        tax: taxPortion,
         paymentMode,
         reference: reference || invoice.invoiceNo,
         invoiceId: invoice.id,
@@ -113,6 +143,20 @@ export const recordInvoicePayment = async (invoiceId, { amount, paymentMode = PA
       },
     });
 
-    return updatedInvoice;
+    const fullyPaid = round2(alreadyPaid + payAmount) >= total;
+    const updated = await tx.invoice.update({
+      where: { id: invoice.id },
+      data: { status: fullyPaid ? INVOICE_STATUS.PAID : INVOICE_STATUS.SENT },
+      include: { items: true, member: true },
+    });
+
+    await writeAudit(tx, {
+      action: 'INVOICE_PAYMENT',
+      entity: 'Invoice',
+      entityId: invoice.id,
+      meta: { amount: payAmount, paymentMode, fullyPaid },
+    });
+
+    return updated;
   });
 };

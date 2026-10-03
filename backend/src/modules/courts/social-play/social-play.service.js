@@ -2,6 +2,7 @@ import { addMinutes, getDay } from 'date-fns';
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { parseTimeOnDate } from '../../../utils/time.js';
+import { genDocNo } from '../../../utils/ids.js';
 import {
   BOOKING_TYPE,
   BOOKING_STATUS,
@@ -40,6 +41,13 @@ export const createSocialSession = async (data, user) => {
   const startTime = parseTimeOnDate(targetDate, data.startTime);
   const endTime = addMinutes(startTime, 60);
 
+  // The court must exist and be open. Overlap with any other booking on the same
+  // court is rejected by the DB EXCLUDE constraint `booking_no_overlap`.
+  const court = await prisma.court.findUnique({ where: { id: data.courtId } });
+  if (!court || !court.isOpen) {
+    throw new ApiError(400, 'Selected court is either not found or currently closed');
+  }
+
   return prisma.booking.create({
     data: {
       courtId: data.courtId,
@@ -56,51 +64,56 @@ export const createSocialSession = async (data, user) => {
 };
 
 export const joinSocialPlay = async (bookingId, data, user) => {
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    include: { socialParticipants: true, court: true },
-  });
-
-  if (!booking || booking.type !== BOOKING_TYPE.SOCIAL) {
-    throw new ApiError(404, 'Social play session not found');
-  }
-
-  if (booking.socialParticipants.length >= (booking.maxPlayers || 8)) {
-    throw new ApiError(400, 'This social play session is full');
-  }
-
-  const memberId = data.memberId || (user?.role === 'MEMBER' ? user.memberId : null);
-
-  if (memberId) {
-    const alreadyJoined = booking.socialParticipants.some((p) => p.memberId === memberId);
-    if (alreadyJoined) {
-      throw new ApiError(400, 'Member has already joined this session');
-    }
-  }
+  // A MEMBER always joins as themselves; staff may add a member or a guest.
+  const memberId = user?.role === 'MEMBER' ? user.memberId : data.memberId || null;
 
   return prisma.$transaction(async (tx) => {
-    const participant = await tx.socialParticipant.create({
-      data: {
-        bookingId,
-        memberId: memberId || null,
-        guestName: data.guestName || null,
-        guestPhone: data.guestPhone || null,
-        fee: booking.price,
-        paymentStatus: PAYMENT_STATUS.PAID,
-      },
+    const booking = await tx.booking.findUnique({
+      where: { id: bookingId },
+      include: { court: true, _count: { select: { socialParticipants: true } } },
     });
+
+    if (!booking || booking.type !== BOOKING_TYPE.SOCIAL) {
+      throw new ApiError(404, 'Social play session not found');
+    }
+
+    // Capacity is re-checked inside the transaction so concurrent joins cannot
+    // exceed maxPlayers.
+    if (booking._count.socialParticipants >= (booking.maxPlayers || 8)) {
+      throw new ApiError(409, 'This social play session is full');
+    }
+
+    let participant;
+    try {
+      participant = await tx.socialParticipant.create({
+        data: {
+          bookingId,
+          memberId,
+          guestName: data.guestName || null,
+          guestPhone: data.guestPhone || null,
+          fee: booking.price,
+          paymentStatus: PAYMENT_STATUS.PAID,
+        },
+      });
+    } catch (err) {
+      // Unique (bookingId, memberId) — the member is already in this session.
+      if (err.code === 'P2002') {
+        throw new ApiError(409, 'Member has already joined this session');
+      }
+      throw err;
+    }
 
     if (Number(booking.price) > 0) {
       await tx.transaction.create({
         data: {
-          transactionNo: `TXN-SOC-${Date.now().toString().slice(-6)}`,
+          transactionNo: genDocNo('TXN-SOC'),
           source: TRANSACTION_SOURCE.COURT,
           amount: booking.price,
           tax: 0,
           paymentMode: data.paymentMode || PAYMENT_MODE.UPI,
           reference: bookingId,
           bookingId,
-          memberId: memberId || null,
+          memberId,
           notes: `Social play on ${booking.court.name}`,
         },
       });

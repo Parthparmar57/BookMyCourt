@@ -29,7 +29,11 @@ router.get(
   controller.searchMembers
 );
 
-router.get('/:id', controller.getMemberProfile);
+router.get(
+  '/:id',
+  authorize('OWNER', 'FRONT_DESK', 'BAR_STAFF', 'SHOP_STAFF', 'MEMBER'),
+  controller.getMemberProfile
+);
 
 router.post(
   '/:id/renew',

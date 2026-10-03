@@ -31,3 +31,17 @@ export const exportInventoryExcel = asyncHandler(async (req, res) => {
 
   await exportToExcel(res, 'Inventory Report', columns, report.items, 'inventory-report.xlsx');
 });
+
+export const exportTaxExcel = asyncHandler(async (req, res) => {
+  const report = await reportService.getTaxReport(req.query);
+  const columns = [
+    { header: 'Source / Category', key: 'category', width: 22 },
+    { header: 'Taxable Amount (Rs.)', key: 'totalAmount', width: 22 },
+    { header: 'Tax Collected (Rs.)', key: 'tax', width: 20 },
+  ];
+  const rows = [
+    ...report.byCategory,
+    { category: 'TOTAL', totalAmount: report.totalTaxableAmount, tax: report.totalCollectedTax },
+  ];
+  await exportToExcel(res, 'Tax Report', columns, rows, 'tax-report.xlsx');
+});

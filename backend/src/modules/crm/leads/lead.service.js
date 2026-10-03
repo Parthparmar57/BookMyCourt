@@ -1,6 +1,8 @@
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { LEAD_STAGE, QUOTATION_STATUS } from '../../../shared/index.js';
+import { genDocNo } from '../../../utils/ids.js';
+import { registerMember } from '../../membership/members/member.service.js';
 
 export const listLeads = async ({ stage, assignedToId }) => {
   return prisma.lead.findMany({
@@ -58,7 +60,7 @@ export const addFollowUp = async (leadId, data) => {
 };
 
 export const createQuotation = async (data) => {
-  const quotationNo = `QUO-${Date.now().toString().slice(-6)}`;
+  const quotationNo = genDocNo('QUO');
   const amount = Number(data.amount);
   const discount = Number(data.discount || 0);
   const total = Math.max(0, amount - discount);
@@ -86,6 +88,36 @@ export const createQuotation = async (data) => {
 
     return quotation;
   });
+};
+
+// PRD M6: a Won lead converts to a member. Conversion is explicit because a lead
+// does not carry the plan, date of birth (needed for the BR6 age check) or start
+// date that member registration requires.
+export const convertLeadToMember = async (leadId, data, actorId) => {
+  const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+  if (!lead) throw new ApiError(404, 'Lead not found');
+
+  const email = data.email || lead.email;
+  if (!email) {
+    throw new ApiError(400, 'An email address is required to create a member account');
+  }
+
+  const member = await registerMember(
+    {
+      name: lead.name,
+      phone: lead.phone,
+      email,
+      planId: data.planId,
+      dob: data.dob,
+      startDate: data.startDate,
+      password: data.password,
+      emergencyContact: data.emergencyContact || null,
+    },
+    actorId
+  );
+
+  await prisma.lead.update({ where: { id: leadId }, data: { stage: LEAD_STAGE.WON } });
+  return member;
 };
 
 export const updateQuotationStatus = async (id, status) => {

@@ -20,6 +20,11 @@ export const errorHandler = (err, req, res, next) => {
 
   if (statusCode >= 500) {
     logger.error({ err, path: req.path, method: req.method }, 'Unhandled server error');
+    // Never leak internal error details (Prisma internals, stack traces) to clients.
+    if (process.env.NODE_ENV !== 'development') {
+      message = 'Internal server error';
+      errors = null;
+    }
   }
 
   res.status(statusCode).json({

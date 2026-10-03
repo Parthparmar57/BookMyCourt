@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
+import { genDocNo } from '../../../utils/ids.js';
 
 export const listEmployees = async () => {
   return prisma.employee.findMany({
@@ -35,7 +36,7 @@ export const createEmployee = async (data) => {
 
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(data.password || 'Staff@123', salt);
-  const employeeNo = `EMP-${Date.now().toString().slice(-5)}`;
+  const employeeNo = genDocNo('EMP');
 
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.create({

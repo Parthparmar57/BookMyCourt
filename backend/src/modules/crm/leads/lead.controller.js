@@ -36,3 +36,8 @@ export const updateQuotationStatus = asyncHandler(async (req, res) => {
   const quotation = await leadService.updateQuotationStatus(req.params.id, req.body.status);
   return success(res, quotation, 'Quotation status updated');
 });
+
+export const convertLead = asyncHandler(async (req, res) => {
+  const member = await leadService.convertLeadToMember(req.params.id, req.body, req.user?.id);
+  return success(res, member, 'Lead converted to member successfully', 201);
+});

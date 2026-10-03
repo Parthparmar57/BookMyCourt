@@ -8,6 +8,7 @@ const router = Router();
 router.use(auth, authorize('OWNER'));
 
 router.get('/tax', controller.getTaxReport);
+router.get('/tax/export', controller.exportTaxExcel);
 router.get('/inventory', controller.getInventoryReport);
 router.get('/inventory/export', controller.exportInventoryExcel);
 router.get('/membership', controller.getMembershipReport);

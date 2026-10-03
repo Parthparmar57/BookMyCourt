@@ -18,10 +18,9 @@ export const createBookingSchema = z
       .optional()
       .nullable(),
     paymentMode: z.nativeEnum(PAYMENT_MODE).default(PAYMENT_MODE.UPI),
-  })
-  .refine((d) => d.memberId || (d.walkIn && d.walkIn.name && d.walkIn.phone), {
-    message: 'Either memberId or complete walkIn details are required',
   });
+// Note: whether a member or walk-in is required is enforced in the service, because
+// a logged-in MEMBER books for themselves and sends neither field.
 
 export const cancelBookingSchema = z.object({
   reason: z.string().min(3, 'Cancellation reason is required').optional(),

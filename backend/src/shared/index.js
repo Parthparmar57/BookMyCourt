@@ -16,6 +16,7 @@ export * from './schemas/shift.schema.js';
 export * from './schemas/lead.schema.js';
 export * from './schemas/quotation.schema.js';
 export * from './schemas/invoice.schema.js';
+export * from './schemas/payment.schema.js';
 export * from './schemas/expense.schema.js';
 export * from './schemas/employee.schema.js';
 export * from './schemas/leave.schema.js';
