@@ -1,0 +1,664 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  FRONT_DESK
+  BAR_STAFF
+  KITCHEN
+  SHOP_STAFF
+  MEMBER
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum BookingType {
+  NORMAL
+  SOCIAL
+}
+
+enum MemberStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+}
+
+enum OrderChannel {
+  COUNTER
+  ONLINE
+  BAR
+}
+
+enum OrderStatus {
+  PLACED
+  PREPARING
+  SERVED
+  PACKED
+  READY
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum FulfilmentType {
+  DINE_IN
+  PICKUP
+  DELIVERY
+}
+
+enum PaymentMode {
+  CASH
+  CARD
+  UPI
+  ONLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum ProductCategory {
+  RACKETS
+  BALLS
+  SHOES
+  ACCESSORIES
+  APPAREL
+}
+
+enum MenuCategory {
+  BEVERAGES
+  SNACKS
+  MEALS
+  DESSERTS
+  HEALTH_DRINKS
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+}
+
+enum TabStatus {
+  OPEN
+  SETTLED
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum TransactionSource {
+  COURT
+  SHOP
+  BAR
+  MEMBERSHIP
+  OTHER
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum InvoiceType {
+  MEMBERSHIP
+  BUSINESS
+}
+
+enum ExpenseStatus {
+  UNPAID
+  PAID
+}
+
+enum LeadStage {
+  NEW
+  CONTACTED
+  QUOTED
+  WON
+  LOST
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  PAID
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  ON_LEAVE
+}
+
+enum PayrollStatus {
+  DRAFT
+  PROCESSED
+  PAID
+}
+
+model User {
+  id              String         @id @default(uuid())
+  name            String
+  email           String         @unique
+  phone           String         @unique
+  passwordHash    String
+  role            Role           @default(MEMBER)
+  member          Member?
+  employee        Employee?
+  bookingsCreated Booking[]      @relation("CreatedByUser")
+  leadsAssigned   Lead[]         @relation("AssignedLeads")
+  leavesApproved  LeaveRequest[] @relation("ApprovedLeaves")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Plan {
+  id              String      @id @default(uuid())
+  name            String      @unique
+  price           Decimal     @db.Decimal(10, 2)
+  durationMonths  Int
+  courtRate       Decimal     @db.Decimal(10, 2)
+  freeSessions    Int         @default(0)
+  shopDiscountPct Int         @default(0)
+  barDiscountPct  Int         @default(0)
+  maxBookingsDay  Int         @default(2)
+  maxAge          Int?
+  members         Member[]
+  quotations      Quotation[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model Member {
+  id                   String              @id @default(uuid())
+  memberNo             String              @unique
+  userId               String              @unique
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 Plan                @relation(fields: [planId], references: [id])
+  dob                  DateTime
+  emergencyContact     String?
+  photoUrl             String?
+  status               MemberStatus        @default(ACTIVE)
+  qrCode               String?
+  startDate            DateTime
+  endDate              DateTime
+  bookings             Booking[]
+  socialParticipations SocialParticipant[]
+  orders               Order[]
+  tabs                 BarTab[]
+  invoices             Invoice[]
+  transactions         Transaction[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+}
+
+model Court {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  sport         String
+  openTime      String         @default("06:00")
+  closeTime     String         @default("23:00")
+  walkInRate    Decimal        @db.Decimal(10, 2)
+  isOpen        Boolean        @default(true)
+  bookings      Booking[]
+  trialBookings TrialBooking[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Booking {
+  id                 String              @id @default(uuid())
+  courtId            String
+  court              Court               @relation(fields: [courtId], references: [id], onDelete: Restrict)
+  memberId           String?
+  member             Member?             @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  walkInName         String?
+  walkInPhone        String?
+  startTime          DateTime            @db.Timestamptz
+  endTime            DateTime            @db.Timestamptz
+  type               BookingType         @default(NORMAL)
+  status             BookingStatus       @default(CONFIRMED)
+  price              Decimal             @db.Decimal(10, 2)
+  maxPlayers         Int?                @default(1)
+  createdById        String
+  createdBy          User                @relation("CreatedByUser", fields: [createdById], references: [id])
+  cancelReason       String?
+  cancelledById      String?
+  cancelledAt        DateTime?
+  refundAmount       Decimal?            @db.Decimal(10, 2)
+  socialParticipants SocialParticipant[]
+  transactions       Transaction[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  // Overlap prevention is enforced at the DB level by a GiST EXCLUDE constraint
+  // (see prisma/migrations/manual_constraints.sql) — the non-unique index below
+  // only speeds lookups.
+  @@index([courtId, startTime])
+  @@index([startTime, endTime])
+}
+
+model SocialParticipant {
+  id            String        @id @default(uuid())
+  bookingId     String
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  memberId      String?
+  member        Member?       @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  guestName     String?
+  guestPhone    String?
+  fee           Decimal       @db.Decimal(10, 2)
+  paymentStatus PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+
+  // A member can join a given social session only once (guests have null memberId
+  // and are not constrained, since Postgres treats NULLs as distinct).
+  @@unique([bookingId, memberId])
+  @@index([bookingId])
+}
+
+model Product {
+  id            String          @id @default(uuid())
+  name          String
+  category      ProductCategory
+  sku           String          @unique
+  brand         String?
+  variant       String?
+  price         Decimal         @db.Decimal(10, 2)
+  taxPct        Decimal         @default(18) @db.Decimal(5, 2)
+  stock         Int             @default(0)
+  reorderLevel  Int             @default(5)
+  imageUrl      String?
+  orderItems    OrderItem[]
+  inventoryLogs InventoryLog[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([sku])
+  @@index([category])
+}
+
+model InventoryLog {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier  String?
+  quantity  Int
+  cost      Decimal? @db.Decimal(10, 2)
+  type      String   @default("STOCK_IN")
+  notes     String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+model MenuItem {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  category    MenuCategory
+  price       Decimal      @db.Decimal(10, 2)
+  taxPct      Decimal      @default(5) @db.Decimal(5, 2)
+  isAvailable Boolean      @default(true)
+  orderItems  OrderItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model BarTable {
+  id        String      @id @default(uuid())
+  number    String      @unique
+  capacity  Int         @default(4)
+  status    TableStatus @default(AVAILABLE)
+  orders    Order[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model BarTab {
+  id          String    @id @default(uuid())
+  memberId    String
+  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  status      TabStatus @default(OPEN)
+  openedAt    DateTime  @default(now())
+  settledAt   DateTime?
+  totalAmount Decimal   @default(0) @db.Decimal(10, 2)
+  notes       String?
+  orders      Order[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([memberId])
+}
+
+model Shift {
+  id           String      @id @default(uuid())
+  employeeId   String
+  employee     Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  startTime    DateTime    @default(now())
+  endTime      DateTime?
+  openingCash  Decimal     @default(0) @db.Decimal(10, 2)
+  closingCash  Decimal?    @db.Decimal(10, 2)
+  expectedCash Decimal?    @db.Decimal(10, 2)
+  actualCash   Decimal?    @db.Decimal(10, 2)
+  notes        String?
+  status       ShiftStatus @default(OPEN)
+  orders       Order[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Order {
+  id              String         @id @default(uuid())
+  orderNo         String         @unique
+  memberId        String?
+  member          Member?        @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  channel         OrderChannel
+  barTableId      String?
+  barTable        BarTable?      @relation(fields: [barTableId], references: [id], onDelete: SetNull)
+  barTabId        String?
+  barTab          BarTab?        @relation(fields: [barTabId], references: [id], onDelete: SetNull)
+  shiftId         String?
+  shift           Shift?         @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  status          OrderStatus    @default(PLACED)
+  fulfilment      FulfilmentType @default(DINE_IN)
+  deliveryAddress String?
+  pinCode         String?
+  subtotal        Decimal        @db.Decimal(10, 2)
+  discount        Decimal        @default(0) @db.Decimal(10, 2)
+  tax             Decimal        @default(0) @db.Decimal(10, 2)
+  total           Decimal        @db.Decimal(10, 2)
+  paymentMode     PaymentMode?
+  paymentStatus   PaymentStatus  @default(PENDING)
+  notes           String?
+  items           OrderItem[]
+  transactions    Transaction[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([orderNo])
+  @@index([status])
+  @@index([channel])
+}
+
+model OrderItem {
+  id         String    @id @default(uuid())
+  orderId    String
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  menuItemId String?
+  menuItem   MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  quantity   Int
+  unitPrice  Decimal   @db.Decimal(10, 2)
+  taxPct     Decimal   @default(0) @db.Decimal(5, 2)
+  totalPrice Decimal   @db.Decimal(10, 2)
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  transactionNo String            @unique
+  date          DateTime          @default(now())
+  source        TransactionSource
+  amount        Decimal           @db.Decimal(10, 2)
+  tax           Decimal           @default(0) @db.Decimal(10, 2)
+  paymentMode   PaymentMode
+  reference     String?
+  orderId       String?
+  order         Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  bookingId     String?
+  booking       Booking?          @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  invoiceId     String?
+  invoice       Invoice?          @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  memberId      String?
+  member        Member?           @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  notes         String?
+  createdAt     DateTime          @default(now())
+
+  @@index([date])
+  @@index([source])
+  @@index([paymentMode])
+}
+
+model Invoice {
+  id           String        @id @default(uuid())
+  invoiceNo    String        @unique
+  memberId     String?
+  member       Member?       @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  companyName  String?
+  gstin        String?
+  clientEmail  String?
+  type         InvoiceType   @default(MEMBERSHIP)
+  amount       Decimal       @db.Decimal(10, 2)
+  tax          Decimal       @default(0) @db.Decimal(10, 2)
+  total        Decimal       @db.Decimal(10, 2)
+  dueDate      DateTime
+  status       InvoiceStatus @default(DRAFT)
+  items        InvoiceItem[]
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([invoiceNo])
+  @@index([status])
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  taxPct      Decimal @default(0) @db.Decimal(5, 2)
+  total       Decimal @db.Decimal(10, 2)
+}
+
+model Expense {
+  id          String        @id @default(uuid())
+  expenseNo   String        @unique
+  vendor      String
+  category    String
+  amount      Decimal       @db.Decimal(10, 2)
+  tax         Decimal       @default(0) @db.Decimal(10, 2)
+  dueDate     DateTime
+  paidDate    DateTime?
+  status      ExpenseStatus @default(UNPAID)
+  paymentMode PaymentMode?
+  reference   String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status])
+}
+
+model Lead {
+  id            String         @id @default(uuid())
+  name          String
+  phone         String
+  email         String?
+  source        String         @default("WEBSITE")
+  interest      String?
+  stage         LeadStage      @default(NEW)
+  assignedToId  String?
+  assignedTo    User?          @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
+  quotations    Quotation[]
+  followUps     LeadFollowUp[]
+  trialBookings TrialBooking[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([stage])
+}
+
+model Quotation {
+  id          String          @id @default(uuid())
+  quotationNo String          @unique
+  leadId      String
+  lead        Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  planId      String?
+  plan        Plan?           @relation(fields: [planId], references: [id], onDelete: SetNull)
+  amount      Decimal         @db.Decimal(10, 2)
+  discount    Decimal         @default(0) @db.Decimal(10, 2)
+  total       Decimal         @db.Decimal(10, 2)
+  validUntil  DateTime
+  status      QuotationStatus @default(DRAFT)
+  pdfUrl      String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model LeadFollowUp {
+  id        String   @id @default(uuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  date      DateTime
+  type      String   @default("CALL")
+  notes     String?
+  status    String   @default("SCHEDULED")
+  createdAt DateTime @default(now())
+}
+
+model Employee {
+  id            String         @id @default(uuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeNo    String         @unique
+  designation   String
+  joiningDate   DateTime
+  salary        Decimal        @db.Decimal(10, 2)
+  bankAccountNo String?
+  ifscCode      String?
+  panNo         String?
+  leaveBalance  Int            @default(18)
+  shifts        Shift[]
+  leaves        LeaveRequest[]
+  payrolls      Payroll[]
+  attendances   Attendance[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Attendance {
+  id         String           @id @default(uuid())
+  employeeId String
+  employee   Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime         @db.Date
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     AttendanceStatus @default(PRESENT)
+  notes      String?
+  createdAt  DateTime         @default(now())
+
+  @@unique([employeeId, date])
+}
+
+model LeaveRequest {
+  id           String      @id @default(uuid())
+  employeeId   String
+  employee     Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type         LeaveType   @default(CASUAL)
+  startDate    DateTime    @db.Date
+  endDate      DateTime    @db.Date
+  days         Int         @default(1)
+  reason       String?
+  status       LeaveStatus @default(PENDING)
+  approvedById String?
+  approvedBy   User?       @relation("ApprovedLeaves", fields: [approvedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Payroll {
+  id          String        @id @default(uuid())
+  payrollNo   String        @unique
+  employeeId  String
+  employee    Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  month       Int
+  year        Int
+  basicSalary Decimal       @db.Decimal(10, 2)
+  allowances  Decimal       @default(0) @db.Decimal(10, 2)
+  deductions  Decimal       @default(0) @db.Decimal(10, 2)
+  netSalary   Decimal       @db.Decimal(10, 2)
+  status      PayrollStatus @default(DRAFT)
+  paidDate    DateTime?
+  payslipUrl  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([employeeId, month, year])
+}
+
+model Enquiry {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String
+  email     String?
+  interest  String?
+  message   String?
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId])
+}
+
+model TrialBooking {
+  id            String   @id @default(uuid())
+  name          String
+  phone         String
+  email         String?
+  sport         String
+  preferredDate DateTime
+  preferredTime String
+  status        String   @default("PENDING")
+  courtId       String?
+  court         Court?   @relation(fields: [courtId], references: [id], onDelete: SetNull)
+  leadId        String?
+  lead          Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+}
