@@ -36,23 +36,42 @@ p, span, div, a, li, table, th, td, label {
   }
 }
 
-/* Enforce Sharp, Square, Pixel-Perfect Borders Across Entire Website */
-*,
-*::before,
-*::after,
-button,
-input,
-select,
-textarea,
-div,
-section,
-img,
-a,
-span,
-table,
-td,
-th {
-  border-radius: 0px !important;
+/* Premium Custom Select / Dropdown Styling matching UI */
+select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.2' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 1.1rem 1.1rem !important;
+  padding-right: 2.5rem !important;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+select:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+}
+
+select:focus {
+  outline: none !important;
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
+}
+
+select option {
+  background-color: #ffffff;
+  color: #0f172a;
+  font-weight: 500;
+  padding: 10px 14px;
 }
 
 /* Custom Utilities & Animations */
@@ -61,7 +80,6 @@ th {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 0px !important;
 }
 
 .dark-glass-panel {
@@ -69,7 +87,6 @@ th {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(55, 65, 81, 0.5);
-  border-radius: 0px !important;
 }
 
 .glow-green {
@@ -88,7 +105,7 @@ th {
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 0px !important;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {

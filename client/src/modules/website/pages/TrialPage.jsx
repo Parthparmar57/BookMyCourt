@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle2, Send, AlertCircle, Loader2 } from 'lucide-react';
 import { useBookTrial } from '../../../hooks/useCrm';
 import { trialSchema, applyServerErrors } from '../../../shared/validation/schemas';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 
 const TIME_SLOTS = Array.from({ length: 17 }, (_, i) => `${String(6 + i).padStart(2, '0')}:00`);
 
@@ -87,12 +88,16 @@ export const TrialPage = () => {
 
             <div>
               <label className="block mb-1 font-bold text-slate-900">Preferred Sport</label>
-              <select {...register('sport')} className={`${inputCls()} bg-white`}>
-                <option value="Tennis">Tennis</option>
-                <option value="Badminton">Badminton</option>
-                <option value="Padel">Padel</option>
-                <option value="Cricket">Cricket</option>
-              </select>
+              <CustomSelect
+                value={watch('sport') || 'Tennis'}
+                onChange={(e) => setValue('sport', e.target.value)}
+                options={[
+                  { value: 'Tennis', label: 'Tennis' },
+                  { value: 'Badminton', label: 'Badminton' },
+                  { value: 'Padel', label: 'Padel' },
+                  { value: 'Cricket', label: 'Cricket' },
+                ]}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -103,9 +108,11 @@ export const TrialPage = () => {
               </div>
               <div>
                 <label className="block mb-1 font-bold text-slate-900">Preferred Time *</label>
-                <select {...register('preferredTime')} className={`${inputCls()} bg-white`}>
-                  {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <CustomSelect
+                  value={watch('preferredTime') || TIME_SLOTS[0]}
+                  onChange={(e) => setValue('preferredTime', e.target.value)}
+                  options={TIME_SLOTS.map((t) => ({ value: t, label: t }))}
+                />
               </div>
             </div>
 

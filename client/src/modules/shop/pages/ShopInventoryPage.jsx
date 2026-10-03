@@ -9,6 +9,7 @@ import {
 } from '../../../hooks/useShop';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 import {
   AlertTriangle,
   Plus,
@@ -593,17 +594,17 @@ export const ShopInventoryPage = () => {
                 </div>
                 <div>
                   <label className="block mb-1">Category *</label>
-                  <select
+                  <CustomSelect
                     value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
-                  >
-                    <option value="RACKETS">Rackets & Paddles</option>
-                    <option value="BALLS">Balls & Shuttles</option>
-                    <option value="SHOES">Court Shoes</option>
-                    <option value="APPAREL">Apparel & Jerseys</option>
-                    <option value="ACCESSORIES">Accessories & Grips</option>
-                  </select>
+                    options={[
+                      { value: 'RACKETS', label: 'Rackets & Paddles' },
+                      { value: 'BALLS', label: 'Balls & Shuttles' },
+                      { value: 'SHOES', label: 'Court Shoes' },
+                      { value: 'APPAREL', label: 'Apparel & Jerseys' },
+                      { value: 'ACCESSORIES', label: 'Accessories & Grips' },
+                    ]}
+                  />
                 </div>
               </div>
 

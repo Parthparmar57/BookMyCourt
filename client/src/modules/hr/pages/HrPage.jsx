@@ -9,6 +9,7 @@ import {
   useUpdatePayrollStatus,
 } from '../../../hooks/useHr';
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 import { 
   Users, 
   Calendar, 
@@ -555,16 +556,16 @@ export const HrPage = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-slate-700 block mb-1">System Role</label>
-                  <select
+                  <CustomSelect
                     value={empForm.role}
                     onChange={(e) => setEmpForm({ ...empForm, role: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white focus:border-emerald-600 focus:outline-none"
-                  >
-                    <option value="FRONT_DESK">Front Desk</option>
-                    <option value="BAR_STAFF">Bar Staff</option>
-                    <option value="KITCHEN">Kitchen</option>
-                    <option value="SHOP_STAFF">Shop Staff</option>
-                  </select>
+                    options={[
+                      { value: 'FRONT_DESK', label: 'Front Desk' },
+                      { value: 'BAR_STAFF', label: 'Bar Staff' },
+                      { value: 'KITCHEN', label: 'Kitchen' },
+                      { value: 'SHOP_STAFF', label: 'Shop Staff' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="text-slate-700 block mb-1">Designation</label>

@@ -3,6 +3,7 @@ import { useShopOrders, useUpdateShopOrderStatus } from '../../../hooks/useShop'
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
 import { useDebounce } from '../../../shared/hooks/useDebounce';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 import { 
   ShoppingBag, 
   Store, 
@@ -188,27 +189,27 @@ export const ShopOrdersPage = () => {
 
           {/* Fulfillment & Status Filters */}
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <select
+            <CustomSelect
               value={fulfillmentFilter}
               onChange={(e) => setFulfillmentFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-extrabold text-slate-800 focus:outline-none focus:border-[#4A812F]"
-            >
-              <option value="ALL">All Fulfilments</option>
-              <option value="PICKUP">Store Pickup (Click & Collect)</option>
-              <option value="DELIVERY">Home Delivery</option>
-              <option value="COUNTER">Counter POS</option>
-            </select>
+              options={[
+                { value: 'ALL', label: 'All Fulfilments' },
+                { value: 'PICKUP', label: 'Store Pickup (Click & Collect)' },
+                { value: 'DELIVERY', label: 'Home Delivery' },
+                { value: 'COUNTER', label: 'Counter POS' },
+              ]}
+            />
 
-            <select
+            <CustomSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-extrabold text-slate-800 focus:outline-none focus:border-[#4A812F]"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="PENDING">Pending (Placed / Preparing)</option>
-              <option value="READY">Ready / Out for Delivery</option>
-              <option value="COMPLETED">Completed / Delivered</option>
-            </select>
+              options={[
+                { value: 'ALL', label: 'All Statuses' },
+                { value: 'PENDING', label: 'Pending (Placed / Preparing)' },
+                { value: 'READY', label: 'Ready / Out for Delivery' },
+                { value: 'COMPLETED', label: 'Completed / Delivered' },
+              ]}
+            />
           </div>
         </div>
       </div>

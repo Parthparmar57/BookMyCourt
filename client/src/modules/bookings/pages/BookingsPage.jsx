@@ -15,6 +15,7 @@ import { useMembers } from '../../../hooks/useMembership';
 import { useBookingRealtime } from '../../../hooks/useRealtime';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 import {
   CheckCircle2,
   AlertCircle,
@@ -1349,15 +1350,16 @@ export const BookingsPage = () => {
                 />
               </div>
 
-              <select
+              <CustomSelect
                 value={historyStatusFilter}
                 onChange={(e) => setHistoryStatusFilter(e.target.value)}
-                className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none cursor-pointer font-medium"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="CONFIRMED">Confirmed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
+                className="w-40"
+                options={[
+                  { value: 'ALL', label: 'All Statuses' },
+                  { value: 'CONFIRMED', label: 'Confirmed' },
+                  { value: 'CANCELLED', label: 'Cancelled' },
+                ]}
+              />
             </div>
           </div>
 
@@ -1642,18 +1644,17 @@ export const BookingsPage = () => {
                         />
                       </div>
 
-                      <select
+                      <CustomSelect
                         value={selectedMemberId}
                         onChange={(e) => setSelectedMemberId(e.target.value)}
-                        className="w-full border border-slate-200 rounded-xl p-2.5 bg-white text-xs font-medium focus:border-emerald-500 focus:outline-none cursor-pointer"
-                      >
-                        <option value="">-- Choose Member ({filteredMembers.length} available) --</option>
-                        {filteredMembers.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.user?.name} · {m.memberNo} ({m.plan?.name || 'Standard'}) - {m.user?.phone}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder={`-- Choose Member (${filteredMembers.length} available) --`}
+                        searchable={true}
+                        options={filteredMembers.map((m) => ({
+                          value: m.id,
+                          label: `${m.user?.name || 'Member'} · ${m.memberNo}`,
+                          subtext: `${m.plan?.name || 'Standard'} Tier | Phone: ${m.user?.phone || 'N/A'}`,
+                        }))}
+                      />
 
                       {selectedMemberObj && (
                         <div className="bg-emerald-50/70 border border-emerald-200 p-2.5 rounded-xl text-[11px] space-y-1 text-emerald-950 font-normal">
@@ -1677,16 +1678,16 @@ export const BookingsPage = () => {
                   {/* Payment Mode */}
                   <div>
                     <label className="text-slate-700 block mb-1">Payment Method</label>
-                    <select
+                    <CustomSelect
                       value={paymentMode}
                       onChange={(e) => setPaymentMode(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl p-2.5 bg-white text-xs font-medium focus:border-emerald-500 focus:outline-none cursor-pointer"
-                    >
-                      <option value="UPI">UPI / QR Code</option>
-                      <option value="CASH">Cash Counter</option>
-                      <option value="CARD">Credit / Debit Card</option>
-                      <option value="ONLINE">Online Portal</option>
-                    </select>
+                      options={[
+                        { value: 'UPI', label: 'UPI / QR Code' },
+                        { value: 'CASH', label: 'Cash Counter' },
+                        { value: 'CARD', label: 'Credit / Debit Card' },
+                        { value: 'ONLINE', label: 'Online Portal' },
+                      ]}
+                    />
                   </div>
                 </div>
               )}
@@ -1719,16 +1720,16 @@ export const BookingsPage = () => {
 
                   <div>
                     <label className="text-slate-700 block mb-1">Payment Mode</label>
-                    <select
+                    <CustomSelect
                       value={paymentMode}
                       onChange={(e) => setPaymentMode(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl p-2.5 bg-white text-xs font-medium focus:border-blue-500 focus:outline-none cursor-pointer"
-                    >
-                      <option value="UPI">UPI / QR Code</option>
-                      <option value="CASH">Cash Counter</option>
-                      <option value="CARD">Credit / Debit Card</option>
-                      <option value="ONLINE">Online Portal</option>
-                    </select>
+                      options={[
+                        { value: 'UPI', label: 'UPI / QR Code' },
+                        { value: 'CASH', label: 'Cash Counter' },
+                        { value: 'CARD', label: 'Credit / Debit Card' },
+                        { value: 'ONLINE', label: 'Online Portal' },
+                      ]}
+                    />
                   </div>
 
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-[11px] leading-relaxed font-normal">
@@ -1944,18 +1945,15 @@ export const BookingsPage = () => {
             <form onSubmit={handleCreateSocialSession} className="space-y-3.5 text-xs font-medium">
               <div>
                 <label className="text-slate-700 block mb-1">Select Facility Court *</label>
-                <select
+                <CustomSelect
                   value={socialCourtId}
                   onChange={(e) => setSocialCourtId(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white text-xs font-medium focus:border-amber-500 focus:outline-none cursor-pointer"
-                >
-                  <option value="">-- Choose Court --</option>
-                  {allCourts.map((c) => (
-                    <option key={c.courtId} value={c.courtId}>
-                      {c.courtName} ({c.sport})
-                    </option>
-                  ))}
-                </select>
+                  placeholder="-- Choose Court --"
+                  options={allCourts.map((c) => ({
+                    value: c.courtId,
+                    label: `${c.courtName} (${c.sport})`,
+                  }))}
+                />
               </div>
 
               <div>
@@ -1972,15 +1970,14 @@ export const BookingsPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 block mb-1">Start Time (:00 / :30) *</label>
-                  <select
+                  <CustomSelect
                     value={socialStartTime}
                     onChange={(e) => setSocialStartTime(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-white text-xs font-mono focus:border-amber-500 focus:outline-none cursor-pointer"
-                  >
-                    {['06:00', '07:00', '08:00', '09:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'].map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
+                    options={['06:00', '07:00', '08:00', '09:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'].map((t) => ({
+                      value: t,
+                      label: t,
+                    }))}
+                  />
                 </div>
 
                 <div>
@@ -2095,18 +2092,17 @@ export const BookingsPage = () => {
                   {socialJoinTab === 'member' ? (
                     <div>
                       <label className="text-slate-700 block mb-1">Select Member</label>
-                      <select
+                      <CustomSelect
                         value={socialMemberId}
                         onChange={(e) => setSocialMemberId(e.target.value)}
-                        className="w-full border border-slate-200 rounded-xl p-2.5 bg-white text-xs font-medium focus:border-emerald-500 focus:outline-none cursor-pointer"
-                      >
-                        <option value="">-- Choose Member --</option>
-                        {rawMembers.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.user?.name} · {m.memberNo} ({m.user?.phone})
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="-- Choose Member --"
+                        searchable={true}
+                        options={rawMembers.map((m) => ({
+                          value: m.id,
+                          label: `${m.user?.name || 'Member'} · ${m.memberNo}`,
+                          subtext: m.user?.phone ? `Phone: ${m.user.phone}` : null,
+                        }))}
+                      />
                     </div>
                   ) : (
                     <div className="space-y-2.5">
@@ -2142,16 +2138,16 @@ export const BookingsPage = () => {
 
               <div>
                 <label className="text-slate-700 block mb-1">Payment Method</label>
-                <select
+                <CustomSelect
                   value={socialPaymentMode}
                   onChange={(e) => setSocialPaymentMode(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-white text-xs font-medium focus:border-emerald-500 focus:outline-none cursor-pointer"
-                >
-                  <option value="UPI">UPI / QR Code</option>
-                  <option value="CASH">Cash Counter</option>
-                  <option value="CARD">Credit / Debit Card</option>
-                  <option value="ONLINE">Online Portal</option>
-                </select>
+                  options={[
+                    { value: 'UPI', label: 'UPI / QR Code' },
+                    { value: 'CASH', label: 'Cash Counter' },
+                    { value: 'CARD', label: 'Credit / Debit Card' },
+                    { value: 'ONLINE', label: 'Online Portal' },
+                  ]}
+                />
               </div>
 
               <div className="flex items-center gap-2 pt-2">

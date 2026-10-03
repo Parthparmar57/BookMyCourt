@@ -17,6 +17,7 @@ import {
   useCloseShift
 } from '../../../hooks/useBar';
 import { formatCurrency } from '../../../shared/utils/formatters';
+import { CustomSelect } from '../../../shared/components/CustomSelect';
 import {
   Coffee,
   Utensils,
@@ -529,18 +530,20 @@ export const BarPage = () => {
                   />
                 </div>
 
-                <select
+                <CustomSelect
                   value={selectedMemberId}
                   onChange={(e) => setSelectedMemberId(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl text-xs font-semibold px-2.5 py-2 text-slate-800 focus:outline-none focus:border-[#2e7d32]"
-                >
-                  <option value="">Walk-in Guest / Non-Member</option>
-                  {filteredMembers.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.plan?.name || 'Standard'} • {m.plan?.barDiscount || 0}% OFF)
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Walk-in Guest / Non-Member"
+                  searchable={true}
+                  options={[
+                    { value: '', label: 'Walk-in Guest / Non-Member' },
+                    ...filteredMembers.map((m) => ({
+                      value: m.id,
+                      label: `${m.name} (${m.plan?.name || 'Standard'})`,
+                      subtext: `${m.plan?.barDiscount || 0}% OFF`,
+                    })),
+                  ]}
+                />
               </div>
 
               {/* Items List */}
@@ -1205,17 +1208,17 @@ export const BarPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block mb-1">Category *</label>
-                  <select
+                  <CustomSelect
                     value={menuForm.category}
                     onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:border-[#2e7d32] focus:outline-none text-slate-900"
-                  >
-                    <option value="BEVERAGES">Beverages</option>
-                    <option value="HEALTH_DRINKS">Health & Protein Drinks</option>
-                    <option value="SNACKS">Snacks & Bowls</option>
-                    <option value="MEALS">Meals & Paninis</option>
-                    <option value="DESSERTS">Desserts</option>
-                  </select>
+                    options={[
+                      { value: 'BEVERAGES', label: 'Beverages' },
+                      { value: 'HEALTH_DRINKS', label: 'Health & Protein Drinks' },
+                      { value: 'SNACKS', label: 'Snacks & Bowls' },
+                      { value: 'MEALS', label: 'Meals & Paninis' },
+                      { value: 'DESSERTS', label: 'Desserts' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="block mb-1">Price (₹) *</label>
@@ -1276,15 +1279,15 @@ export const BarPage = () => {
             <form onSubmit={handleSettleTabSubmit} className="space-y-3 text-xs font-semibold">
               <div>
                 <label className="block mb-1 text-slate-700">Payment Mode</label>
-                <select
+                <CustomSelect
                   value={tabPaymentMode}
                   onChange={(e) => setTabPaymentMode(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#2e7d32] focus:outline-none"
-                >
-                  <option value="CARD">Credit / Debit Card</option>
-                  <option value="UPI">UPI / QR Payment</option>
-                  <option value="CASH">Cash Counter</option>
-                </select>
+                  options={[
+                    { value: 'CARD', label: 'Credit / Debit Card' },
+                    { value: 'UPI', label: 'UPI / QR Payment' },
+                    { value: 'CASH', label: 'Cash Counter' },
+                  ]}
+                />
               </div>
               <button
                 type="submit"
