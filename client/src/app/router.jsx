@@ -20,6 +20,9 @@ import { BarPage } from '../modules/bar/pages/BarPage';
 import { KitchenPage } from '../modules/kitchen/pages/KitchenPage';
 import { ShopInventoryPage } from '../modules/shop/pages/ShopInventoryPage';
 import { ShopDashboardPage } from '../modules/shop/pages/ShopDashboardPage';
+import { CrmPage } from '../modules/crm/pages/CrmPage';
+import { AccountingPage } from '../modules/finance/pages/AccountingPage';
+import { HrPage } from '../modules/hr/pages/HrPage';
 
 // Dedicated Member Portal Pages
 import { MemberDashboardPage } from '../modules/members/pages/MemberDashboardPage';
@@ -59,9 +62,9 @@ export const router = createBrowserRouter([
       { path: 'bookings', element: <BookingsPage /> },
       { path: 'bar', element: <BarPage /> },
       { path: 'shop', element: <ShopInventoryPage /> },
-      { path: 'crm', element: <OwnerDashboardPage /> },
-      { path: 'accounting', element: <OwnerDashboardPage /> },
-      { path: 'hr', element: <OwnerDashboardPage /> }
+      { path: 'crm', element: <CrmPage /> },
+      { path: 'accounting', element: <AccountingPage /> },
+      { path: 'hr', element: <HrPage /> }
     ])
   },
 
@@ -72,7 +75,7 @@ export const router = createBrowserRouter([
       { index: true, element: <MembersPage /> },
       { path: 'members', element: <MembersPage /> },
       { path: 'bookings', element: <BookingsPage /> },
-      { path: 'crm', element: <MembersPage /> }
+      { path: 'crm', element: <CrmPage /> }
     ])
   },
 

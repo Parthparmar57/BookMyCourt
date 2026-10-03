@@ -25,6 +25,10 @@ import { Link } from 'react-router-dom';
 
 export const ShopInventoryPage = () => {
   const productsQuery = useProducts();
+  const lowStockQuery = useLowStock();
+  const inventoryLogsQuery = useInventoryLogs();
+  const shopOrdersQuery = useShopOrders();
+
   const stockIn = useStockIn();
   const logsQuery = useInventoryLogs();
 
@@ -74,25 +78,72 @@ export const ShopInventoryPage = () => {
   const outOfStockCount = products.filter((p) => p.stock === 0).length;
 
   const openStockIn = (p) => {
-    setError('');
-    setForm({ quantity: 10, cost: '', supplier: '' });
+    setStockError('');
+    setStockForm({ quantity: 10, cost: '', supplier: '' });
     setStockTarget(p);
   };
 
   const submitStockIn = async (e) => {
     e.preventDefault();
-    setError('');
+    setStockError('');
     try {
       await stockIn.mutateAsync({
         productId: stockTarget.id,
-        quantity: Number(form.quantity),
-        ...(form.cost ? { cost: Number(form.cost) } : {}),
-        ...(form.supplier ? { supplier: form.supplier } : {}),
+        quantity: Number(stockForm.quantity),
+        ...(stockForm.cost ? { cost: Number(stockForm.cost) } : {}),
+        ...(stockForm.supplier ? { supplier: stockForm.supplier } : {}),
       });
       setStockTarget(null);
     } catch (err) {
-      setError(err?.message || 'Could not record stock.');
+      setStockError(err?.message || 'Could not record stock.');
     }
+  };
+
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingProduct) {
+        await updateProduct.mutateAsync({
+          id: editingProduct.id,
+          sku: productForm.sku,
+          name: productForm.name,
+          category: productForm.category,
+          price: Number(productForm.price),
+          stock: Number(productForm.stock),
+          reorderLevel: Number(productForm.reorderLevel),
+          imageUrl: productForm.imageUrl,
+          description: productForm.description,
+        });
+      } else {
+        await createProduct.mutateAsync({
+          sku: productForm.sku,
+          name: productForm.name,
+          category: productForm.category,
+          price: Number(productForm.price),
+          stock: Number(productForm.stock),
+          reorderLevel: Number(productForm.reorderLevel),
+          imageUrl: productForm.imageUrl,
+          description: productForm.description,
+        });
+      }
+      setShowProductModal(false);
+      setEditingProduct(null);
+    } catch (err) {
+      alert(err?.message || 'Error saving product.');
+    }
+  };
+
+  const exportStockCSV = () => {
+    const headers = ['SKU', 'Product Name', 'Category', 'Price', 'Stock', 'Reorder Level'];
+    const rows = products.map((p) => [p.sku, p.name, p.category, p.price, p.stock, p.reorderLevel]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Shop_Stock_Audit_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -104,7 +155,7 @@ export const ShopInventoryPage = () => {
             <Boxes className="w-3.5 h-3.5" />
             <span>RETAIL INVENTORY CONTROL</span>
             <span>•</span>
-            <span>SHARED STOCK POOL</span>
+            <span>OMNICHANNEL STOCK POOL</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             Pro Shop Inventory & <span className="text-[#4A812F]">Stock Audit</span>
@@ -143,9 +194,8 @@ export const ShopInventoryPage = () => {
 
         <button
           onClick={() => setStockFilter(stockFilter === 'ALL' ? 'ALL' : 'ALL')}
-          className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${
-            stockFilter === 'ALL' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200'
-          }`}
+          className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${stockFilter === 'ALL' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200'
+            }`}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -160,9 +210,8 @@ export const ShopInventoryPage = () => {
 
         <button
           onClick={() => setStockFilter(stockFilter === 'LOW' ? 'ALL' : 'LOW')}
-          className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${
-            stockFilter === 'LOW' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200'
-          }`}
+          className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${stockFilter === 'LOW' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200'
+            }`}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -177,9 +226,8 @@ export const ShopInventoryPage = () => {
 
         <button
           onClick={() => setStockFilter(stockFilter === 'OUT' ? 'ALL' : 'OUT')}
-          className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${
-            stockFilter === 'OUT' ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-200'
-          }`}
+          className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${stockFilter === 'OUT' ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-200'
+            }`}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -222,11 +270,10 @@ export const ShopInventoryPage = () => {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                  selectedCategory === cat
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedCategory === cat
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                  }`}
               >
                 {cat}
               </button>
@@ -293,13 +340,12 @@ export const ShopInventoryPage = () => {
                       <td className="p-4 min-w-[180px]">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className={`px-2 py-0.5 text-[10px] font-black rounded-md ${
-                              isOutOfStock
+                            <span className={`px-2 py-0.5 text-[10px] font-black rounded-md ${isOutOfStock
                                 ? 'bg-rose-100 text-rose-800'
                                 : isLowStock
-                                ? 'bg-amber-100 text-amber-900 flex items-center gap-1'
-                                : 'bg-emerald-100 text-emerald-800'
-                            }`}>
+                                  ? 'bg-amber-100 text-amber-900 flex items-center gap-1'
+                                  : 'bg-emerald-100 text-emerald-800'
+                              }`}>
                               {isLowStock && <AlertTriangle className="w-3 h-3 text-amber-600" />}
                               {isOutOfStock ? 'Out of Stock' : `${p.stock} Units`}
                             </span>
@@ -309,13 +355,12 @@ export const ShopInventoryPage = () => {
                           {/* Visual Stock Level Progress Bar */}
                           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                             <div
-                              className={`h-full transition-all duration-300 rounded-full ${
-                                isOutOfStock
+                              className={`h-full transition-all duration-300 rounded-full ${isOutOfStock
                                   ? 'bg-rose-500'
                                   : isLowStock
-                                  ? 'bg-amber-500'
-                                  : 'bg-emerald-500'
-                              }`}
+                                    ? 'bg-amber-500'
+                                    : 'bg-emerald-500'
+                                }`}
                               style={{ width: `${Math.max(4, stockPercent)}%` }}
                             />
                           </div>
@@ -393,23 +438,150 @@ export const ShopInventoryPage = () => {
               <h3 className="font-extrabold text-base text-slate-900">Stock In — {stockTarget.name}</h3>
               <button onClick={() => setStockTarget(null)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
-            {error && <div className="p-2 bg-rose-50 text-rose-700 text-xs rounded-xl">{error}</div>}
+            {stockError && <div className="p-2.5 bg-rose-50 text-rose-700 text-xs rounded-xl font-bold">{stockError}</div>}
             <form onSubmit={submitStockIn} className="space-y-3 text-xs font-semibold text-slate-700">
               <div>
-                <label className="block mb-1">Quantity *</label>
-                <input type="number" min="1" required value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:border-emerald-500 focus:outline-none" />
+                <label className="block mb-1">Quantity to Add *</label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={stockForm.quantity}
+                  onChange={(e) => setStockForm({ ...stockForm, quantity: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                />
               </div>
               <div>
-                <label className="block mb-1">Unit Cost (optional)</label>
-                <input type="number" min="0" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:border-emerald-500 focus:outline-none" placeholder="₹" />
+                <label className="block mb-1">Unit Cost (₹) (Optional)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={stockForm.cost}
+                  onChange={(e) => setStockForm({ ...stockForm, cost: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                  placeholder="₹ Cost price"
+                />
               </div>
               <div>
-                <label className="block mb-1">Supplier (optional)</label>
-                <input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:border-emerald-500 focus:outline-none" placeholder="Supplier name" />
+                <label className="block mb-1">Supplier Name (Optional)</label>
+                <input
+                  value={stockForm.supplier}
+                  onChange={(e) => setStockForm({ ...stockForm, supplier: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                  placeholder="e.g. Yonex Official Vendor"
+                />
               </div>
-              <button type="submit" disabled={stockIn.isPending} className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl flex items-center justify-center gap-2">
+              <button
+                type="submit"
+                disabled={stockIn.isPending}
+                className="w-full bg-[#4A812F] hover:bg-[#3b6725] disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
                 {stockIn.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Record Stock In
+                Record Stock In Entry
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD / EDIT PRODUCT */}
+      {showProductModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+              <h3 className="font-extrabold text-base text-slate-900">
+                {editingProduct ? 'Edit Catalog Product' : 'Add New Pro Shop Product'}
+              </h3>
+              <button onClick={() => setShowProductModal(false)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+            <form onSubmit={handleSaveProduct} className="space-y-3 text-xs font-semibold text-slate-700">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1">SKU *</label>
+                  <input
+                    required
+                    value={productForm.sku}
+                    onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                    placeholder="e.g. RAK-001"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Category *</label>
+                  <select
+                    value={productForm.category}
+                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                  >
+                    <option value="RACKETS">Rackets & Paddles</option>
+                    <option value="BALLS">Balls & Shuttles</option>
+                    <option value="SHOES">Court Shoes</option>
+                    <option value="APPAREL">Apparel & Jerseys</option>
+                    <option value="ACCESSORIES">Accessories & Grips</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-1">Product Name *</label>
+                <input
+                  required
+                  value={productForm.name}
+                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                  placeholder="e.g. Yonex Astrox 99 Pro Racket"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block mb-1">Price (₹) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={productForm.price}
+                    onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Initial Stock</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={productForm.stock}
+                    onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Reorder Level</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={productForm.reorderLevel}
+                    onChange={(e) => setProductForm({ ...productForm, reorderLevel: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-1">Product Image URL</label>
+                <input
+                  value={productForm.imageUrl}
+                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-[#4A812F] focus:outline-none"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-[#4A812F] hover:bg-[#3b6725] text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-sm cursor-pointer mt-2"
+              >
+                Save Product
               </button>
             </form>
           </div>

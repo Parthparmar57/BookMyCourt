@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMembers, usePlans, useCreateMember } from '../../../hooks/useMembership';
+import { useDebounce } from '../../../shared/hooks/useDebounce';
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
 import { memberSchema, applyServerErrors } from '../../../shared/validation/schemas';
@@ -20,15 +21,15 @@ const toView = (m) => ({
   status: m.status,
   qrCode: m.qrCode,
   tabBalance: m.activeTabBalance ?? 0,
-  avatar: `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(m.user?.name || 'M')}`,
 });
 
 export const MembersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedQuery = useDebounce(searchQuery, 350);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
-  const membersQuery = useMembers(searchQuery.trim() ? { q: searchQuery.trim() } : {});
+  const membersQuery = useMembers(debouncedQuery.trim() ? { q: debouncedQuery.trim() } : {});
   const { data: plans = [] } = usePlans();
   const createMember = useCreateMember();
 
@@ -75,7 +76,7 @@ export const MembersPage = () => {
   const fieldErr = (name) => errors[name]?.message;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4 border-slate-200">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Member Directory & Profiles</h1>
@@ -83,7 +84,7 @@ export const MembersPage = () => {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
+          className="bg-[#2e7d32] hover:bg-[#236327] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer"
         >
           <UserPlus className="w-4 h-4" />
           <span>Register New Member</span>
@@ -98,12 +99,12 @@ export const MembersPage = () => {
           placeholder="Search by name, phone, member no. (e.g. Rohan, 9876543210, MEM-001001)..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-emerald-500 focus:outline-none shadow-xs"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-[#2e7d32] focus:outline-none shadow-2xs font-semibold text-slate-900"
         />
       </div>
 
       {/* Member Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -127,8 +128,10 @@ export const MembersPage = () => {
                 {(data) => data.items.map(toView).map((m) => (
                   <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="p-4 font-mono font-bold text-slate-900">{m.memberNo}</td>
-                    <td className="p-4 font-bold text-slate-900 flex items-center gap-2">
-                      <img src={m.avatar} alt={m.name} className="w-7 h-7 rounded-full object-cover" />
+                    <td className="p-4 font-bold text-slate-900 flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-[#e8f5e9] text-[#2e7d32] font-black flex items-center justify-center text-xs shrink-0 border border-emerald-200">
+                        {m.name.charAt(0).toUpperCase()}
+                      </div>
                       <span>{m.name}</span>
                     </td>
                     <td className="p-4 font-medium text-slate-600">{formatPhone(m.phone)}</td>
@@ -144,7 +147,7 @@ export const MembersPage = () => {
                     </td>
                     <td className="p-4 font-semibold text-slate-900">{formatCurrency(m.tabBalance || 0)}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => setSelectedMember(m)} className="text-xs font-bold text-emerald-600 hover:text-emerald-800">
+                      <button onClick={() => setSelectedMember(m)} className="text-xs font-bold text-[#2e7d32] hover:underline cursor-pointer">
                         View 360° Profile →
                       </button>
                     </td>
