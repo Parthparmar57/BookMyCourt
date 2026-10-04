@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { ApplyLeaveModal } from './ApplyLeaveModal';
+import { UserProfileModal } from './UserProfileModal';
 
 // Turn a stored timestamp into a short relative label ("Just now", "5m ago", …).
 const formatRelativeTime = (time) => {
@@ -27,6 +28,7 @@ export const Topbar = () => {
   const { notifications, unreadCount, markAllRead, clearAll } = useNotifications();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const notifRef = useRef(null);
 
   // Close dropdown on outside click
@@ -178,16 +180,19 @@ export const Topbar = () => {
         </div>
 
         {currentUser && (
-          <div className="flex items-center gap-3">
+          <div
+            onClick={() => setShowProfileModal(true)}
+            title="Click to view profile details"
+            className="flex items-center gap-3 cursor-pointer p-1.5 rounded-2xl hover:bg-slate-100 transition-all group"
+          >
             {/* Profile Avatar / Logo with First Name Initial */}
             <div
-              title={currentUser.name}
-              className="w-8 h-8 rounded-full bg-linear-to-br from-emerald-600 via-emerald-700 to-[#1b4332] text-white flex items-center justify-center font-medium text-xs shadow-xs border border-emerald-400/40 select-none shrink-0"
+              className="w-8.5 h-8.5 rounded-full bg-gradient-to-br from-emerald-600 via-emerald-700 to-[#1b4332] text-white flex items-center justify-center font-bold text-xs shadow-xs border border-emerald-400/40 select-none shrink-0 group-hover:scale-105 transition-transform"
             >
               {currentUser.initial || (currentUser.name ? currentUser.name.trim().charAt(0).toUpperCase() : 'U')}
             </div>
             <div className="text-left leading-tight hidden sm:block">
-              <span className="font-medium text-slate-800 block text-xs">{currentUser.name}</span>
+              <span className="font-bold text-slate-800 block text-xs group-hover:text-emerald-700 transition-colors">{currentUser.name}</span>
               <span className="text-[11px] text-slate-500 font-normal block">{roleTitle}</span>
             </div>
           </div>
@@ -196,6 +201,16 @@ export const Topbar = () => {
 
       {/* Apply Leave Modal */}
       {showLeaveModal && <ApplyLeaveModal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} />}
+
+      {/* User Profile View-Only Modal */}
+      {showProfileModal && (
+        <UserProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          user={currentUser}
+          roleTitle={roleTitle}
+        />
+      )}
     </header>
   );
 };
