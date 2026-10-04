@@ -5,6 +5,7 @@ import {
   useCancelBooking,
   useBookings,
   useCourts,
+  useCreateCourt,
   useUpdateCourt,
   useSocialSessions,
   useCreateSocialSession,
@@ -66,6 +67,16 @@ const getNextFriday = () => {
   return d.toISOString().split('T')[0];
 };
 
+const COURT_HOURS_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? '00' : '30';
+  const val = `${String(h).padStart(2, '0')}:${m}`;
+  const period = h < 12 ? 'AM' : 'PM';
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  const label = `${String(displayH).padStart(2, '0')}:${m} ${period}`;
+  return { value: val, label: `${label} (${val})` };
+});
+
 export const BookingsPage = () => {
   const { role, user } = useAuth();
   const isOwner = role === 'OWNER';
@@ -119,6 +130,19 @@ export const BookingsPage = () => {
   const [editingCourt, setEditingCourt] = useState(null);
   const [updatedRate, setUpdatedRate] = useState('');
 
+  // Add New Court (Admin / Owner Only)
+  const [showAddCourtModal, setShowAddCourtModal] = useState(false);
+  const [addCourtForm, setAddCourtForm] = useState({
+    name: '',
+    sport: 'Tennis',
+    customSport: '',
+    walkInRate: '500',
+    openTime: '06:00',
+    closeTime: '23:00',
+    isOpen: true,
+  });
+  const [addCourtError, setAddCourtError] = useState('');
+
   // History states
   const [historySearch, setHistorySearch] = useState('');
   const [historyStatusFilter, setHistoryStatusFilter] = useState('ALL');
@@ -135,6 +159,7 @@ export const BookingsPage = () => {
   const createBooking = useCreateBooking();
   const cancelBooking = useCancelBooking();
   const updateCourt = useUpdateCourt();
+  const createCourt = useCreateCourt();
   const createSocial = useCreateSocialSession();
   const joinSocial = useJoinSocial();
   const leaveSocial = useLeaveSocial();
@@ -539,6 +564,72 @@ export const BookingsPage = () => {
     }
   };
 
+  // Add New Court (Owner / Admin Only)
+  const handleOpenTimeChange = (newOpen) => {
+    setAddCourtForm((prev) => {
+      let newClose = prev.closeTime;
+      if (newOpen >= prev.closeTime) {
+        const [h, m] = newOpen.split(':').map(Number);
+        const nextH = Math.min(23, h + 2);
+        newClose = `${String(nextH).padStart(2, '0')}:${m === 30 ? '30' : '00'}`;
+        if (newClose <= newOpen) newClose = '23:30';
+      }
+      return { ...prev, openTime: newOpen, closeTime: newClose };
+    });
+  };
+
+  const handleCreateCourt = async (e) => {
+    e?.preventDefault();
+    setAddCourtError('');
+    const courtName = addCourtForm.name.trim();
+    if (!courtName) {
+      setAddCourtError('Please enter a court / facility name.');
+      return;
+    }
+    const finalSport = addCourtForm.sport === 'OTHER'
+      ? addCourtForm.customSport.trim()
+      : addCourtForm.sport;
+    if (!finalSport) {
+      setAddCourtError('Please select or enter a sport category.');
+      return;
+    }
+    const rate = Number(addCourtForm.walkInRate);
+    if (isNaN(rate) || rate < 0) {
+      setAddCourtError('Please enter a valid hourly rate.');
+      return;
+    }
+    if (addCourtForm.openTime >= addCourtForm.closeTime) {
+      setAddCourtError('Closing time must be strictly after opening time.');
+      return;
+    }
+
+    try {
+      await createCourt.mutateAsync({
+        name: courtName,
+        sport: finalSport,
+        walkInRate: rate,
+        openTime: addCourtForm.openTime,
+        closeTime: addCourtForm.closeTime,
+        isOpen: Boolean(addCourtForm.isOpen),
+      });
+      setSuccessMsg(`Facility "${courtName}" created successfully.`);
+      setShowAddCourtModal(false);
+      setAddCourtForm({
+        name: '',
+        sport: 'Tennis',
+        customSport: '',
+        walkInRate: '500',
+        openTime: '06:00',
+        closeTime: '23:00',
+        isOpen: true,
+      });
+      availabilityQuery.refetch();
+      courtsQuery.refetch();
+    } catch (err) {
+      setAddCourtError(err?.response?.data?.message || err?.message || 'Failed to create court.');
+    }
+  };
+
   // Friday Social Play: Schedule Session
   const handleCreateSocialSession = async (e) => {
     e?.preventDefault();
@@ -714,6 +805,17 @@ export const BookingsPage = () => {
             </button>
           )}
         </div>
+
+        {isOwner && (
+          <button
+            onClick={() => setShowAddCourtModal(true)}
+            className="bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+            title="Add a new sports court or facility (Admin Only)"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Court</span>
+          </button>
+        )}
       </div>
 
       {/* ─── EXECUTIVE METRICS CARDS ─── */}
@@ -1489,9 +1591,20 @@ export const BookingsPage = () => {
       {/* ─── TAB 4: FACILITY RATES & PRICING RULES ─── */}
       {activeMainTab === 'rules' && isStaff && (
         <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-2xs space-y-4">
-          <div>
-            <h3 className="font-semibold text-sm text-slate-800">Facility Hourly Rates & Operating Policies</h3>
-            <p className="text-xs text-slate-400">Configure canonical walk-in tariffs, active sports, and court availability status.</p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+            <div>
+              <h3 className="font-semibold text-sm text-slate-800">Facility Hourly Rates & Operating Policies</h3>
+              <p className="text-xs text-slate-400">Configure canonical walk-in tariffs, active sports, and court availability status.</p>
+            </div>
+            {isOwner && (
+              <button
+                onClick={() => setShowAddCourtModal(true)}
+                className="bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Court</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -2333,6 +2446,211 @@ export const BookingsPage = () => {
           booking={activeTicketBooking}
           onClose={() => setActiveTicketBooking(null)}
         />
+      )}
+
+      {/* ─── MODAL: ADD NEW COURT / FACILITY (ADMIN ONLY) ─── */}
+      {showAddCourtModal && isOwner && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 border border-slate-100">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b pb-3 border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-[#2e7d32] border border-emerald-200/80 flex items-center justify-center shrink-0">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900">Add New Court / Facility</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Configure court details, sport category, operating hours, and standard hourly rate.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddCourtModal(false);
+                  setAddCourtError('');
+                }}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {addCourtError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{addCourtError}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleCreateCourt} className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="text-slate-700 block mb-1">Court Name / Label *</label>
+                <input
+                  type="text"
+                  required
+                  value={addCourtForm.name}
+                  onChange={(e) => setAddCourtForm({ ...addCourtForm, name: e.target.value })}
+                  placeholder="e.g. Tennis Court 3 (Clay) or Badminton Court 5 (Wood)"
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:border-emerald-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-700 block mb-1">Sport Category *</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                  {['Tennis', 'Badminton', 'Pickleball', 'Squash', 'Padel', 'Cricket', 'Table Tennis', 'OTHER'].map((sp) => {
+                    const isSelected = addCourtForm.sport === sp;
+                    return (
+                      <button
+                        key={sp}
+                        type="button"
+                        onClick={() => setAddCourtForm({ ...addCourtForm, sport: sp })}
+                        className={`p-2 rounded-xl text-center font-bold text-xs border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#e8f5e9] text-[#1b5e20] border-emerald-400 shadow-2xs ring-1 ring-emerald-500/20'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {sp === 'OTHER' ? 'Custom...' : sp}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {addCourtForm.sport === 'OTHER' && (
+                  <input
+                    type="text"
+                    required
+                    value={addCourtForm.customSport}
+                    onChange={(e) => setAddCourtForm({ ...addCourtForm, customSport: e.target.value })}
+                    placeholder="Enter sport name (e.g. Basketball, Volleyball)"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:border-emerald-600 focus:outline-none mt-1"
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 block mb-1">Walk-in Hourly Rate (₹) *</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">₹</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      required
+                      value={addCourtForm.walkInRate}
+                      onChange={(e) => setAddCourtForm({ ...addCourtForm, walkInRate: e.target.value })}
+                      placeholder="500"
+                      className="w-full border border-slate-200 rounded-xl pl-7 pr-3 py-2.5 text-xs font-mono font-bold focus:border-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-medium">Standard non-member hourly rate</span>
+                </div>
+
+                <div>
+                  <label className="text-slate-700 block mb-1">Initial Status</label>
+                  <select
+                    value={addCourtForm.isOpen ? 'true' : 'false'}
+                    onChange={(e) => setAddCourtForm({ ...addCourtForm, isOpen: e.target.value === 'true' })}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold focus:border-emerald-600 focus:outline-none cursor-pointer bg-white"
+                  >
+                    <option value="true">Operational (Open for bookings)</option>
+                    <option value="false">Under Maintenance (Closed)</option>
+                  </select>
+                  <span className="text-[10px] text-slate-400 font-medium">Can be toggled anytime</span>
+                </div>
+              </div>
+
+              {/* Operating Hours Quick Presets & Full Dynamic Selectors */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-700 block">Operating Hours & Schedule *</label>
+                  <span className="text-[10px] text-slate-400 font-medium">Full 24-hr flexibility (30-min intervals)</span>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: '6 AM – 11 PM (Standard)', open: '06:00', close: '23:00' },
+                    { label: '5 AM – 10 PM', open: '05:00', close: '22:00' },
+                    { label: '7 AM – 9 PM', open: '07:00', close: '21:00' },
+                    { label: 'Morning (6 AM – 12 PM)', open: '06:00', close: '12:00' },
+                    { label: 'Evening (2 PM – 11 PM)', open: '14:00', close: '23:00' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => setAddCourtForm({ ...addCourtForm, openTime: preset.open, closeTime: preset.close })}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                        addCourtForm.openTime === preset.open && addCourtForm.closeTime === preset.close
+                          ? 'bg-[#e8f5e9] text-[#1b5e20] border-emerald-400 shadow-2xs font-extrabold ring-1 ring-emerald-500/20'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-slate-600 block mb-1 text-[11px] font-medium">Opening Time</label>
+                    <select
+                      value={addCourtForm.openTime}
+                      onChange={(e) => handleOpenTimeChange(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold focus:border-emerald-600 focus:outline-none cursor-pointer bg-white"
+                    >
+                      {COURT_HOURS_OPTIONS.filter((t) => t.value < '23:00').map((t) => (
+                        <option key={`open-${t.value}`} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-slate-600 block mb-1 text-[11px] font-medium">Closing Time</label>
+                    <select
+                      value={addCourtForm.closeTime}
+                      onChange={(e) => setAddCourtForm({ ...addCourtForm, closeTime: e.target.value })}
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold focus:border-emerald-600 focus:outline-none cursor-pointer bg-white"
+                    >
+                      {COURT_HOURS_OPTIONS.filter((t) => t.value > addCourtForm.openTime).map((t) => (
+                        <option key={`close-${t.value}`} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddCourtModal(false);
+                    setAddCourtError('');
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createCourt.isPending}
+                  className="flex-1 py-3 rounded-xl bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-extrabold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {createCourt.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Create Court</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -443,3 +443,41 @@ test('Phase 3 - Issue #4: Admin can update member details and deactivate member 
   }
 });
 
+test('Phase 4 - Admin Court Management: Only OWNER can create courts', async () => {
+  const testCourtName = `Test Court ${Date.now()}`;
+  
+  // 1. Non-owner (MEMBER) attempts to create court -> 403 Forbidden
+  const memberRes = await request('/api/courts', {
+    method: 'POST',
+    token: memberToken,
+    body: {
+      name: testCourtName,
+      sport: 'Pickleball',
+      walkInRate: 450,
+      openTime: '06:00',
+      closeTime: '23:00',
+    },
+  });
+  assert.strictEqual(memberRes.status, 403, 'Member cannot create court');
+
+  // 2. Owner creates court -> 201 Created
+  const ownerRes = await request('/api/courts', {
+    method: 'POST',
+    token: ownerToken,
+    body: {
+      name: testCourtName,
+      sport: 'Pickleball',
+      walkInRate: 450,
+      openTime: '06:00',
+      closeTime: '23:00',
+      isOpen: true,
+    },
+  });
+  assert.strictEqual(ownerRes.status, 201, 'Owner can create court');
+  assert.strictEqual(ownerRes.data.data.name, testCourtName, 'Court created with expected name');
+
+  // Clean up test court
+  await prisma.court.delete({ where: { name: testCourtName } });
+});
+
+

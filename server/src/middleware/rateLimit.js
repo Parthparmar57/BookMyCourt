@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 requests per 15 min window (generous for testing)
+  max: 500, // increased to allow ample logins/switch-users in dev and testing
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again after 15 minutes',
@@ -13,7 +13,7 @@ export const authLimiter = rateLimit({
 
 export const publicApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later',
@@ -26,7 +26,7 @@ export const publicApiLimiter = rateLimit({
 // SPA calls /auth/refresh on every page load and on each 401, but still caps abuse.
 export const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 120,
+  max: 2000,
   message: {
     success: false,
     message: 'Too many token refresh attempts, please try again later',
@@ -38,7 +38,7 @@ export const refreshLimiter = rateLimit({
 // Baseline limiter applied to the entire API surface.
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
+  max: 10000,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later',

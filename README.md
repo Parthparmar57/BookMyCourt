@@ -544,22 +544,61 @@ flowchart TD
 
 ## 4. Role-Based Access Control (RBAC) Specification
 
-| Capability / Module | Owner / Admin | Front Desk | Bar Staff | Kitchen | Shop Staff | Member |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Executive Financial Dashboard | Yes | No | No | No | No | No |
-| Member Directory & KYC Registration | Yes | Yes | No | No | No | No |
-| Member QR Scanning & Profile Lookup | Yes | Yes | Yes | No | Yes | Self Only |
-| Court Booking Grid & Reservation Override | Yes | Yes | No | No | No | Self Only |
-| Social Play Session Orchestration | Yes | Yes | No | No | No | Join Only |
-| Bar POS & Table Touch Ordering | Yes | No | Yes | No | No | No |
-| Kitchen Display System (KDS) Live Queue | Yes | No | View | Full | No | No |
-| Member Bar Tab Settlement | Yes | No | Yes | No | No | Self Only |
-| Pro Shop POS & Barcode Scanner Checkout | Yes | No | No | No | Yes | Web Orders |
-| Pro Shop Inventory Inward & Reorder Logs | Yes | No | No | No | Yes | No |
-| CRM Kanban Pipeline & Quotation Engine | Yes | Yes | No | No | No | No |
-| Accounting Ledger, P&L, GST & Invoices | Yes | No | No | No | No | Invoices Only |
-| HR Staff Directory, Attendance & Payroll | Yes | No | No | No | No | No |
-| Employee Leave Request Submission | No | Yes | Yes | Yes | Yes | No |
+> **Owner controls everything; each staff role sees only its own area**
+
+```mermaid
+flowchart TD
+    subgraph InternalStaff ["Internal Staff (Roles & Hierarchy)"]
+        subgraph L1 ["Level 1 · Full Control"]
+            Owner["1. Owner / Admin<br/>Prices, plans, staff, all money"]
+        end
+
+        subgraph L2 ["Level 2 · Operations Staff"]
+            FrontDesk["2. Front Desk<br/>Members, bookings, enquiries and leads"]
+            BarStaff["3. Bar Staff<br/>Tables, orders, tabs, payments, shifts"]
+            ShopStaff["5. Shop Staff<br/>Shop counter, stock, online orders"]
+        end
+
+        subgraph L3 ["Level 3 · Limited Staff"]
+            Kitchen["4. Kitchen<br/>Kitchen order screen only"]
+        end
+    end
+
+    subgraph ExternalUsers ["External Users: Customers, Not Staff"]
+        subgraph L4 ["Level 4 · Logged-in Customer"]
+            Member["6. Member<br/>Own profile, bookings, tab"]
+        end
+
+        subgraph L5 ["Level 5 · Public, No Login"]
+            Visitor["7. Visitor<br/>Public pages, no login"]
+        end
+    end
+
+    Owner --> FrontDesk
+    Owner --> BarStaff
+    Owner --> ShopStaff
+    BarStaff -->|orders| Kitchen
+    Visitor -->|signs up| Member
+```
+
+### Hierarchy & Role Responsibilities
+
+#### Internal Staff
+- **Level 1 · Full Control**
+  - **1. Owner / Admin**: System administrator and club owner. Unrestricted access to financial dashboards, pricing rules, membership plans, HR staff directory, payroll, and double-entry accounting ledgers.
+- **Level 2 · Operations Staff**
+  - **2. Front Desk**: Front office operations, member directory & KYC registration, court booking grid and reservation management, and CRM leads & enquiries.
+  - **3. Bar Staff**: Cafeteria and sports bar POS, table touch ordering, member bar tabs, bill settlements, and shift management.
+  - **5. Shop Staff**: Pro shop retail checkout, barcode scanning, inventory inward & reorder logs, and online shop order pickup.
+- **Level 3 · Limited Staff**
+  - **4. Kitchen**: Dedicated Kitchen Display System (KDS) live queue to track order tickets (`PLACED` &rarr; `PREPARING` &rarr; `SERVED`). Receives orders routed from Bar Staff.
+
+#### External Users (Customers, Not Staff)
+- **Level 4 · Logged-in Customer**
+  - **6. Member**: Authenticated portal access to own member profile, court reservations, active bar tab balance, personal invoices, and social play sessions.
+- **Level 5 · Public, No Login**
+  - **7. Visitor**: Public website access to view club details, court availability, membership plans, and submit membership enquiries or trial bookings. Converts to Member upon registration.
+
 
 ---
 
