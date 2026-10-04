@@ -197,10 +197,10 @@ export const HomePage = () => {
 
 
   const ITEM_PRODUCT_IMAGES = {
-    racket_tennis: 'https://images.unsplash.com/photo-1617083934555-ac7d4fed8814?auto=format&fit=crop&q=80&w=600',
-    racket_padel: 'https://images.unsplash.com/photo-1592709823125-a191f07a2a5e?auto=format&fit=crop&q=80&w=600',
-    racket_badminton: 'https://images.unsplash.com/photo-1627627256672-027a4613d028?auto=format&fit=crop&q=80&w=600',
-    balls: 'https://images.unsplash.com/photo-1530915536647-759c9044a7b7?auto=format&fit=crop&q=80&w=600',
+    racket_tennis: '/photo-1622279457486-62dcc4a431d6.avif',
+    racket_padel: '/photo-1554068865-24cecd4e34b8.avif',
+    racket_badminton: '/photo-1626248801379-51a0748a5f96.avif',
+    balls: '/photo-1595435934249-5df7ed86e1c0.avif',
     shoes: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600',
     apparel: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600',
     bags: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600',
@@ -208,14 +208,13 @@ export const HomePage = () => {
   };
 
   const getProductImage = (prod, idx = 0) => {
-    const name = (prod?.name || '').toLowerCase();
-    const cat = (prod?.category || '').toLowerCase();
-
-    // Direct valid non-people equipment URL
     const url = prod?.imageUrl;
-    if (url && typeof url === 'string' && url.trim().length > 0 && !url.includes('.avif') && !url.includes('undefined')) {
+    if (url && typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')) {
       return url;
     }
+
+    const name = (prod?.name || '').toLowerCase();
+    const cat = (prod?.category || '').toLowerCase();
 
     // 1. Tennis Balls
     if (name.includes('ball') || cat.includes('ball')) {
@@ -249,12 +248,12 @@ export const HomePage = () => {
     if (name.includes('badminton') || name.includes('astrox') || cat.includes('badminton')) {
       return ITEM_PRODUCT_IMAGES.racket_badminton;
     }
-    if (name.includes('tennis') || name.includes('pro staff') || name.includes('pure aero') || cat.includes('racket')) {
+    if (name.includes('tennis') || name.includes('pro staff') || name.includes('pure aero') || cat.includes('racket') || cat.includes('rackets')) {
       const racketVariations = [
         ITEM_PRODUCT_IMAGES.racket_tennis,
         ITEM_PRODUCT_IMAGES.racket_padel,
         ITEM_PRODUCT_IMAGES.racket_badminton,
-        'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&q=80&w=600'
+        ITEM_PRODUCT_IMAGES.balls
       ];
       return racketVariations[idx % racketVariations.length];
     }
@@ -732,6 +731,10 @@ export const HomePage = () => {
                   <img
                     src={getProductImage(prod, idx)}
                     alt={prod.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/photo-1622279457486-62dcc4a431d6.avif';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <span className="absolute top-3 left-3 bg-[#121212] text-white text-[10px] font-black px-2.5 py-1 uppercase font-mono shadow-md">
@@ -1076,36 +1079,32 @@ export const HomePage = () => {
       </section>
 
       {/* PRE-FOOTER CTA BANNER */}
-      <section className="py-16 sm:py-20 px-6 lg:px-16 bg-[#18191c] text-white border-t border-gray-800/80">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10">
-          <div className="space-y-4 text-center lg:text-left max-w-2xl">
-            <h2 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-white tracking-tight leading-[1.08]">
+      <section className="py-14 sm:py-18 px-6 lg:px-16 bg-[#232528] text-white border-t border-gray-700/40">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-8">
+          <div className="space-y-3 text-center lg:text-left max-w-xl">
+            <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-white tracking-tight leading-[1.12]">
               Grow your club on <br className="hidden sm:inline" />BookMyCourt
             </h2>
-            <p className="text-base sm:text-lg text-gray-300 font-normal leading-relaxed">
+            <p className="text-sm sm:text-base text-gray-300 font-normal leading-relaxed">
               Bookings, memberships, shop POS & court scheduling — all in one place.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-5 w-full lg:w-auto shrink-0 justify-center lg:justify-end">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto shrink-0 justify-center lg:justify-end">
             <a
               href="#trial"
-              className="bg-[#1f2125] hover:bg-black text-white p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-800"
+              className="bg-[#70B42C] hover:bg-[#62a024] text-[#0f172a] px-7 py-5 sm:px-8 sm:py-6 w-full sm:w-60 h-28 sm:h-32 rounded-2xl flex items-center justify-between transition-all transform hover:-translate-y-1 shadow-lg group border border-lime-500/30 cursor-pointer"
             >
-              <div className="flex items-center justify-between text-xl font-black text-white">
-                <span>Book a Trial</span>
-                <CaretRight weight="bold" className="w-6 h-6 text-emerald-400 group-hover:translate-x-1.5 transition-transform" />
-              </div>
+              <span className="text-lg sm:text-xl font-extrabold tracking-tight">Book a Trial</span>
+              <CaretRight weight="bold" className="w-6 h-6 text-[#0f172a] group-hover:translate-x-1.5 transition-transform" />
             </a>
 
             <a
               href="#plans"
-              className="bg-white hover:bg-gray-100 text-[#1f2125] p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-200"
+              className="bg-white hover:bg-gray-100 text-[#0f172a] px-7 py-5 sm:px-8 sm:py-6 w-full sm:w-60 h-28 sm:h-32 rounded-2xl flex items-center justify-between transition-all transform hover:-translate-y-1 shadow-lg group border border-gray-200 cursor-pointer"
             >
-              <div className="flex items-center justify-between text-xl font-black text-[#1f2125]">
-                <span>See Plans</span>
-                <CaretRight weight="bold" className="w-6 h-6 text-gray-700 group-hover:translate-x-1.5 transition-transform" />
-              </div>
+              <span className="text-lg sm:text-xl font-extrabold tracking-tight">See Plans</span>
+              <CaretRight weight="bold" className="w-6 h-6 text-[#0f172a] group-hover:translate-x-1.5 transition-transform" />
             </a>
           </div>
         </div>

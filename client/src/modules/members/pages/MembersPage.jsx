@@ -616,13 +616,12 @@ export const MembersPage = () => {
                       </td>
                       <td className="p-4 font-semibold text-slate-600">{formatPhone(m.phone)}</td>
                       <td className="p-4">
-                        <span className={`px-2.5 py-1 text-[10px] font-black rounded-full border shadow-2xs ${
-                          isGold
-                            ? 'bg-amber-100 text-amber-950 border-amber-400'
-                            : isJunior
+                        <span className={`px-2.5 py-1 text-[10px] font-black rounded-full border shadow-2xs ${isGold
+                          ? 'bg-amber-100 text-amber-950 border-amber-400'
+                          : isJunior
                             ? 'bg-sky-100 text-sky-950 border-sky-400'
                             : 'bg-slate-100 text-slate-800 border-slate-300'
-                        }`}>
+                          }`}>
                           {isGold ? 'Gold VIP' : currentTier}
                         </span>
                       </td>
@@ -638,11 +637,10 @@ export const MembersPage = () => {
                             e.stopPropagation();
                             handleDirectUpgradeMember(m);
                           }}
-                          className={`text-[11px] font-extrabold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                            isGold
+                          className={`text-[11px] font-extrabold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${isGold
                               ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
                               : 'bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-800 shadow-2xs'
-                          }`}
+                            }`}
                         >
                           {isGold ? 'Set Silver' : 'Upgrade Gold'}
                         </button>
@@ -929,10 +927,10 @@ export const MembersPage = () => {
                   </span>
                 </div>
                 <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border shadow-2xs ${/active/i.test(selectedMember.status || 'ACTIVE')
-                    ? 'bg-[#e8f5e9] text-[#2e7d32] border-emerald-300'
-                    : /suspended/i.test(selectedMember.status)
-                      ? 'bg-rose-50 text-rose-700 border-rose-200'
-                      : 'bg-amber-50 text-amber-800 border-amber-200'
+                  ? 'bg-[#e8f5e9] text-[#2e7d32] border-emerald-300'
+                  : /suspended/i.test(selectedMember.status)
+                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
                   }`}>
                   {selectedMember.status || 'ACTIVE'}
                 </span>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useBookings, useCancelBooking, useSocialSessions, useJoinSocial } from '../../../hooks/useCourts';
@@ -31,16 +31,37 @@ export const MemberDashboardPage = () => {
   const joinSocial = useJoinSocial();
 
   const allBookings = bookingsData?.items || [];
-  // Filter bookings belonging to this member (or all in demo member account)
-  const myBookings = allBookings.slice(0, 5);
-  const upcomingBookings = myBookings.filter(b => b.status === 'CONFIRMED');
+  // Filter bookings belonging to this member
+  const myBookings = useMemo(() => {
+    return allBookings.filter(
+      (b) =>
+        b.memberId === user?.memberId ||
+        b.member?.id === user?.memberId ||
+        b.member?.userId === user?.id ||
+        (b.member?.user?.email && user?.email && b.member.user.email.toLowerCase() === user.email.toLowerCase())
+    );
+  }, [allBookings, user]);
+
+  const upcomingBookings = myBookings.filter(
+    (b) => b.status === 'CONFIRMED' && new Date(b.startTime) >= new Date()
+  );
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayUsedCount = useMemo(() => {
+    return myBookings.filter((b) => {
+      if (b.status === 'CANCELLED') return false;
+      const bDate = b.startTime ? new Date(b.startTime).toISOString().slice(0, 10) : '';
+      return bDate === todayStr;
+    }).length;
+  }, [myBookings, todayStr]);
 
   const allTabs = Array.isArray(tabsData) ? tabsData : (tabsData?.items || []);
   const activeTab = allTabs.find((t) => t.status === 'OPEN');
   const activeTabBalance = activeTab ? Number(activeTab.totalAmount || 0) : 0;
 
-  const memberPlan = user?.member?.plan || { name: 'Gold Annual', courtRate: 0, shopDiscountPct: 20, barDiscountPct: 15 };
+  const memberPlan = user?.member?.plan || { name: 'Gold Annual', courtRate: 0, shopDiscountPct: 20, barDiscountPct: 15, maxBookingsDay: 2 };
   const memberNo = user?.member?.memberNo || 'MEM-001001';
+  const maxPerDay = memberPlan.maxBookingsDay || 2;
   const endDate = user?.member?.endDate ? new Date(user.member.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '31 Dec 2026';
 
   const handleCancel = async (bookingId) => {
@@ -138,7 +159,15 @@ export const MemberDashboardPage = () => {
             <h3 className="text-lg font-black text-slate-900">
               {Number(memberPlan.courtRate) === 0 ? '₹0 / Session' : formatCurrency(memberPlan.courtRate)}
             </h3>
-            <p className="text-[11px] text-slate-500 font-semibold">Max 2 bookings / day</p>
+            {todayUsedCount >= maxPerDay ? (
+              <p className="text-[11px] text-rose-600 font-extrabold flex items-center gap-1">
+                <span>⚠️ Used Today: {todayUsedCount} / {maxPerDay} (Limit Reached)</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-emerald-700 font-extrabold">
+                Used Today: {todayUsedCount} / {maxPerDay} bookings
+              </p>
+            )}
           </div>
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
             <Calendar className="w-6 h-6" />

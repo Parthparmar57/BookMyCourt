@@ -138,8 +138,8 @@ export const MemberTabPage = () => {
       const displayLabel = isToday
         ? `Today • ${formatDate(rawDate)}`
         : isYesterday
-        ? `Yesterday • ${formatDate(rawDate)}`
-        : formatDate(rawDate);
+          ? `Yesterday • ${formatDate(rawDate)}`
+          : formatDate(rawDate);
 
       if (!map.has(dateKey)) {
         map.set(dateKey, {
@@ -561,8 +561,8 @@ export const MemberTabPage = () => {
         deliveryType === 'DINE_IN'
           ? (selectedTableId ? `Table ${tables.find(t => t.id === selectedTableId)?.number || ''}` : 'Cafeteria Seating')
           : deliveryType === 'COURT_DELIVERY'
-          ? 'Court Delivery'
-          : 'Cafeteria Counter Pickup',
+            ? 'Court Delivery'
+            : 'Cafeteria Counter Pickup',
         orderNotes
       ].filter(Boolean).join(' • '),
       barTableId: deliveryType === 'DINE_IN' && selectedTableId ? selectedTableId : null,
@@ -638,11 +638,10 @@ export const MemberTabPage = () => {
       <div className="flex items-center gap-2 border-b border-gray-200 pb-3 overflow-x-auto">
         <button
           onClick={() => setActiveView('menu')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
-            activeView === 'menu'
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${activeView === 'menu'
               ? 'bg-[#2e7d32] text-white shadow-xs'
               : 'bg-white border border-gray-200 text-slate-700 hover:bg-slate-50'
-          }`}
+            }`}
         >
           <Utensils className="w-4 h-4" />
           <span>Order Food & Drinks</span>
@@ -650,18 +649,16 @@ export const MemberTabPage = () => {
 
         <button
           onClick={() => setActiveView('orders')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
-            activeView === 'orders'
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${activeView === 'orders'
               ? 'bg-[#2e7d32] text-white shadow-xs'
               : 'bg-white border border-gray-200 text-slate-700 hover:bg-slate-50'
-          }`}
+            }`}
         >
           <ChefHat className="w-4 h-4" />
           <span>Kitchen Orders</span>
           {myOrders.length > 0 && (
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-              activeView === 'orders' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#2e7d32]'
-            }`}>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${activeView === 'orders' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#2e7d32]'
+              }`}>
               {myOrders.length}
             </span>
           )}
@@ -669,11 +666,10 @@ export const MemberTabPage = () => {
 
         <button
           onClick={() => setActiveView('tab')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
-            activeView === 'tab'
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${activeView === 'tab'
               ? 'bg-[#2e7d32] text-white shadow-xs'
               : 'bg-white border border-gray-200 text-slate-700 hover:bg-slate-50'
-          }`}
+            }`}
         >
           <Receipt className="w-4 h-4" />
           <span>My Tab & Settlements</span>
@@ -683,11 +679,10 @@ export const MemberTabPage = () => {
       {/* Global Feedback message */}
       {orderFeedback && (
         <div
-          className={`p-4 rounded-2xl flex items-center gap-3 text-sm font-semibold animate-in fade-in slide-in-from-top-2 ${
-            orderFeedback.type === 'success'
+          className={`p-4 rounded-2xl flex items-center gap-3 text-sm font-semibold animate-in fade-in slide-in-from-top-2 ${orderFeedback.type === 'success'
               ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
               : 'bg-rose-50 border border-rose-200 text-rose-800'
-          }`}
+            }`}
         >
           {orderFeedback.type === 'success' ? (
             <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
@@ -720,11 +715,10 @@ export const MemberTabPage = () => {
                 <button
                   type="button"
                   onClick={() => setDeliveryType('DINE_IN')}
-                  className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                    deliveryType === 'DINE_IN'
+                  className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${deliveryType === 'DINE_IN'
                       ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
                       : 'border-gray-200 hover:border-gray-300 text-slate-700 bg-slate-50/50'
-                  }`}
+                    }`}
                 >
                   <Utensils className="w-4 h-4 mx-auto mb-1 text-[#2e7d32]" />
                   Cafeteria Table
@@ -733,11 +727,10 @@ export const MemberTabPage = () => {
                 <button
                   type="button"
                   onClick={() => setDeliveryType('COURT_DELIVERY')}
-                  className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                    deliveryType === 'COURT_DELIVERY'
+                  className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${deliveryType === 'COURT_DELIVERY'
                       ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
                       : 'border-gray-200 hover:border-gray-300 text-slate-700 bg-slate-50/50'
-                  }`}
+                    }`}
                 >
                   <MapPin className="w-4 h-4 mx-auto mb-1 text-[#2e7d32]" />
                   Court Delivery
@@ -746,11 +739,10 @@ export const MemberTabPage = () => {
                 <button
                   type="button"
                   onClick={() => setDeliveryType('COUNTER_PICKUP')}
-                  className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                    deliveryType === 'COUNTER_PICKUP'
+                  className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${deliveryType === 'COUNTER_PICKUP'
                       ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
                       : 'border-gray-200 hover:border-gray-300 text-slate-700 bg-slate-50/50'
-                  }`}
+                    }`}
                 >
                   <Coffee className="w-4 h-4 mx-auto mb-1 text-[#2e7d32]" />
                   Takeaway / Counter
@@ -774,13 +766,12 @@ export const MemberTabPage = () => {
                           key={t.id}
                           type="button"
                           onClick={() => setSelectedTableId(t.id)}
-                          className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                            isSel
+                          className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${isSel
                               ? 'border-[#2e7d32] bg-[#2e7d32] text-white font-black shadow-xs'
                               : isAvail
-                              ? 'border-emerald-200 bg-emerald-50/60 text-slate-800 hover:border-emerald-400 font-bold'
-                              : 'border-gray-200 bg-slate-100 text-slate-400 opacity-60'
-                          }`}
+                                ? 'border-emerald-200 bg-emerald-50/60 text-slate-800 hover:border-emerald-400 font-bold'
+                                : 'border-gray-200 bg-slate-100 text-slate-400 opacity-60'
+                            }`}
                         >
                           <div className="text-xs">{t.number}</div>
                           <div className="text-[9px] opacity-75">{t.capacity}p</div>
@@ -814,11 +805,10 @@ export const MemberTabPage = () => {
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
-                      selectedCategory === cat
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${selectedCategory === cat
                         ? 'bg-[#2e7d32] text-white shadow-xs'
                         : 'bg-white border border-gray-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     {cat.replace(/_/g, ' ')}
                   </button>
@@ -1009,33 +999,30 @@ export const MemberTabPage = () => {
                       <button
                         type="button"
                         onClick={() => setPaymentChoice('TAB')}
-                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
-                          paymentChoice === 'TAB'
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${paymentChoice === 'TAB'
                             ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
                             : 'border-gray-200 text-slate-600 hover:bg-slate-50'
-                        }`}
+                          }`}
                       >
                         Member Tab
                       </button>
                       <button
                         type="button"
                         onClick={() => setPaymentChoice('UPI')}
-                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
-                          paymentChoice === 'UPI'
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${paymentChoice === 'UPI'
                             ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
                             : 'border-gray-200 text-slate-600 hover:bg-slate-50'
-                        }`}
+                          }`}
                       >
                         UPI
                       </button>
                       <button
                         type="button"
                         onClick={() => setPaymentChoice('CARD')}
-                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
-                          paymentChoice === 'CARD'
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${paymentChoice === 'CARD'
                             ? 'border-[#2e7d32] bg-emerald-50 text-[#2e7d32] ring-2 ring-[#2e7d32]/20 font-black'
                             : 'border-gray-200 text-slate-600 hover:bg-slate-50'
-                        }`}
+                          }`}
                       >
                         Card / Counter
                       </button>
@@ -1170,13 +1157,12 @@ export const MemberTabPage = () => {
 
                       {/* Status Badge */}
                       <span
-                        className={`text-[10px] font-black uppercase px-3 py-1 rounded-full flex items-center gap-1 ${
-                          isServed
+                        className={`text-[10px] font-black uppercase px-3 py-1 rounded-full flex items-center gap-1 ${isServed
                             ? 'bg-emerald-100 text-emerald-800'
                             : isPreparing
-                            ? 'bg-blue-100 text-blue-800 animate-pulse'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
+                              ? 'bg-blue-100 text-blue-800 animate-pulse'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
                       >
                         {isServed ? (
                           <>
@@ -1257,9 +1243,8 @@ export const MemberTabPage = () => {
                 </div>
 
                 <span
-                  className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${
-                    activeTab ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-                  }`}
+                  className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${activeTab ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                    }`}
                 >
                   {activeTab ? 'TAB OPEN' : 'NO ACTIVE TAB'}
                 </span>
@@ -1506,16 +1491,14 @@ export const MemberTabPage = () => {
                 {/* Option 1: UPI */}
                 <div
                   onClick={() => setSettlePaymentMode('UPI')}
-                  className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${
-                    settlePaymentMode === 'UPI'
+                  className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${settlePaymentMode === 'UPI'
                       ? 'border-[#2e7d32] bg-emerald-50/50 shadow-xs'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      settlePaymentMode === 'UPI' ? 'bg-[#2e7d32] text-white' : 'bg-slate-100 text-slate-600'
-                    }`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${settlePaymentMode === 'UPI' ? 'bg-[#2e7d32] text-white' : 'bg-slate-100 text-slate-600'
+                      }`}
                   >
                     <Smartphone className="w-5 h-5" />
                   </div>
@@ -1556,16 +1539,14 @@ export const MemberTabPage = () => {
                 {/* Option 2: Card */}
                 <div
                   onClick={() => setSettlePaymentMode('CARD')}
-                  className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${
-                    settlePaymentMode === 'CARD'
+                  className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${settlePaymentMode === 'CARD'
                       ? 'border-[#2e7d32] bg-emerald-50/50 shadow-xs'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      settlePaymentMode === 'CARD' ? 'bg-[#2e7d32] text-white' : 'bg-slate-100 text-slate-600'
-                    }`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${settlePaymentMode === 'CARD' ? 'bg-[#2e7d32] text-white' : 'bg-slate-100 text-slate-600'
+                      }`}
                   >
                     <CreditCard className="w-5 h-5" />
                   </div>
@@ -1584,16 +1565,14 @@ export const MemberTabPage = () => {
                 {/* Option 3: Cash */}
                 <div
                   onClick={() => setSettlePaymentMode('CASH')}
-                  className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${
-                    settlePaymentMode === 'CASH'
+                  className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${settlePaymentMode === 'CASH'
                       ? 'border-[#2e7d32] bg-emerald-50/50 shadow-xs'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      settlePaymentMode === 'CASH' ? 'bg-[#2e7d32] text-white' : 'bg-slate-100 text-slate-600'
-                    }`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${settlePaymentMode === 'CASH' ? 'bg-[#2e7d32] text-white' : 'bg-slate-100 text-slate-600'
+                      }`}
                   >
                     <Banknote className="w-5 h-5" />
                   </div>

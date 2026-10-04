@@ -114,10 +114,11 @@ export const BookingsPage = () => {
   const [socialGuestPhone, setSocialGuestPhone] = useState('');
   const [socialPaymentMode, setSocialPaymentMode] = useState('UPI');
 
-  // Edit Court Rate state
+  // Edit Court Rate & Override limit states
   const [cancelReason, setCancelReason] = useState('Administrative court schedule adjustment');
   const [editingCourt, setEditingCourt] = useState(null);
   const [updatedRate, setUpdatedRate] = useState('');
+  const [overrideLimit, setOverrideLimit] = useState(false);
 
   // History states
   const [historySearch, setHistorySearch] = useState('');
@@ -328,6 +329,21 @@ export const BookingsPage = () => {
     return rawMembers.find((m) => m.id === selectedMemberId);
   }, [rawMembers, selectedMemberId, isMember, currentMemberId, user]);
 
+  const memberBookingsCountOnDate = useMemo(() => {
+    const targetMemberId = isMember ? (currentMemberId || user?.memberId || user?.member?.id) : selectedMemberId;
+    if (!targetMemberId) return 0;
+    return rawBookings.filter((b) => {
+      if (b.status === 'CANCELLED') return false;
+      const matchMember =
+        b.memberId === targetMemberId ||
+        b.member?.id === targetMemberId ||
+        b.member?.userId === user?.id;
+      if (!matchMember) return false;
+      const bDate = b.startTime ? new Date(b.startTime).toISOString().slice(0, 10) : '';
+      return bDate === date;
+    }).length;
+  }, [rawBookings, isMember, currentMemberId, user, selectedMemberId, date]);
+
   // Date Navigation
   const handlePrevDay = () => {
     try {
@@ -416,6 +432,7 @@ export const BookingsPage = () => {
       startTime: selectedSlot.slotTime,
       type: bookingTab === 'event' ? 'SOCIAL' : 'NORMAL',
       paymentMode,
+      overrideLimit,
     };
 
     if (bookingTab === 'member') {
@@ -1693,7 +1710,7 @@ export const BookingsPage = () => {
                       />
 
                       {selectedMemberObj && (
-                        <div className="bg-emerald-50/70 border border-emerald-200 p-2.5 rounded-xl text-[11px] space-y-1 text-emerald-950 font-normal">
+                        <div className="bg-emerald-50/70 border border-emerald-200 p-2.5 rounded-xl text-[11px] space-y-1.5 text-emerald-950 font-normal">
                           <div className="flex justify-between">
                             <span className="font-medium">Plan Tier:</span>
                             <span className="font-semibold text-emerald-800">{selectedMemberObj.plan?.name}</span>
@@ -1704,11 +1721,31 @@ export const BookingsPage = () => {
                               {Number(selectedMemberObj.plan?.courtRate || 0) === 0 ? 'FREE (100% Discount)' : `${formatCurrency(selectedMemberObj.plan?.courtRate)}/hr`}
                             </span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Daily Limit:</span>
-                            <span>{selectedMemberObj.plan?.maxBookingsDay || 2} bookings/day</span>
+                          <div className="flex justify-between items-center border-t border-emerald-200/60 pt-1">
+                            <span className="font-bold">Daily Usage for {date}:</span>
+                            <span className={`font-black ${memberBookingsCountOnDate >= (selectedMemberObj.plan?.maxBookingsDay || 2) ? 'text-rose-700' : 'text-emerald-900'}`}>
+                              {memberBookingsCountOnDate} / {selectedMemberObj.plan?.maxBookingsDay || 2} used
+                            </span>
                           </div>
+                          {memberBookingsCountOnDate >= (selectedMemberObj.plan?.maxBookingsDay || 2) && (
+                            <p className="text-[10px] text-rose-700 font-bold leading-tight">
+                              ⚠️ Daily booking limit reached for {date}. Select a different date or request staff override below.
+                            </p>
+                          )}
                         </div>
+                      )}
+
+                      {/* Staff Override Checkbox */}
+                      {isStaff && memberBookingsCountOnDate >= (selectedMemberObj?.plan?.maxBookingsDay || 2) && (
+                        <label className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-xs font-bold text-amber-950 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={overrideLimit}
+                            onChange={(e) => setOverrideLimit(e.target.checked)}
+                            className="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-500"
+                          />
+                          <span>Staff Override: Authorize Booking Beyond Daily Limit</span>
+                        </label>
                       )}
                     </div>
                   )}

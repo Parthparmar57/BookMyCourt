@@ -7,7 +7,7 @@ import { io } from 'socket.io-client';
  * through Vite in dev), so it uses VITE_SOCKET_URL. The backend CORS allows the
  * dev client origin. Connection is lazy + reused across hooks.
  */
-const URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const URL = import.meta.env.VITE_SOCKET_URL || undefined;
 
 let socket = null;
 
