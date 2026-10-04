@@ -8,10 +8,6 @@ export const authService = {
   // { login (email or phone), password } -> { user, accessToken, refreshToken }
   login: (credentials) => apiClient.post('/auth/login', credentials),
 
-  // { name, email, phone, password } -> { user, accessToken, refreshToken }
-  // (role is always forced to MEMBER by the backend)
-  register: (payload) => apiClient.post('/auth/register', payload),
-
   // reads the httpOnly refresh cookie, or a { refreshToken } body fallback -> { accessToken }
   refresh: (refreshToken) =>
     apiClient.post('/auth/refresh', refreshToken ? { refreshToken } : {}),

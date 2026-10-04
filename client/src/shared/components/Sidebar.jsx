@@ -41,9 +41,8 @@ export const Sidebar = () => {
         ];
       case 'FRONT_DESK':
         return [
-          { label: 'Dashboard', path: '/staff/frontdesk', icon: LayoutDashboard },
           { label: 'Bookings', path: '/staff/frontdesk/bookings', icon: Calendar },
-          { label: 'Members', path: '/staff/frontdesk/members', icon: Users },
+          { label: 'Members', path: '/staff/frontdesk', icon: Users },
           { label: 'CRM Leads', path: '/staff/frontdesk/crm', icon: Kanban }
         ];
       case 'BAR_STAFF':
@@ -83,23 +82,24 @@ export const Sidebar = () => {
 
   const navContent = (
     <div className="w-64 p-6 flex flex-col h-full overflow-hidden select-none bg-white">
-      {/* Header with Logo and Mobile Close button */}
-      <div className="flex items-center justify-between py-1 shrink-0">
+      {/* Header with Logo and Close button for all screens */}
+      <div className="flex items-center justify-between gap-2 py-1 shrink-0">
         <Link to="/" className="block group">
           <img
             src="/bookmycourt_logo.png"
             alt="BookMyCourt Logo"
-            className="h-14 sm:h-16 w-auto object-contain transition-transform group-hover:scale-105"
+            className="h-12 sm:h-14 max-w-[140px] w-auto object-contain transition-transform group-hover:scale-105"
           />
         </Link>
 
-        {/* Mobile close button inside sidebar */}
+        {/* Close button inside sidebar for ALL screens */}
         <button
           onClick={closeSidebar}
-          className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="p-2 rounded-xl text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all shadow-2xs cursor-pointer flex items-center justify-center shrink-0 hover:rotate-90 duration-200"
           aria-label="Close Sidebar"
+          title="Close Sidebar"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
@@ -107,7 +107,7 @@ export const Sidebar = () => {
       <nav className="space-y-1.5 pt-4 flex-1 overflow-y-auto no-scrollbar">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = location.pathname === link.path;
+          const isActive = location.pathname === link.path || (link.path === '/staff/frontdesk' && location.pathname === '/staff/frontdesk/members');
           return (
             <Link
               key={link.path}

@@ -1,7 +1,7 @@
 import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { getMemberDiscounts } from '../../../utils/pricing.js';
-import { emitNewKitchenOrder } from '../../../sockets/kitchen.socket.js';
+import { emitNewKitchenOrder, emitKitchenStatusUpdate, emitTableStatusUpdate } from '../../../sockets/kitchen.socket.js';
 import { genDocNo } from '../../../utils/ids.js';
 import { round2 } from '../../../utils/money.js';
 import { writeAudit } from '../../../utils/audit.js';
@@ -122,10 +122,25 @@ export const createBarOrder = async (data, user) => {
     });
 
     if (data.barTableId) {
-      await tx.barTable.update({
+      const targetTable = await tx.barTable.findUnique({ where: { id: data.barTableId } });
+      if (!targetTable) throw new ApiError(404, 'Selected table not found');
+
+      const activeOrdersCount = await tx.order.count({
+        where: {
+          barTableId: data.barTableId,
+          status: { in: ['PLACED', 'PREPARING', 'SERVED'] },
+        },
+      });
+
+      if (targetTable.status === TABLE_STATUS.OCCUPIED || activeOrdersCount > 0) {
+        throw new ApiError(409, `Table ${targetTable.number} is currently occupied. Please select an available table or clear the existing table order.`);
+      }
+
+      const updatedTable = await tx.barTable.update({
         where: { id: data.barTableId },
         data: { status: TABLE_STATUS.OCCUPIED },
       });
+      emitTableStatusUpdate(updatedTable);
     }
 
     if (onTab) {
@@ -239,10 +254,11 @@ export const settleBarOrder = async (orderId, { paymentMode = PAYMENT_MODE.UPI, 
       });
 
       if (activeOrdersCount === 0) {
-        await tx.barTable.update({
+        const freedTable = await tx.barTable.update({
           where: { id: order.barTableId },
           data: { status: TABLE_STATUS.AVAILABLE },
         });
+        emitTableStatusUpdate(freedTable);
       }
     }
 
@@ -285,17 +301,38 @@ export const updateOrderStatus = async (orderId, { status }) => {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) throw new ApiError(404, 'Order not found');
 
-  const updated = await prisma.order.update({
-    where: { id: orderId },
-    data: { status },
-    include: {
-      items: { include: { menuItem: true } },
-      barTable: true,
-      member: { include: { user: true } },
-    },
-  });
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.order.update({
+      where: { id: orderId },
+      data: { status },
+      include: {
+        items: { include: { menuItem: true } },
+        barTable: true,
+        member: { include: { user: true } },
+      },
+    });
 
-  return updated;
+    if (order.barTableId && (status === ORDER_STATUS.COMPLETED || status === ORDER_STATUS.CANCELLED)) {
+      const activeOrdersCount = await tx.order.count({
+        where: {
+          barTableId: order.barTableId,
+          status: { in: ['PLACED', 'PREPARING', 'SERVED'] },
+          id: { not: orderId },
+        },
+      });
+
+      if (activeOrdersCount === 0) {
+        const freedTable = await tx.barTable.update({
+          where: { id: order.barTableId },
+          data: { status: TABLE_STATUS.AVAILABLE },
+        });
+        emitTableStatusUpdate(freedTable);
+      }
+    }
+
+    emitKitchenStatusUpdate(updated);
+    return updated;
+  });
 };
 
 export const voidOrder = async (orderId, { reason }, user) => {

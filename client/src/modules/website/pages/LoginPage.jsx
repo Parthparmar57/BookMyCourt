@@ -209,10 +209,7 @@ export const LoginPage = () => {
         {/* Footer */}
         <div className="text-center pt-3 border-t border-slate-100">
           <p className="text-xs text-slate-500">
-            Don't have an account?{' '}
-            <Link to="/register" className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline">
-              Register as Member
-            </Link>
+            Membership registrations are issued via Front Desk or Inquiry.
           </p>
         </div>
       </div>

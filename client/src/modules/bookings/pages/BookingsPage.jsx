@@ -683,16 +683,18 @@ export const BookingsPage = () => {
               </span>
             )}
           </button>
-          <button
-            onClick={() => setActiveMainTab('history')}
-            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeMainTab === 'history'
-                ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-              }`}
-          >
-            <TrendingUp className="w-3.5 h-3.5 text-sky-600" />
-            <span>Revenue & Logs</span>
-          </button>
+          {!isMember && (
+            <button
+              onClick={() => setActiveMainTab('history')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeMainTab === 'history'
+                  ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+                }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-sky-600" />
+              <span>Revenue & Logs</span>
+            </button>
+          )}
           {isStaff && (
             <button
               onClick={() => setActiveMainTab('rules')}
@@ -1358,7 +1360,7 @@ export const BookingsPage = () => {
       )}
 
       {/* ─── TAB 3: BOOKING HISTORY & REVENUE LOGS ─── */}
-      {activeMainTab === 'history' && (
+      {activeMainTab === 'history' && !isMember && (
         <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>

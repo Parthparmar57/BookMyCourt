@@ -10,12 +10,6 @@ const REFRESH_COOKIE_OPTIONS = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-export const register = asyncHandler(async (req, res) => {
-  const result = await authService.registerUser(req.body);
-  res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
-  return success(res, result, 'User registered successfully', 201);
-});
-
 export const login = asyncHandler(async (req, res) => {
   const result = await authService.loginUser(req.body);
   res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);

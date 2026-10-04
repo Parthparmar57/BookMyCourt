@@ -57,6 +57,7 @@ export const registerMember = async (data, createdById) => {
         dob: new Date(data.dob),
         emergencyContact: data.emergencyContact || null,
         photoUrl: data.photoUrl || null,
+        inquirySource: data.inquirySource || 'WALK_IN',
         status: MEMBER_STATUS.ACTIVE,
         qrCode,
         startDate,
@@ -121,10 +122,15 @@ export const registerMember = async (data, createdById) => {
   });
 };
 
-export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 }) => {
+export const searchMembers = async ({ q, planId, status, page = 1, limit = 25 }) => {
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = String(limit).toLowerCase() === 'all' || Number(limit) >= 1000
+    ? 1000
+    : Math.max(1, Math.min(1000, parseInt(limit, 10) || 25));
+
   const where = {
-    ...(status && { status }),
-    ...(planId && { planId }),
+    ...(status && status !== 'ALL' && { status }),
+    ...(planId && planId !== 'ALL' && { planId }),
     ...(q && {
       OR: [
         { memberNo: { contains: q, mode: 'insensitive' } },
@@ -139,8 +145,8 @@ export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 })
     prisma.member.count({ where }),
     prisma.member.findMany({
       where,
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
       orderBy: { createdAt: 'desc' },
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },
@@ -165,7 +171,7 @@ export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 })
     };
   });
 
-  return { members, total, page, totalPages: Math.ceil(total / limit) };
+  return { members, total, page: pageNum, totalPages: Math.ceil(total / limitNum), limit: limitNum };
 };
 
 const STAFF_ROLES = new Set([ROLES.OWNER, ROLES.FRONT_DESK, ROLES.BAR_STAFF, ROLES.SHOP_STAFF]);
@@ -406,7 +412,7 @@ export const updateMember = async (id, data, actorId) => {
   const member = await prisma.member.findUnique({ where: { id }, include: { user: true } });
   if (!member) throw new ApiError(404, 'Member not found');
 
-  const { name, email, phone, emergencyContact, photoUrl, status, planId } = data;
+  const { name, email, phone, emergencyContact, photoUrl, status, planId, inquirySource } = data;
 
   return prisma.$transaction(async (tx) => {
     if (name || email || phone) {
@@ -425,6 +431,7 @@ export const updateMember = async (id, data, actorId) => {
       data: {
         ...(emergencyContact !== undefined && { emergencyContact }),
         ...(photoUrl !== undefined && { photoUrl }),
+        ...(inquirySource && { inquirySource }),
         ...(status && { status }),
         ...(planId && { planId }),
       },

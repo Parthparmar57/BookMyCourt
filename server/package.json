@@ -10,6 +10,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
+    "db:feed": "node prisma/seed.js && node feed_member_activity.js && node feed_hr_staff.js",
     "db:studio": "prisma studio"
   },
   "prisma": {

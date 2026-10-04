@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   useEmployees,
   useCreateEmployee,
@@ -23,6 +23,11 @@ import {
   XCircle,
   Clock,
   Filter,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 
 const ROLE_COLORS = {
@@ -37,7 +42,76 @@ const ROLE_COLORS = {
 const LEAVE_TYPE_COLORS = {
   CASUAL: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   SICK: 'bg-rose-50 text-rose-700 border-rose-200',
+  PAID: 'bg-amber-50 text-amber-700 border-amber-200',
   VACATION: 'bg-amber-50 text-amber-700 border-amber-200',
+  UNPAID: 'bg-slate-100 text-slate-700 border-slate-200',
+};
+
+// Sexy Table Page Size Selector (Floats smoothly upwards)
+const TablePageSizeSelect = ({ value, onChange, options = [10, 20, 50, 'all'], totalCount }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const normalizedOptions = options.map((opt) => ({
+    value: opt,
+    label: opt === 'all' ? `Show All (${totalCount || ''})` : `${opt} / page`,
+  }));
+
+  const current = normalizedOptions.find((o) => String(o.value) === String(value)) || normalizedOptions[0];
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative inline-block text-left select-none">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+          open
+            ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-2 ring-emerald-500/20'
+            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 hover:border-emerald-300'
+        }`}
+      >
+        <span>{current.label}</span>
+        <ChevronUp className={`w-3.5 h-3.5 text-emerald-700 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full mb-2 right-0 w-44 bg-white/95 backdrop-blur-md border border-emerald-100 rounded-2xl shadow-xl shadow-emerald-950/10 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
+            Rows Per Page
+          </div>
+          {normalizedOptions.map((opt) => {
+            const isSelected = String(opt.value) === String(value);
+            return (
+              <button
+                key={String(opt.value)}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-950'
+                }`}
+              >
+                <span>{opt.label}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export const HrPage = () => {
@@ -69,6 +143,49 @@ export const HrPage = () => {
     joiningDate: new Date().toISOString().split('T')[0],
     password: 'Staff@123',
   });
+
+  // Staff Search, Role Filter & Pagination State
+  const [searchStaff, setSearchStaff] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [staffPage, setStaffPage] = useState(1);
+  const [staffPageSize, setStaffPageSize] = useState(10);
+
+  // Payroll Pagination State
+  const [payrollPage, setPayrollPage] = useState(1);
+  const [payrollPageSize, setPayrollPageSize] = useState(10);
+
+  useEffect(() => {
+    setStaffPage(1);
+  }, [searchStaff, roleFilter, staffPageSize]);
+
+  useEffect(() => {
+    setPayrollPage(1);
+  }, [payrollPageSize]);
+
+  // Filtered and Paginated Staff
+  const filteredEmployees = employees.filter((emp) => {
+    const q = searchStaff.toLowerCase().trim();
+    const matchesSearch = !q ||
+      emp.employeeNo?.toLowerCase().includes(q) ||
+      emp.user?.name?.toLowerCase().includes(q) ||
+      emp.user?.email?.toLowerCase().includes(q) ||
+      emp.designation?.toLowerCase().includes(q) ||
+      emp.user?.phone?.includes(q);
+
+    const matchesRole = roleFilter === 'ALL' ||
+      (roleFilter === 'COACHES' && /coach|trainer|physio|specialist/i.test(emp.designation)) ||
+      (roleFilter === 'FRONT_DESK' && emp.user?.role === 'FRONT_DESK' && !/coach|trainer|physio|specialist/i.test(emp.designation)) ||
+      emp.user?.role === roleFilter;
+
+    return matchesSearch && matchesRole;
+  });
+
+  const staffLimit = staffPageSize === 'all' ? filteredEmployees.length : Number(staffPageSize);
+  const paginatedStaff = filteredEmployees.slice((staffPage - 1) * staffLimit, staffPage * staffLimit);
+
+  // Paginated Payrolls
+  const payrollLimit = payrollPageSize === 'all' ? payrolls.length : Number(payrollPageSize);
+  const paginatedPayrolls = payrolls.slice((payrollPage - 1) * payrollLimit, payrollPage * payrollLimit);
 
   const handleCreateEmployee = async (e) => {
     e.preventDefault();
@@ -141,11 +258,11 @@ export const HrPage = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="bg-slate-100 p-1 rounded-xl flex text-xs font-bold">
+          <div className="bg-emerald-50/70 p-1 rounded-xl flex text-xs font-bold border border-emerald-200/60">
             <button
               onClick={() => setActiveTab('directory')}
               className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                activeTab === 'directory' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                activeTab === 'directory' ? 'bg-emerald-800 shadow-xs text-white' : 'text-emerald-900 hover:text-emerald-950 hover:bg-emerald-100/50'
               }`}
             >
               Staff Directory ({employees.length})
@@ -153,7 +270,7 @@ export const HrPage = () => {
             <button
               onClick={() => setActiveTab('leaves')}
               className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'leaves' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                activeTab === 'leaves' ? 'bg-emerald-800 shadow-xs text-white' : 'text-emerald-900 hover:text-emerald-950 hover:bg-emerald-100/50'
               }`}
             >
               <span>Leave Queue</span>
@@ -166,7 +283,7 @@ export const HrPage = () => {
             <button
               onClick={() => setActiveTab('payroll')}
               className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                activeTab === 'payroll' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                activeTab === 'payroll' ? 'bg-emerald-800 shadow-xs text-white' : 'text-emerald-900 hover:text-emerald-950 hover:bg-emerald-100/50'
               }`}
             >
               Payroll
@@ -217,15 +334,53 @@ export const HrPage = () => {
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h3 className="font-extrabold text-sm text-slate-900">Staff Personnel Directory</h3>
-              <p className="text-[11px] text-slate-500">Active club employees across Front Desk, Bar, Kitchen, and Pro Shop.</p>
+              <p className="text-[11px] text-slate-500">Active club employees across Management, Front Desk, Coaches, Bar, Kitchen, and Pro Shop.</p>
             </div>
-            <span className="text-xs font-bold text-slate-500">{employees.length} employees on record</span>
+            <span className="text-xs font-bold text-slate-500">{filteredEmployees.length} employees found</span>
+          </div>
+
+          {/* Search & Role Filter Toolbar */}
+          <div className="p-3.5 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search staff by name, emp no, role, or designation..."
+                value={searchStaff}
+                onChange={(e) => setSearchStaff(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 shadow-2xs"
+              />
+            </div>
+
+            {/* Quick Role Filters */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[
+                { label: 'All Roles', val: 'ALL' },
+                { label: 'Front Desk', val: 'FRONT_DESK' },
+                { label: 'Coaches & Academies', val: 'COACHES' },
+                { label: 'Bar & Café', val: 'BAR_STAFF' },
+                { label: 'Kitchen', val: 'KITCHEN' },
+                { label: 'Pro Shop', val: 'SHOP_STAFF' },
+              ].map((rf) => (
+                <button
+                  key={rf.val}
+                  onClick={() => setRoleFilter(rf.val)}
+                  className={`text-xs px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                    roleFilter === rf.val
+                      ? 'bg-emerald-800 text-white shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'
+                  }`}
+                >
+                  {rf.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider whitespace-nowrap">
+                <tr className="bg-[#e8f5e9] text-[#1b5e20] border-b-2 border-emerald-200/90 uppercase text-[11px] font-black tracking-wider whitespace-nowrap">
                   <th className="p-4">Emp No</th>
                   <th className="p-4">Employee</th>
                   <th className="p-4">Role</th>
@@ -237,8 +392,8 @@ export const HrPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
+                {paginatedStaff.map((emp) => (
+                  <tr key={emp.id} className="hover:bg-emerald-50/40 transition-colors">
                     <td className="p-4 font-mono font-bold text-slate-900 whitespace-nowrap">{emp.employeeNo}</td>
                     <td className="p-4">
                       <div className="font-bold text-slate-900 whitespace-nowrap">{emp.user?.name}</div>
@@ -260,16 +415,73 @@ export const HrPage = () => {
                     <td className="p-4 text-right font-medium text-slate-600 whitespace-nowrap">{formatPhone(emp.user?.phone)}</td>
                   </tr>
                 ))}
-                {employees.length === 0 && (
+                {paginatedStaff.length === 0 && (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-slate-400">
-                      No employees on record. Click "Add Staff" above to register staff accounts.
+                      No staff members matching search or filter criteria.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {(() => {
+            const totalCount = filteredEmployees.length;
+            const currentLimit = staffPageSize === 'all' ? totalCount : Number(staffPageSize);
+            const totalPages = Math.ceil(totalCount / currentLimit) || 1;
+            const startIdx = totalCount > 0 ? (staffPage - 1) * currentLimit + 1 : 0;
+            const endIdx = staffPageSize === 'all' ? totalCount : Math.min(staffPage * currentLimit, totalCount);
+
+            return (
+              <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="text-slate-600 font-semibold flex items-center gap-2">
+                  <span>
+                    Showing <strong className="text-slate-900">{startIdx}</strong> to{' '}
+                    <strong className="text-slate-900">{endIdx}</strong> of{' '}
+                    <strong className="text-emerald-800 font-extrabold">{totalCount}</strong> employees
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-600">
+                    <span>Show:</span>
+                    <TablePageSizeSelect
+                      value={staffPageSize}
+                      onChange={(val) => setStaffPageSize(val === 'all' ? 'all' : Number(val))}
+                      options={[10, 20, 50, 'all']}
+                      totalCount={totalCount}
+                    />
+                  </div>
+
+                  {staffPageSize !== 'all' && totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
+                        disabled={staffPage <= 1}
+                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        <span>Prev</span>
+                      </button>
+                      <span className="px-3 py-1.5 font-extrabold text-slate-800 bg-white border border-slate-200 rounded-lg shadow-2xs">
+                        Page {staffPage} of {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setStaffPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={staffPage >= totalPages}
+                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <span>Next</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -293,8 +505,8 @@ export const HrPage = () => {
                   onClick={() => setLeaveStatusFilter(btn.val)}
                   className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                     leaveStatusFilter === btn.val
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-emerald-800 text-white shadow-xs'
+                      : 'bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-950'
                   }`}
                 >
                   <span>{btn.label}</span>
@@ -326,7 +538,7 @@ export const HrPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider whitespace-nowrap">
+                  <tr className="bg-[#e8f5e9] text-[#1b5e20] border-b-2 border-emerald-200/90 uppercase text-[11px] font-black tracking-wider whitespace-nowrap">
                     <th className="p-4">Employee</th>
                     <th className="p-4">Leave Type</th>
                     <th className="p-4">Duration & Days</th>
@@ -447,7 +659,7 @@ export const HrPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider whitespace-nowrap">
+                <tr className="bg-[#e8f5e9] text-[#1b5e20] border-b-2 border-emerald-200/90 uppercase text-[11px] font-black tracking-wider whitespace-nowrap">
                   <th className="p-4">Payslip #</th>
                   <th className="p-4">Employee</th>
                   <th className="p-4">Month / Year</th>
@@ -459,8 +671,8 @@ export const HrPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {payrolls.map((pay) => (
-                  <tr key={pay.id} className="hover:bg-slate-50/70 transition-colors">
+                {paginatedPayrolls.map((pay) => (
+                  <tr key={pay.id} className="hover:bg-emerald-50/40 transition-colors">
                     <td className="p-4 font-mono font-bold text-slate-900 whitespace-nowrap">{pay.payrollNo || pay.id.slice(0, 8)}</td>
                     <td className="p-4 font-bold text-slate-900 whitespace-nowrap">{pay.employee?.user?.name || 'Staff'}</td>
                     <td className="p-4 text-slate-600 font-semibold whitespace-nowrap">{pay.month}/{pay.year}</td>
@@ -486,7 +698,7 @@ export const HrPage = () => {
                     </td>
                   </tr>
                 ))}
-                {payrolls.length === 0 && (
+                {paginatedPayrolls.length === 0 && (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-slate-400">
                       No payroll runs generated yet. Click "Run Month Payroll" above.
@@ -496,6 +708,63 @@ export const HrPage = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls for Payroll */}
+          {(() => {
+            const totalCount = payrolls.length;
+            const currentLimit = payrollPageSize === 'all' ? totalCount : Number(payrollPageSize);
+            const totalPages = Math.ceil(totalCount / currentLimit) || 1;
+            const startIdx = totalCount > 0 ? (payrollPage - 1) * currentLimit + 1 : 0;
+            const endIdx = payrollPageSize === 'all' ? totalCount : Math.min(payrollPage * currentLimit, totalCount);
+
+            return (
+              <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="text-slate-600 font-semibold flex items-center gap-2">
+                  <span>
+                    Showing <strong className="text-slate-900">{startIdx}</strong> to{' '}
+                    <strong className="text-slate-900">{endIdx}</strong> of{' '}
+                    <strong className="text-emerald-800 font-extrabold">{totalCount}</strong> payslips
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-600">
+                    <span>Show:</span>
+                    <TablePageSizeSelect
+                      value={payrollPageSize}
+                      onChange={(val) => setPayrollPageSize(val === 'all' ? 'all' : Number(val))}
+                      options={[10, 20, 50, 'all']}
+                      totalCount={totalCount}
+                    />
+                  </div>
+
+                  {payrollPageSize !== 'all' && totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPayrollPage((p) => Math.max(1, p - 1))}
+                        disabled={payrollPage <= 1}
+                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        <span>Prev</span>
+                      </button>
+                      <span className="px-3 py-1.5 font-extrabold text-slate-800 bg-white border border-slate-200 rounded-lg shadow-2xs">
+                        Page {payrollPage} of {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setPayrollPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={payrollPage >= totalPages}
+                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <span>Next</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

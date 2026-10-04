@@ -31,48 +31,6 @@ const formatUserResponse = (user) => {
   };
 };
 
-export const registerUser = async ({ name, email, phone, password }) => {
-  const existingUser = await prisma.user.findFirst({
-    where: {
-      OR: [{ email }, { phone }],
-    },
-  });
-
-  if (existingUser) {
-    if (existingUser.email === email) {
-      throw new ApiError(409, 'A user with this email already exists');
-    }
-    throw new ApiError(409, 'A user with this phone number already exists');
-  }
-
-  const salt = await bcrypt.genSalt(10);
-  const passwordHash = await bcrypt.hash(password, salt);
-
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      phone,
-      passwordHash,
-      // Public registration always creates a plain MEMBER. Elevated roles are
-      // assigned only through the OWNER-only user-management route.
-      role: ROLES.MEMBER,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      role: true,
-      createdAt: true,
-    },
-  });
-
-  const userPayload = formatUserResponse(user);
-  const tokens = generateTokens(userPayload);
-  return { user: userPayload, ...tokens };
-};
-
 export const loginUser = async ({ login, password }) => {
   const cleanLogin = (login || '').trim();
   const searchEmails = [{ equals: cleanLogin, mode: 'insensitive' }];

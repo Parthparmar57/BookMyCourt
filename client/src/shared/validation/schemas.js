@@ -20,8 +20,10 @@ export const memberSchema = z.object({
   name: z.string().min(2, 'Full name must be at least 2 characters').max(100),
   phone: phoneField,
   email: z.string().email('Enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 8 characters').optional().or(z.literal('')),
   dob: z.string().min(1, 'Date of birth is required'),
   planId: z.string().uuid('Select a membership plan'),
+  inquirySource: z.string().optional().default('WALK_IN'),
   startDate: z.string().optional(),
 });
 

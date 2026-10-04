@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useForm } from 'react-hook-form';
@@ -9,7 +9,7 @@ import { useDebounce } from '../../../shared/hooks/useDebounce';
 import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
 import { memberSchema, applyServerErrors } from '../../../shared/validation/schemas';
-import { Search, UserPlus, AlertCircle, X, Loader2, QrCode, Phone, Mail, ShieldCheck, Sparkles, CheckCircle2, Clock, Edit3, UserX } from 'lucide-react';
+import { Search, UserPlus, AlertCircle, X, Loader2, QrCode, Phone, Mail, ShieldCheck, Sparkles, CheckCircle2, Clock, Edit3, UserX, ChevronLeft, ChevronRight, Users, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QRScannerModal } from '../../../components/member/QRScannerModal';
 import { CustomSelect } from '../../../shared/components/CustomSelect';
@@ -63,8 +63,154 @@ const SafeQRCodeDisplay = ({ member }) => {
   );
 };
 
+// Sexy Custom Page Size Dropdown (Opens upwards seamlessly at bottom footer)
+const PageSizeSelect = ({ value, onChange, totalCount }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const options = [
+    { value: 25, label: '25 / page' },
+    { value: 50, label: '50 / page' },
+    { value: 100, label: '100 / page' },
+    { value: 250, label: '250 / page' },
+    { value: 'all', label: `Show All (${totalCount || '540+'})` },
+  ];
+
+  const current = options.find((o) => String(o.value) === String(value)) || options[0];
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative inline-block text-left select-none">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+          open
+            ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-2 ring-emerald-500/20'
+            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 hover:border-emerald-300'
+        }`}
+      >
+        <span>{current.label}</span>
+        <ChevronUp className={`w-3.5 h-3.5 text-emerald-700 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full mb-2 right-0 w-48 bg-white/95 backdrop-blur-md border border-emerald-100 rounded-2xl shadow-xl shadow-emerald-950/10 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
+            Rows Per Page
+          </div>
+          {options.map((opt) => {
+            const isSelected = String(opt.value) === String(value);
+            return (
+              <button
+                key={String(opt.value)}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-950'
+                }`}
+              >
+                <span>{opt.label}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Sexy Custom Plan Tier Filter Dropdown
+const PlanTierSelect = ({ value, onChange, plans = [] }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const options = [
+    { value: 'ALL', label: 'All Tiers' },
+    ...plans.map((p) => ({ value: p.id, label: p.name })),
+  ];
+
+  const current = options.find((o) => String(o.value) === String(value)) || options[0];
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative inline-block text-left select-none">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+          value !== 'ALL' || open
+            ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-2 ring-emerald-500/15'
+            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+        }`}
+      >
+        <span>{current.label}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-emerald-700 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full mt-2 right-0 w-48 bg-white/95 backdrop-blur-md border border-emerald-100 rounded-2xl shadow-xl shadow-emerald-950/10 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
+            Membership Tier
+          </div>
+          {options.map((opt) => {
+            const isSelected = String(opt.value) === String(value);
+            return (
+              <button
+                key={String(opt.value)}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-950'
+                }`}
+              >
+                <span className="truncate">{opt.label}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 text-white shrink-0 ml-1.5" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Normalize a server member (fields live on the user/plan relations) into a flat
 // view model for the table and card.
+const INQUIRY_SOURCE_OPTIONS = [
+  { value: 'WALK_IN', label: 'Walk-in' },
+  { value: 'PHONE_CALL', label: 'Phone Call' },
+  { value: 'INQUIRY_FORM', label: 'Website / Inquiry Form' },
+  { value: 'REFERRAL', label: 'Member Referral' },
+  { value: 'SOCIAL_MEDIA', label: 'Social Media' },
+  { value: 'OTHER', label: 'Other' },
+];
+
 const toView = (m) => ({
   id: m.id,
   memberNo: m.memberNo,
@@ -72,6 +218,7 @@ const toView = (m) => ({
   phone: m.user?.phone || m.phone || '',
   email: m.user?.email || m.email || '',
   emergencyContact: m.emergencyContact || '',
+  inquirySource: m.inquirySource || 'WALK_IN',
   planName: m.plan?.name || m.planName || '—',
   status: m.status || 'ACTIVE',
   qrCode: m.qrCode,
@@ -90,6 +237,11 @@ export const MembersPage = () => {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [syncVersion, setSyncVersion] = useState(0);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [planFilter, setPlanFilter] = useState('ALL');
 
   // Sync upgrade requests and approvals
   useEffect(() => {
@@ -196,7 +348,17 @@ export const MembersPage = () => {
     window.dispatchEvent(new Event('bmc_upgrade_change'));
   };
 
-  const membersQuery = useMembers(debouncedQuery.trim() ? { q: debouncedQuery.trim() } : {});
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQuery, pageSize, statusFilter, planFilter]);
+
+  const membersQuery = useMembers({
+    page,
+    limit: pageSize === 'all' ? 1000 : Number(pageSize),
+    ...(debouncedQuery.trim() ? { q: debouncedQuery.trim() } : {}),
+    ...(statusFilter !== 'ALL' ? { status: statusFilter } : {}),
+    ...(planFilter !== 'ALL' ? { planId: planFilter } : {}),
+  });
   const { data: plans = [] } = usePlans();
   const createMember = useCreateMember();
   const updateMember = useUpdateMember();
@@ -212,7 +374,7 @@ export const MembersPage = () => {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(memberSchema),
-    defaultValues: { name: '', phone: '', email: '', dob: '', planId: '', startDate: new Date().toISOString().split('T')[0] },
+    defaultValues: { name: '', phone: '', email: '', password: '', dob: '', planId: '', inquirySource: 'WALK_IN', startDate: new Date().toISOString().split('T')[0] },
   });
 
   const planId = watch('planId');
@@ -242,7 +404,7 @@ export const MembersPage = () => {
     }
   };
 
-  const [editFormData, setEditFormData] = useState({ name: '', phone: '', email: '', emergencyContact: '', status: 'ACTIVE' });
+  const [editFormData, setEditFormData] = useState({ name: '', phone: '', email: '', emergencyContact: '', inquirySource: 'WALK_IN', status: 'ACTIVE' });
   const [editError, setEditError] = useState('');
 
   const handleOpenEdit = (m) => {
@@ -253,6 +415,7 @@ export const MembersPage = () => {
       phone: m.phone || '',
       email: m.email || '',
       emergencyContact: m.emergencyContact || '',
+      inquirySource: m.inquirySource || 'WALK_IN',
       status: m.status || 'ACTIVE',
     });
     setEditError('');
@@ -301,7 +464,15 @@ export const MembersPage = () => {
     <div className="space-y-6 font-sans">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4 border-slate-200">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Member Directory & Profiles</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-extrabold text-slate-900">Member Directory & Profiles</h1>
+            {membersQuery.data?.total !== undefined && (
+              <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-black px-3 py-1 rounded-full shadow-2xs flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-emerald-700" />
+                <span>{membersQuery.data.total} Members</span>
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500">Fast search by Name, Phone, Member No. or QR code scan.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -367,16 +538,39 @@ export const MembersPage = () => {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search by name, phone, member no. (e.g. Rohan, 9876543210, MEM-001001)..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-[#2e7d32] focus:outline-none shadow-2xs font-semibold text-slate-900"
-        />
+      {/* Search and Filters Bar */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by name, phone, member no. (e.g. Rohan, 9876543210, MEM-001001)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-[#2e7d32] focus:outline-none shadow-2xs font-semibold text-slate-900"
+          />
+        </div>
+
+        {/* Quick Filter Pills & Plan Filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          {['ALL', 'ACTIVE', 'EXPIRED', 'SUSPENDED'].map((st) => (
+            <button
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-2 text-xs font-extrabold rounded-xl border transition-all cursor-pointer ${
+                statusFilter === st
+                  ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+              }`}
+            >
+              {st === 'ALL' ? 'All' : st}
+            </button>
+          ))}
+
+          {plans.length > 0 && (
+            <PlanTierSelect value={planFilter} onChange={setPlanFilter} plans={plans} />
+          )}
+        </div>
       </div>
 
       {/* Member Table */}
@@ -467,6 +661,62 @@ export const MembersPage = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        {(() => {
+          const totalCount = membersQuery.data?.total || 0;
+          const totalPages = membersQuery.data?.totalPages || 1;
+          const currentLimit = pageSize === 'all' ? totalCount : Number(pageSize);
+          const startIdx = totalCount > 0 ? (page - 1) * currentLimit + 1 : 0;
+          const endIdx = pageSize === 'all' ? totalCount : Math.min(page * currentLimit, totalCount);
+
+          return (
+            <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="text-slate-600 font-semibold flex items-center gap-2">
+                <span>
+                  Showing <strong className="text-slate-900">{startIdx}</strong> to{' '}
+                  <strong className="text-slate-900">{endIdx}</strong> of{' '}
+                  <strong className="text-emerald-800 font-extrabold">{totalCount}</strong> members
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-1.5 font-bold text-slate-600">
+                  <span>Show:</span>
+                  <PageSizeSelect
+                    value={pageSize}
+                    onChange={(val) => setPageSize(val === 'all' ? 'all' : Number(val))}
+                    totalCount={membersQuery.data?.total}
+                  />
+                </div>
+
+                {pageSize !== 'all' && totalPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Prev</span>
+                    </button>
+                    <span className="px-3 py-1.5 font-extrabold text-slate-800 bg-white border border-slate-200 rounded-lg shadow-2xs">
+                      Page {page} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Register Member Modal */}
@@ -489,6 +739,7 @@ export const MembersPage = () => {
               <Field label="Full Name *" placeholder="e.g. Vikramaditya Singh" error={fieldErr('name')} {...register('name')} />
               <Field label="Phone Number (10 Digits) *" placeholder="9820123456" error={fieldErr('phone')} {...register('phone')} />
               <Field label="Email Address *" type="email" placeholder="user@example.com" error={fieldErr('email')} {...register('email')} />
+              <Field label="Account Password *" type="password" placeholder="Set login password (min 6 characters)" error={fieldErr('password')} {...register('password')} />
               <Field label="Date of Birth *" type="date" error={fieldErr('dob')} {...register('dob')} />
 
               <div>
@@ -506,6 +757,20 @@ export const MembersPage = () => {
                   }))}
                 />
                 {fieldErr('planId') && <p className="text-[11px] text-rose-600 mt-1">{fieldErr('planId')}</p>}
+              </div>
+
+              <div>
+                <label className="block mb-1 font-bold text-slate-700">Inquiry / Registration Source *</label>
+                <CustomSelect
+                  name="inquirySource"
+                  value={watch('inquirySource') || 'WALK_IN'}
+                  onChange={(e) => {
+                    const val = e.target?.value || e?.value || e;
+                    setValue('inquirySource', val, { shouldValidate: true });
+                  }}
+                  options={INQUIRY_SOURCE_OPTIONS}
+                />
+                {fieldErr('inquirySource') && <p className="text-[11px] text-rose-600 mt-1">{fieldErr('inquirySource')}</p>}
               </div>
 
               <button
@@ -583,6 +848,15 @@ export const MembersPage = () => {
               </div>
 
               <div>
+                <label className="block mb-1 text-slate-700 font-bold">Inquiry Source</label>
+                <CustomSelect
+                  value={editFormData.inquirySource || 'WALK_IN'}
+                  onChange={(e) => setEditFormData({ ...editFormData, inquirySource: e.target.value })}
+                  options={INQUIRY_SOURCE_OPTIONS}
+                />
+              </div>
+
+              <div>
                 <label className="block mb-1 text-slate-700 font-bold">Account Status</label>
                 <CustomSelect
                   value={editFormData.status}
@@ -629,7 +903,7 @@ export const MembersPage = () => {
                   <ShieldCheck className="w-4 h-4 text-[#2e7d32]" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-base text-slate-900">Member 360° Digital Pass</h3>
+                  <h3 className="font-extrabold text-base text-slate-900">Member Profile</h3>
                   <p className="text-[11px] text-slate-500">Account Privileges & Live QR Verification</p>
                 </div>
               </div>
@@ -685,6 +959,9 @@ export const MembersPage = () => {
                         {selectedMember.email}
                       </span>
                     )}
+                    <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200">
+                      Source: {INQUIRY_SOURCE_OPTIONS.find(o => o.value === selectedMember.inquirySource)?.label || selectedMember.inquirySource || 'Walk-in'}
+                    </span>
                   </div>
                 </div>
               </div>

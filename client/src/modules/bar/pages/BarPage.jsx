@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   useMenu,
   useBarTables,
+  useUpdateBarTable,
   useCreateBarOrder,
   useBarOrders,
   useUpdateBarOrderStatus,
@@ -16,6 +17,7 @@ import {
   useOpenShift,
   useCloseShift
 } from '../../../hooks/useBar';
+import { useBarOrderRealtime } from '../../../hooks/useRealtime';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { CustomSelect } from '../../../shared/components/CustomSelect';
 import { toast, confirmToast } from '../../../shared/utils/toast';
@@ -25,6 +27,8 @@ import {
   Receipt,
   Clock,
   CheckCircle2,
+  ChevronDown,
+  Check,
   X,
   Loader2,
   Plus,
@@ -46,9 +50,85 @@ import {
 import { useMembers } from '../../../hooks/useMembership';
 import { useAuth } from '../../../context/AuthContext';
 
+// Custom Floating Dropdown for Table Status Badge (Replaces native OS <select>)
+const TableStatusBadgeDropdown = ({ status, onChange, isSelected }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  const badgeStyle = isSelected
+    ? 'bg-white text-emerald-900 border border-emerald-300 shadow-2xs'
+    : status === 'OCCUPIED'
+    ? 'bg-amber-500 text-white shadow-2xs hover:bg-amber-600'
+    : status === 'RESERVED'
+    ? 'bg-sky-600 text-white shadow-2xs hover:bg-sky-700'
+    : 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700';
+
+  const options = [
+    { value: 'AVAILABLE', label: 'AVAILABLE', activeColor: 'text-emerald-700 hover:bg-emerald-50' },
+    { value: 'OCCUPIED', label: 'OCCUPIED', activeColor: 'text-amber-700 hover:bg-amber-50' },
+    { value: 'RESERVED', label: 'RESERVED', activeColor: 'text-sky-700 hover:bg-sky-50' },
+  ];
+
+  return (
+    <div ref={dropdownRef} className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((prev) => !prev);
+        }}
+        className={`text-[9px] px-2 py-1 rounded-lg font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all ${badgeStyle}`}
+      >
+        <span>{status}</span>
+        <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1.5 w-32 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-1.5 space-y-0.5 animate-in fade-in zoom-in-95 font-sans">
+          {options.map((opt) => {
+            const isCurrent = status === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  if (onChange && opt.value !== status) {
+                    onChange(opt.value);
+                  }
+                }}
+                className={`w-full text-left px-2.5 py-1.5 rounded-xl flex items-center justify-between text-[10px] font-black tracking-wider transition-colors cursor-pointer ${opt.activeColor} ${
+                  isCurrent ? 'bg-slate-100 font-extrabold' : ''
+                }`}
+              >
+                <span>{opt.label}</span>
+                {isCurrent && <Check className="w-3 h-3 text-emerald-600 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const BarPage = () => {
   const { currentRole } = useAuth();
+  useBarOrderRealtime();
+
   const { data: tables = [] } = useBarTables();
+  const updateBarTable = useUpdateBarTable();
   const { data: menu = [] } = useMenu();
   const { data: orders = [] } = useBarOrders();
   const { data: tabs = [] } = useTabs();
@@ -168,8 +248,21 @@ export const BarPage = () => {
     );
   };
 
+  const handleTableStatusChange = async (tableId, newStatus) => {
+    try {
+      await updateBarTable.mutateAsync({ id: tableId, status: newStatus });
+      toast.success(`Table status updated to ${newStatus}`);
+    } catch (err) {
+      toast.error(err?.message || 'Could not update table status');
+    }
+  };
+
   const handleSendOrder = async () => {
     if (!cart.length) return;
+    if (selectedTable && selectedTable.status === 'OCCUPIED') {
+      toast.error(`Table ${selectedTable.number} is currently occupied. Please clear the table before placing a new order.`);
+      return;
+    }
     setFeedback(null);
     try {
       await createBarOrder.mutateAsync({
@@ -424,34 +517,42 @@ export const BarPage = () => {
                 {tables.map((t) => {
                   const isSelected = selectedTable?.id === t.id;
                   const isOccupied = t.status === 'OCCUPIED';
+                  const isReserved = t.status === 'RESERVED';
                   return (
-                    <button
+                    <div
                       key={t.id}
-                      onClick={() => setSelectedTable(isSelected ? null : t)}
-                      className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                      onClick={() => {
+                        if (isOccupied && !isSelected) {
+                          toast.error(`Table ${t.number} is currently OCCUPIED. Clear table or mark Available first.`);
+                        }
+                        if (isReserved && !isSelected) {
+                          toast.error(`Table ${t.number} is RESERVED.`);
+                        }
+                        setSelectedTable(isSelected ? null : t);
+                      }}
+                      className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer relative ${
                         isSelected
                           ? 'bg-[#2e7d32] text-white border-[#1b4332] shadow-md font-bold'
                           : isOccupied
-                          ? 'bg-amber-50/90 border-amber-300 hover:border-amber-400 text-amber-950 shadow-2xs hover:bg-amber-100/60'
-                          : 'bg-emerald-50/60 border-emerald-200 hover:border-emerald-400 text-emerald-950 shadow-2xs hover:bg-emerald-100/60'
+                          ? 'bg-amber-50/90 border-amber-300 hover:border-amber-400 text-amber-950 shadow-2xs'
+                          : isReserved
+                          ? 'bg-sky-50/90 border-sky-300 hover:border-sky-400 text-sky-950 shadow-2xs'
+                          : 'bg-emerald-50/60 border-emerald-200 hover:border-emerald-400 text-emerald-950 shadow-2xs'
                       }`}
                     >
                       <div className="flex items-center justify-between text-xs font-black">
                         <span>Table {t.number}</span>
-                        <span
-                          className={`text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-wider ${
-                            isSelected
-                              ? 'bg-white/25 text-white'
-                              : isOccupied
-                              ? 'bg-amber-500 text-white shadow-2xs'
-                              : 'bg-emerald-600 text-white shadow-2xs'
-                          }`}
-                        >
-                          {t.status}
-                        </span>
+                        <TableStatusBadgeDropdown
+                          status={t.status}
+                          isSelected={isSelected}
+                          onChange={(newStatus) => handleTableStatusChange(t.id, newStatus)}
+                        />
                       </div>
-                      <div className="text-[10px] opacity-80 mt-1 font-semibold">Cap: {t.capacity} seats</div>
-                    </button>
+                      <div className="text-[10px] opacity-80 mt-1 font-semibold flex items-center justify-between">
+                        <span>Cap: {t.capacity} seats</span>
+                        {isOccupied && <span className="text-amber-700 font-bold text-[9px]">Occupied</span>}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
