@@ -290,46 +290,41 @@ export const BarPage = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActiveTab('pos')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'pos'
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'pos'
                 ? 'bg-[#2e7d32] text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+            }`}
           >
             <Coffee className="w-4 h-4" /> Touch POS
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'orders'
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'orders'
                 ? 'bg-[#2e7d32] text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+            }`}
           >
             <Receipt className="w-4 h-4" /> Live Orders ({orders.length})
           </button>
           <button
-            onClick={() => setActiveTab('tabs')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'tabs'
-                ? 'bg-[#2e7d32] text-white shadow-md'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-          >
-            <Users className="w-4 h-4" /> Member Tabs ({tabs.length})
-          </button>
-          <button
             onClick={() => setActiveTab('menu')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'menu'
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'menu'
                 ? 'bg-[#2e7d32] text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+            }`}
           >
             <Utensils className="w-4 h-4" /> Menu Catalog
           </button>
           <button
             onClick={() => setActiveTab('shift')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${activeTab === 'shift'
+            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'shift'
                 ? 'bg-[#2e7d32] text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+            }`}
           >
             <Wallet className="w-4 h-4" /> Cash Shift {activeShift ? '• OPEN' : ''}
           </button>
@@ -337,47 +332,42 @@ export const BarPage = () => {
       </div>
 
       {/* KPI Cards Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-gray-200 rounded-3xl p-5 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4.5">
+        <div className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] text-white rounded-3xl p-5 shadow-sm space-y-2 border border-emerald-700/60">
+          <div className="flex items-center justify-between text-xs font-black tracking-wider text-emerald-200 uppercase">
             <span>TODAY'S BAR REVENUE</span>
-            <DollarSign className="w-4 h-4 text-[#2e7d32]" />
+            <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-emerald-300" />
+            </div>
           </div>
-          <p className="text-2xl font-black text-slate-900">{formatCurrency(todayEarnings)}</p>
-          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+          <p className="text-2xl font-black text-white">{formatCurrency(todayEarnings)}</p>
+          <span className="inline-block text-[11px] font-extrabold text-emerald-100 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/10">
             Live POS & Tab settled
           </span>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-3xl p-5 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+        <div className="bg-white border-2 border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-2 hover:border-amber-400 transition-all">
+          <div className="flex items-center justify-between text-xs font-black tracking-wider text-slate-500 uppercase">
             <span>OCCUPIED TABLES</span>
-            <Utensils className="w-4 h-4 text-amber-500" />
+            <div className="w-7 h-7 rounded-xl bg-amber-50 flex items-center justify-center">
+              <Utensils className="w-4 h-4 text-amber-600" />
+            </div>
           </div>
           <p className="text-2xl font-black text-slate-900">{occupiedTablesCount} / {tables.length}</p>
-          <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
+          <span className="inline-block text-[11px] font-extrabold text-amber-950 bg-amber-100/90 px-2.5 py-0.5 rounded-lg border border-amber-300">
             {tables.length - occupiedTablesCount} tables available
           </span>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-3xl p-5 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-            <span>ACTIVE MEMBER TABS</span>
-            <Users className="w-4 h-4 text-blue-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900">{activeTabsCount}</p>
-          <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-            Unpaid: {formatCurrency(totalTabsOwed)}
-          </span>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-3xl p-5 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+        <div className="bg-white border-2 border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-2 hover:border-emerald-400 transition-all">
+          <div className="flex items-center justify-between text-xs font-black tracking-wider text-slate-500 uppercase">
             <span>MENU ITEMS</span>
-            <Coffee className="w-4 h-4 text-purple-500" />
+            <div className="w-7 h-7 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <Coffee className="w-4 h-4 text-[#2e7d32]" />
+            </div>
           </div>
           <p className="text-2xl font-black text-slate-900">{menu.length}</p>
-          <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
+          <span className="inline-block text-[11px] font-extrabold text-emerald-950 bg-emerald-100/90 px-2.5 py-0.5 rounded-lg border border-emerald-300">
             {availableMenu.length} active on menu
           </span>
         </div>
@@ -412,35 +402,57 @@ export const BarPage = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
                   onClick={() => setSelectedTable(null)}
-                  className={`p-3 rounded-2xl border text-left transition-all ${selectedTable === null
-                      ? 'bg-[#2e7d32] text-white border-[#2e7d32] shadow-sm font-bold'
-                      : 'bg-white border-slate-200 text-slate-800 hover:border-emerald-500 font-semibold'
-                    }`}
+                  className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                    selectedTable === null
+                      ? 'bg-[#2e7d32] text-white border-[#1b4332] shadow-sm font-bold'
+                      : 'bg-white border-slate-200 hover:border-emerald-500 text-slate-800 shadow-2xs font-semibold'
+                  }`}
                 >
-                  <div className="text-xs font-black">Direct Takeaway</div>
-                  <div className="text-[10px] opacity-80 mt-0.5">Counter POS</div>
-                </button>
-                {tables.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setSelectedTable(selectedTable?.id === t.id ? null : t)}
-                    className={`p-3 rounded-2xl border text-left transition-all ${selectedTable?.id === t.id
-                        ? 'bg-[#2e7d32] text-white border-[#2e7d32] shadow-sm font-bold'
-                        : t.status === 'OCCUPIED'
-                          ? 'bg-amber-50 border-amber-200 text-amber-900'
-                          : 'bg-white border-slate-200 text-slate-800 hover:border-emerald-500'
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black">Direct Takeaway</span>
+                    <span
+                      className={`text-[9px] px-2 py-0.5 rounded-md font-black uppercase ${
+                        selectedTable === null ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
                       }`}
-                  >
-                    <div className="flex items-center justify-between text-xs font-extrabold">
-                      <span>Table {t.number}</span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${t.status === 'OCCUPIED' ? 'bg-amber-200 text-amber-900' : 'bg-emerald-100 text-emerald-800'
-                        }`}>
-                        {t.status}
-                      </span>
-                    </div>
-                    <div className="text-[10px] opacity-80 mt-1">Cap: {t.capacity} seats</div>
-                  </button>
-                ))}
+                    >
+                      Counter
+                    </span>
+                  </div>
+                  <div className="text-[10px] opacity-80 mt-1 font-semibold">Counter POS</div>
+                </button>
+                {tables.map((t) => {
+                  const isSelected = selectedTable?.id === t.id;
+                  const isOccupied = t.status === 'OCCUPIED';
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTable(isSelected ? null : t)}
+                      className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#2e7d32] text-white border-[#1b4332] shadow-md font-bold'
+                          : isOccupied
+                          ? 'bg-amber-50/90 border-amber-300 hover:border-amber-400 text-amber-950 shadow-2xs hover:bg-amber-100/60'
+                          : 'bg-emerald-50/60 border-emerald-200 hover:border-emerald-400 text-emerald-950 shadow-2xs hover:bg-emerald-100/60'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs font-black">
+                        <span>Table {t.number}</span>
+                        <span
+                          className={`text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-wider ${
+                            isSelected
+                              ? 'bg-white/25 text-white'
+                              : isOccupied
+                              ? 'bg-amber-500 text-white shadow-2xs'
+                              : 'bg-emerald-600 text-white shadow-2xs'
+                          }`}
+                        >
+                          {t.status}
+                        </span>
+                      </div>
+                      <div className="text-[10px] opacity-80 mt-1 font-semibold">Cap: {t.capacity} seats</div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -453,10 +465,11 @@ export const BarPage = () => {
                     <button
                       key={cat}
                       onClick={() => setActiveCategory(cat)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${activeCategory === cat
-                          ? 'bg-[#e8f5e9] text-[#2e7d32] border border-emerald-300'
-                          : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                        }`}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer ${
+                        activeCategory === cat
+                          ? 'bg-[#2e7d32] text-white shadow-xs'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
                     >
                       {cat}
                     </button>
@@ -468,18 +481,20 @@ export const BarPage = () => {
                 {filteredMenu.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col justify-between hover:border-emerald-500 transition-all group"
+                    className="bg-white border-2 border-slate-100 hover:border-emerald-500 p-4 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-xs transition-all group"
                   >
                     <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{item.category}</span>
-                      <h4 className="font-extrabold text-slate-900 text-xs leading-snug">{item.name}</h4>
+                      <span className="text-[9px] font-black text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md uppercase tracking-wider border border-emerald-200/60 inline-block">
+                        {item.category}
+                      </span>
+                      <h4 className="font-extrabold text-slate-900 text-xs leading-snug pt-0.5">{item.name}</h4>
                       {item.description && <p className="text-[10px] text-slate-500 line-clamp-1">{item.description}</p>}
                     </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 mt-2">
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-2">
                       <span className="font-black text-slate-900 text-xs">{formatCurrency(Number(item.price))}</span>
                       <button
                         onClick={() => addToCart(item)}
-                        className="bg-[#2e7d32] hover:bg-[#236327] text-white text-[11px] font-extrabold px-3 py-1.5 rounded-xl transition-all shadow-2xs group-hover:scale-105"
+                        className="bg-[#2e7d32] hover:bg-[#236327] text-white text-[11px] font-extrabold px-3 py-1.5 rounded-xl transition-all shadow-2xs group-hover:scale-105 cursor-pointer"
                       >
                         + Add
                       </button>
@@ -640,7 +655,7 @@ export const BarPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white text-xs font-mono uppercase">
+                <tr className="bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider">
                   <th className="p-3.5">Order ID</th>
                   <th className="p-3.5">Table / Service</th>
                   <th className="p-3.5">Items</th>
