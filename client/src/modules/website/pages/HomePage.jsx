@@ -1079,36 +1079,32 @@ export const HomePage = () => {
       </section>
 
       {/* PRE-FOOTER CTA BANNER */}
-      <section className="py-16 sm:py-20 px-6 lg:px-16 bg-[#18191c] text-white border-t border-gray-800/80">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10">
-          <div className="space-y-4 text-center lg:text-left max-w-2xl">
-            <h2 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-white tracking-tight leading-[1.08]">
+      <section className="py-14 sm:py-18 px-6 lg:px-16 bg-[#232528] text-white border-t border-gray-700/40">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-8">
+          <div className="space-y-3 text-center lg:text-left max-w-xl">
+            <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-white tracking-tight leading-[1.12]">
               Grow your club on <br className="hidden sm:inline" />BookMyCourt
             </h2>
-            <p className="text-base sm:text-lg text-gray-300 font-normal leading-relaxed">
+            <p className="text-sm sm:text-base text-gray-300 font-normal leading-relaxed">
               Bookings, memberships, shop POS & court scheduling — all in one place.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-5 w-full lg:w-auto shrink-0 justify-center lg:justify-end">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto shrink-0 justify-center lg:justify-end">
             <a
               href="#trial"
-              className="bg-[#1f2125] hover:bg-black text-white p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-800"
+              className="bg-[#70B42C] hover:bg-[#62a024] text-[#0f172a] px-7 py-5 sm:px-8 sm:py-6 w-full sm:w-60 h-28 sm:h-32 rounded-2xl flex items-center justify-between transition-all transform hover:-translate-y-1 shadow-lg group border border-lime-500/30 cursor-pointer"
             >
-              <div className="flex items-center justify-between text-xl font-black text-white">
-                <span>Book a Trial</span>
-                <CaretRight weight="bold" className="w-6 h-6 text-emerald-400 group-hover:translate-x-1.5 transition-transform" />
-              </div>
+              <span className="text-lg sm:text-xl font-extrabold tracking-tight">Book a Trial</span>
+              <CaretRight weight="bold" className="w-6 h-6 text-[#0f172a] group-hover:translate-x-1.5 transition-transform" />
             </a>
 
             <a
               href="#plans"
-              className="bg-white hover:bg-gray-100 text-[#1f2125] p-6 w-full sm:w-60 h-40 flex flex-col justify-end transition-all transform hover:-translate-y-1 shadow-2xl group border border-gray-200"
+              className="bg-white hover:bg-gray-100 text-[#0f172a] px-7 py-5 sm:px-8 sm:py-6 w-full sm:w-60 h-28 sm:h-32 rounded-2xl flex items-center justify-between transition-all transform hover:-translate-y-1 shadow-lg group border border-gray-200 cursor-pointer"
             >
-              <div className="flex items-center justify-between text-xl font-black text-[#1f2125]">
-                <span>See Plans</span>
-                <CaretRight weight="bold" className="w-6 h-6 text-gray-700 group-hover:translate-x-1.5 transition-transform" />
-              </div>
+              <span className="text-lg sm:text-xl font-extrabold tracking-tight">See Plans</span>
+              <CaretRight weight="bold" className="w-6 h-6 text-[#0f172a] group-hover:translate-x-1.5 transition-transform" />
             </a>
           </div>
         </div>
