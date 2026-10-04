@@ -8,10 +8,10 @@ import { TrendingUp, Users, AlertTriangle, ShoppingBag, Calendar, Coffee, Sparkl
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 
 const SOURCE_META = {
-  COURT: { name: 'Courts', color: '#4A812F' },
+  COURT: { name: 'Courts', color: '#10b981' },
   SHOP: { name: 'Shop', color: '#0284c7' },
-  BAR: { name: 'Bar & Cafe', color: '#d97706' },
-  MEMBERSHIP: { name: 'Memberships', color: '#16a34a' },
+  BAR: { name: 'Bar & Cafe', color: '#f59e0b' },
+  MEMBERSHIP: { name: 'Memberships', color: '#6366f1' },
   OTHER: { name: 'Other', color: '#64748b' },
 };
 
@@ -91,6 +91,7 @@ export const OwnerDashboardPage = () => {
           const revenueData = (summary.revenueBySource || [])
             .map((s) => ({ name: SOURCE_META[s.source]?.name || s.source, value: Number(s.amount), color: SOURCE_META[s.source]?.color || '#64748b' }))
             .filter((d) => d.value > 0);
+          const totalRevenue = revenueData.reduce((acc, curr) => acc + curr.value, 0);
           const utilData = utilisation.map((c) => ({ name: c.courtName, util: c.utilisationPct }));
 
           return (
@@ -162,45 +163,115 @@ export const OwnerDashboardPage = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Revenue pie */}
-                <div className="lg:col-span-6 bg-white border border-gray-200 p-6 rounded-3xl shadow-xs space-y-4">
+                <div className="lg:col-span-6 bg-white border border-gray-200 p-6 rounded-3xl shadow-xs space-y-5">
                   <div className="flex items-center justify-between border-b pb-3 border-gray-100">
                     <h3 className="font-extrabold text-slate-900 text-base">
                       Revenue by Channel ({summary.periodLabel || (period === 'today' ? 'Today' : period === 'week' ? 'This Week' : 'This Month')})
                     </h3>
-                    <span className="text-[10px] font-mono font-black uppercase bg-emerald-50 text-[#4A812F] border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                    <span className="text-[10px] font-mono font-black uppercase bg-emerald-50 text-[#2e7d32] border border-emerald-200 px-2.5 py-0.5 rounded-full">
                       GST BREAKDOWN
                     </span>
                   </div>
 
                   {revenueData.length ? (
                     <>
-                      <div className="h-64">
+                      {/* Donut Chart with Centered Total KPI */}
+                      <div className="relative h-64 flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={revenueData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} label>
-                              {revenueData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                            <Pie
+                              data={revenueData}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={68}
+                              outerRadius={96}
+                              paddingAngle={3}
+                              stroke="#ffffff"
+                              strokeWidth={2}
+                            >
+                              {revenueData.map((entry, i) => (
+                                <Cell key={i} fill={entry.color} />
+                              ))}
                             </Pie>
-                            <Tooltip formatter={(value) => formatCurrency(value)} />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  const pct = totalRevenue > 0 ? ((data.value / totalRevenue) * 100).toFixed(1) : 0;
+                                  return (
+                                    <div className="bg-slate-900/95 backdrop-blur-md text-white text-xs px-3.5 py-2.5 rounded-2xl shadow-xl border border-slate-800 space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: data.color }} />
+                                        <span className="font-bold text-slate-200">{data.name}</span>
+                                      </div>
+                                      <div className="flex items-center justify-between gap-4 font-mono">
+                                        <span className="font-black text-white text-sm">{formatCurrency(data.value)}</span>
+                                        <span className="text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-800/40 text-[10px]">
+                                          {pct}%
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
                           </PieChart>
                         </ResponsiveContainer>
-                      </div>
-                      <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold pt-2">
-                        {revenueData.map((item) => (
-                          <div key={item.name} className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-gray-200">
-                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
-                            <span className="text-slate-700">{item.name}: <strong className="text-slate-900">{formatCurrency(item.value)}</strong></span>
-                          </div>
-                        ))}
+
+                        {/* Centered Total Metric */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total</span>
+                          <span className="text-xl font-black text-slate-900 tracking-tight mt-0.5">
+                            {formatCurrency(totalRevenue)}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Payment mode split */}
+                      {/* Clean 2-Column Channel Legend Cards */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        {revenueData.map((item) => {
+                          const pct = totalRevenue > 0 ? ((item.value / totalRevenue) * 100).toFixed(1) : 0;
+                          return (
+                            <div
+                              key={item.name}
+                              className="flex items-center justify-between p-2.5 bg-slate-50/80 hover:bg-slate-100/80 rounded-2xl border border-gray-100 transition-colors"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs"
+                                  style={{ backgroundColor: item.color }}
+                                />
+                                <span className="text-xs font-bold text-slate-700 truncate">{item.name}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0 pl-2">
+                                <span className="text-xs font-black text-slate-900 font-mono">
+                                  {formatCurrency(item.value)}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-500 bg-white px-1.5 py-0.5 rounded-md border border-gray-200 shadow-2xs">
+                                  {pct}%
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Settled Payment Modes Split */}
                       {summary.paymentModeSplit && summary.paymentModeSplit.length > 0 && (
                         <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-                          <span className="text-[11px] font-mono font-bold text-slate-400 uppercase">Settled Modes:</span>
+                          <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider">
+                            Settled Modes:
+                          </span>
                           <div className="flex flex-wrap gap-2">
                             {summary.paymentModeSplit.map((pm) => (
-                              <span key={pm.mode} className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 font-bold text-[11px]">
-                                {pm.mode}: {formatCurrency(pm.amount)}
+                              <span
+                                key={pm.mode}
+                                className="px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-700 font-bold text-[11px] shadow-2xs"
+                              >
+                                {pm.mode}: <strong className="text-slate-900 font-mono">{formatCurrency(pm.amount)}</strong>
                               </span>
                             ))}
                           </div>

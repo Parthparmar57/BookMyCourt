@@ -71,21 +71,18 @@ export const Topbar = () => {
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 sm:px-8 py-3.5 flex items-center justify-between font-sans sticky top-0 z-20 shadow-2xs">
-      {/* Left Area: Responsive Hamburger / Cross Toggle Button */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        {/* Toggle Button at fixed place: Switches between Hamburger (☰) and Cross (✕) */}
-        <button
-          onClick={toggleSidebar}
-          title={isOpen ? 'Hide / Collapse Sidebar' : 'Show / Expand Sidebar'}
-          aria-label="Toggle Navigation Sidebar"
-          className="p-2.5 rounded-2xl text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all shadow-2xs shrink-0 cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-        >
-          {isOpen ? (
-            <X className="w-4 h-4 text-slate-700 transition-transform duration-200 hover:rotate-90" />
-          ) : (
+      {/* Left Area: Hamburger Toggle Button (Position unchanged; visible when sidebar is collapsed) */}
+      <div className="flex items-center gap-3 sm:gap-4 min-h-[40px]">
+        {!isOpen && (
+          <button
+            onClick={toggleSidebar}
+            title="Show / Expand Sidebar"
+            aria-label="Open Navigation Sidebar"
+            className="p-2.5 rounded-2xl text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all shadow-2xs shrink-0 cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          >
             <Menu className="w-4 h-4 text-slate-700 transition-transform duration-200 hover:scale-110" />
-          )}
-        </button>
+          </button>
+        )}
       </div>
 
       {/* Right Actions: Apply Leave (for staff) + Bell Notifications + Initial Avatar + Name */}
