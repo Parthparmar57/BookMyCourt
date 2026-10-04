@@ -324,23 +324,32 @@ export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_
 };
 
 // ─── G3: QR scan lookup ───────────────────────────────────────────────────────
-// The QR payload is the JSON string generated at registration:
-//   JSON.stringify({ memberNo, email, plan })
-// We accept the raw string and resolve the full member profile so the front-desk
-// can identify a member instantly by scanning their QR card.
+// The QR payload can be either:
+//   • a JSON string generated at registration: JSON.stringify({ memberNo, email, plan })
+//   • a bare member number string, e.g. "MEM-MUT7R1WZ-2B7BB4"
+// We accept both and resolve the full member profile so the front-desk can
+// identify a member instantly by scanning their QR card or typing the member no.
 export const scanMember = async (payload) => {
   if (!payload || typeof payload !== 'string') {
     throw new ApiError(400, 'QR payload must be a non-empty string');
   }
 
-  let parsed;
-  try {
-    parsed = JSON.parse(payload);
-  } catch {
-    throw new ApiError(400, 'Invalid QR payload — expected a JSON string');
-  }
+  const trimmed = payload.trim();
 
-  const { memberNo, email } = parsed;
+  // Try JSON first; fall back to treating the raw string as a member number.
+  let memberNo;
+  let email;
+  if (trimmed.startsWith('{')) {
+    let parsed;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      throw new ApiError(400, 'Invalid QR payload — expected a JSON string');
+    }
+    ({ memberNo, email } = parsed);
+  } else {
+    memberNo = trimmed;
+  }
 
   if (!memberNo && !email) {
     throw new ApiError(400, 'QR payload must contain memberNo or email');

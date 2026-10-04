@@ -96,6 +96,23 @@ export const createBarOrder = async (data, user) => {
     const total = round2(Math.max(0, subtotal - discount + totalTax));
     const shiftId = await findOpenShiftId(tx, user?.employeeId);
 
+    // Validate table availability BEFORE creating the new order
+    if (data.barTableId) {
+      const targetTable = await tx.barTable.findUnique({ where: { id: data.barTableId } });
+      if (!targetTable) throw new ApiError(404, 'Selected table not found');
+
+      const activeOrdersCount = await tx.order.count({
+        where: {
+          barTableId: data.barTableId,
+          status: { in: ['PLACED', 'PREPARING', 'SERVED'] },
+        },
+      });
+
+      if (targetTable.status === TABLE_STATUS.OCCUPIED || activeOrdersCount > 0) {
+        throw new ApiError(409, `Table ${targetTable.number} is currently occupied. Please select an available table or clear the existing table order.`);
+      }
+    }
+
     const order = await tx.order.create({
       data: {
         orderNo: genDocNo('BAR'),
@@ -122,20 +139,6 @@ export const createBarOrder = async (data, user) => {
     });
 
     if (data.barTableId) {
-      const targetTable = await tx.barTable.findUnique({ where: { id: data.barTableId } });
-      if (!targetTable) throw new ApiError(404, 'Selected table not found');
-
-      const activeOrdersCount = await tx.order.count({
-        where: {
-          barTableId: data.barTableId,
-          status: { in: ['PLACED', 'PREPARING', 'SERVED'] },
-        },
-      });
-
-      if (targetTable.status === TABLE_STATUS.OCCUPIED || activeOrdersCount > 0) {
-        throw new ApiError(409, `Table ${targetTable.number} is currently occupied. Please select an available table or clear the existing table order.`);
-      }
-
       const updatedTable = await tx.barTable.update({
         where: { id: data.barTableId },
         data: { status: TABLE_STATUS.OCCUPIED },

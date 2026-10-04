@@ -85,6 +85,7 @@ export const BookingsPage = () => {
   // Drawer / Selection states
   const [selectedSlot, setSelectedSlot] = useState(null); // { courtId, courtName, sport, slotTime, walkInRate }
   const [inspectedBooking, setInspectedBooking] = useState(null); // Slot object for viewing details & cancellation
+  const [alreadyBookedModal, setAlreadyBookedModal] = useState(null); // Alert modal when clicking someone else's booked slot
   const [activeTicketBooking, setActiveTicketBooking] = useState(null); // Booking pass modal target
   const [bookingTab, setBookingTab] = useState('member'); // 'member' | 'walkin' | 'maintenance' | 'event'
 
@@ -367,6 +368,29 @@ export const BookingsPage = () => {
     setSuccessMsg('');
 
     if (!slot?.isAvailable) {
+      const userPhone = user?.phone?.trim()?.toLowerCase();
+      const userName = user?.name?.trim()?.toLowerCase();
+      const slotPhone = slot?.memberPhone?.trim()?.toLowerCase();
+      const slotName = slot?.memberName?.trim()?.toLowerCase();
+
+      const isOwnedByCurrentUser = Boolean(
+        (currentMemberId && slot.memberId && String(slot.memberId) === String(currentMemberId)) ||
+        (userPhone && slotPhone && userPhone === slotPhone) ||
+        (userName && slotName && userName === slotName)
+      );
+
+      // If non-staff user clicks a slot booked by someone else, show already booked popup
+      if (!isStaff && !isOwnedByCurrentUser) {
+        setAlreadyBookedModal({
+          courtName: court.courtName,
+          sport: court.sport,
+          slotTime: slot.slotTime,
+          memberName: slot.memberName,
+          timeRangeText: slot.timeRangeText || slot.slotTime,
+        });
+        return;
+      }
+
       setInspectedBooking({
         ...slot,
         courtName: court.courtName,
@@ -1999,6 +2023,66 @@ export const BookingsPage = () => {
           </div>
         );
       })()}
+
+      {/* ─── MODAL: SLOT ALREADY BOOKED ALERT ─── */}
+      {alreadyBookedModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 border border-slate-100 text-center">
+            
+            {/* Header Icon */}
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200/80 shadow-xs mx-auto">
+              <ShieldAlert className="w-8 h-8 text-amber-600" />
+            </div>
+
+            {/* Title & Description */}
+            <div className="space-y-1.5">
+              <h3 className="font-extrabold text-xl text-slate-800 tracking-tight">
+                Slot Already Booked
+              </h3>
+              <p className="text-slate-600 text-sm font-medium leading-relaxed px-2">
+                This slot is already booked. Please try for another slot.
+              </p>
+            </div>
+
+            {/* Slot Info Card */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left space-y-2.5 text-xs text-slate-700">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
+                <span className="font-semibold text-slate-500">Court / Facility</span>
+                <span className="font-bold text-slate-800">
+                  {alreadyBookedModal.courtName} ({alreadyBookedModal.sport})
+                </span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
+                <span className="font-semibold text-slate-500">Time Slot</span>
+                <span className="font-mono font-bold text-emerald-800">
+                  {date} · {alreadyBookedModal.timeRangeText || alreadyBookedModal.slotTime}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-slate-500">Slot Status</span>
+                <span className="bg-amber-100 text-amber-900 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-amber-200">
+                  Already Reserved
+                </span>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setAlreadyBookedModal(null)}
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#1b4332] hover:bg-[#2d6a4f] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>Please Try For Another Slot</span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 font-medium italic">
+              Available slots are marked in white with green &ldquo;Reserve&rdquo; buttons.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ─── MODAL 3: SCHEDULE FRIDAY SOCIAL PLAY (STAFF) ─── */}
       {isSchedulingSocial && (

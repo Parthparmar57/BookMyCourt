@@ -4,7 +4,7 @@ import { TABLE_STATUS } from '../../../shared/index.js';
 import { emitTableStatusUpdate } from '../../../sockets/kitchen.socket.js';
 
 export const listTables = async () => {
-  return prisma.barTable.findMany({
+  const tables = await prisma.barTable.findMany({
     orderBy: { number: 'asc' },
     include: {
       orders: {
@@ -12,6 +12,19 @@ export const listTables = async () => {
         include: { items: { include: { menuItem: true } } },
       },
     },
+  });
+
+  return tables.map((table) => {
+    const hasActiveOrders = Boolean(table.orders && table.orders.length > 0);
+    const effectiveStatus = table.status === TABLE_STATUS.RESERVED
+      ? TABLE_STATUS.RESERVED
+      : hasActiveOrders
+      ? TABLE_STATUS.OCCUPIED
+      : table.status;
+    return {
+      ...table,
+      status: effectiveStatus,
+    };
   });
 };
 
@@ -25,12 +38,28 @@ export const createTable = async (data) => {
 };
 
 export const updateTable = async (id, data) => {
-  const updated = await prisma.barTable.update({
-    where: { id },
-    data,
+  return prisma.$transaction(async (tx) => {
+    // If staff changes table status to AVAILABLE, mark any active orders on this table as COMPLETED so table is freed
+    if (data.status === TABLE_STATUS.AVAILABLE || data.status === 'AVAILABLE') {
+      await tx.order.updateMany({
+        where: {
+          barTableId: id,
+          status: { in: ['PLACED', 'PREPARING', 'SERVED'] },
+        },
+        data: {
+          status: 'COMPLETED',
+        },
+      });
+    }
+
+    const updated = await tx.barTable.update({
+      where: { id },
+      data,
+    });
+
+    emitTableStatusUpdate(updated);
+    return updated;
   });
-  emitTableStatusUpdate(updated);
-  return updated;
 };
 
 export const deleteTable = async (id) => {
