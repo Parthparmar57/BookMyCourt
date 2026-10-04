@@ -197,10 +197,10 @@ export const HomePage = () => {
 
 
   const ITEM_PRODUCT_IMAGES = {
-    racket_tennis: 'https://images.unsplash.com/photo-1617083934555-ac7d4fed8814?auto=format&fit=crop&q=80&w=600',
-    racket_padel: 'https://images.unsplash.com/photo-1592709823125-a191f07a2a5e?auto=format&fit=crop&q=80&w=600',
-    racket_badminton: 'https://images.unsplash.com/photo-1627627256672-027a4613d028?auto=format&fit=crop&q=80&w=600',
-    balls: 'https://images.unsplash.com/photo-1530915536647-759c9044a7b7?auto=format&fit=crop&q=80&w=600',
+    racket_tennis: '/photo-1622279457486-62dcc4a431d6.avif',
+    racket_padel: '/photo-1554068865-24cecd4e34b8.avif',
+    racket_badminton: '/photo-1626248801379-51a0748a5f96.avif',
+    balls: '/photo-1595435934249-5df7ed86e1c0.avif',
     shoes: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600',
     apparel: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600',
     bags: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600',
@@ -208,14 +208,13 @@ export const HomePage = () => {
   };
 
   const getProductImage = (prod, idx = 0) => {
-    const name = (prod?.name || '').toLowerCase();
-    const cat = (prod?.category || '').toLowerCase();
-
-    // Direct valid non-people equipment URL
     const url = prod?.imageUrl;
-    if (url && typeof url === 'string' && url.trim().length > 0 && !url.includes('.avif') && !url.includes('undefined')) {
+    if (url && typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')) {
       return url;
     }
+
+    const name = (prod?.name || '').toLowerCase();
+    const cat = (prod?.category || '').toLowerCase();
 
     // 1. Tennis Balls
     if (name.includes('ball') || cat.includes('ball')) {
@@ -249,12 +248,12 @@ export const HomePage = () => {
     if (name.includes('badminton') || name.includes('astrox') || cat.includes('badminton')) {
       return ITEM_PRODUCT_IMAGES.racket_badminton;
     }
-    if (name.includes('tennis') || name.includes('pro staff') || name.includes('pure aero') || cat.includes('racket')) {
+    if (name.includes('tennis') || name.includes('pro staff') || name.includes('pure aero') || cat.includes('racket') || cat.includes('rackets')) {
       const racketVariations = [
         ITEM_PRODUCT_IMAGES.racket_tennis,
         ITEM_PRODUCT_IMAGES.racket_padel,
         ITEM_PRODUCT_IMAGES.racket_badminton,
-        'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&q=80&w=600'
+        ITEM_PRODUCT_IMAGES.balls
       ];
       return racketVariations[idx % racketVariations.length];
     }
@@ -732,6 +731,10 @@ export const HomePage = () => {
                   <img
                     src={getProductImage(prod, idx)}
                     alt={prod.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/photo-1622279457486-62dcc4a431d6.avif';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <span className="absolute top-3 left-3 bg-[#121212] text-white text-[10px] font-black px-2.5 py-1 uppercase font-mono shadow-md">
