@@ -41,9 +41,8 @@ export const Sidebar = () => {
         ];
       case 'FRONT_DESK':
         return [
-          { label: 'Dashboard', path: '/staff/frontdesk', icon: LayoutDashboard },
           { label: 'Bookings', path: '/staff/frontdesk/bookings', icon: Calendar },
-          { label: 'Members', path: '/staff/frontdesk/members', icon: Users },
+          { label: 'Members', path: '/staff/frontdesk', icon: Users },
           { label: 'CRM Leads', path: '/staff/frontdesk/crm', icon: Kanban }
         ];
       case 'BAR_STAFF':
@@ -107,7 +106,7 @@ export const Sidebar = () => {
       <nav className="space-y-1.5 pt-4 flex-1 overflow-y-auto no-scrollbar">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = location.pathname === link.path;
+          const isActive = location.pathname === link.path || (link.path === '/staff/frontdesk' && location.pathname === '/staff/frontdesk/members');
           return (
             <Link
               key={link.path}

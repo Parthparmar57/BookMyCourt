@@ -2,19 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useKitchenQueue, useUpdateKitchenStatus } from '../../../hooks/useBar';
 import { useKitchenRealtime } from '../../../hooks/useRealtime';
 import { useAuth } from '../../../context/AuthContext';
-import { ApplyLeaveModal } from '../../../shared/components/ApplyLeaveModal';
 import { 
   Utensils, 
   Clock, 
   CheckCircle2, 
   ArrowRight, 
-  RotateCw, 
-  Volume2, 
-  VolumeX, 
   Search, 
   Flame,
   Check,
-  Calendar,
   ChefHat,
   Sparkles
 } from 'lucide-react';
@@ -44,8 +39,6 @@ export const KitchenPage = () => {
   const queueQuery = useKitchenQueue({ refetchInterval: 10000 });
   const updateStatus = useUpdateKitchenStatus();
 
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
 
@@ -98,46 +91,12 @@ export const KitchenPage = () => {
           </div>
         </div>
 
-        {/* Live Clock & Action Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Live Station Clock */}
+        {/* Live Clock */}
+        <div className="flex items-center gap-3">
           <div className="bg-slate-900 text-emerald-400 font-mono text-xs font-black px-4 py-2 rounded-2xl flex items-center gap-2 border border-slate-800 shadow-inner">
             <Clock className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
             <span>{currentTime}</span>
           </div>
-
-          {/* Sound Alert Toggle */}
-          <button
-            onClick={() => setSoundEnabled((prev) => !prev)}
-            title={soundEnabled ? 'Mute Sound Alerts' : 'Enable Sound Alerts'}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
-              soundEnabled
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-slate-100 border-slate-200 text-slate-500'
-            }`}
-          >
-            {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
-            <span className="hidden sm:inline">{soundEnabled ? 'Audio ON' : 'Muted'}</span>
-          </button>
-
-          {/* Refresh Button */}
-          <button
-            onClick={() => queueQuery.refetch()}
-            disabled={queueQuery.isFetching}
-            className="p-2.5 rounded-2xl border border-gray-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
-            title="Refresh Orders"
-          >
-            <RotateCw className={`w-4 h-4 ${queueQuery.isFetching ? 'animate-spin text-[#2e7d32]' : ''}`} />
-          </button>
-
-          {/* Apply Leave modal trigger */}
-          <button
-            onClick={() => setShowLeaveModal(true)}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-gray-200 text-xs font-bold px-3.5 py-2 rounded-2xl flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-          >
-            <Calendar className="w-4 h-4 text-emerald-600" />
-            <span className="hidden sm:inline">Apply Leave</span>
-          </button>
         </div>
       </div>
 
@@ -363,8 +322,6 @@ export const KitchenPage = () => {
         </div>
       </div>
 
-      {/* Apply Leave Modal */}
-      {showLeaveModal && <ApplyLeaveModal onClose={() => setShowLeaveModal(false)} />}
     </div>
   );
 };
