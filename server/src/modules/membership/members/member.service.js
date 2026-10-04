@@ -121,10 +121,15 @@ export const registerMember = async (data, createdById) => {
   });
 };
 
-export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 }) => {
+export const searchMembers = async ({ q, planId, status, page = 1, limit = 25 }) => {
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = String(limit).toLowerCase() === 'all' || Number(limit) >= 1000
+    ? 1000
+    : Math.max(1, Math.min(1000, parseInt(limit, 10) || 25));
+
   const where = {
-    ...(status && { status }),
-    ...(planId && { planId }),
+    ...(status && status !== 'ALL' && { status }),
+    ...(planId && planId !== 'ALL' && { planId }),
     ...(q && {
       OR: [
         { memberNo: { contains: q, mode: 'insensitive' } },
@@ -139,8 +144,8 @@ export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 })
     prisma.member.count({ where }),
     prisma.member.findMany({
       where,
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
       orderBy: { createdAt: 'desc' },
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },
@@ -165,7 +170,7 @@ export const searchMembers = async ({ q, planId, status, page = 1, limit = 20 })
     };
   });
 
-  return { members, total, page, totalPages: Math.ceil(total / limit) };
+  return { members, total, page: pageNum, totalPages: Math.ceil(total / limitNum), limit: limitNum };
 };
 
 const STAFF_ROLES = new Set([ROLES.OWNER, ROLES.FRONT_DESK, ROLES.BAR_STAFF, ROLES.SHOP_STAFF]);

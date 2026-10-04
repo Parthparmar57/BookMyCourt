@@ -34,5 +34,10 @@ export const memberSearchQuerySchema = z.object({
   planId: z.string().uuid().optional(),
   status: z.nativeEnum(MEMBER_STATUS).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z
+    .preprocess(
+      (val) => (String(val).toLowerCase() === 'all' ? 1000 : val),
+      z.coerce.number().int().min(1).max(1000)
+    )
+    .default(20),
 });
