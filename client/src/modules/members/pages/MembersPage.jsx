@@ -180,7 +180,6 @@ export const MembersPage = () => {
     if (member.phone) approved[member.phone] = targetTier;
     if (member.memberNo) approved[member.memberNo] = targetTier;
     if (member.name) approved[member.name] = targetTier;
-    approved['GLOBAL_ACTIVE_MEMBER'] = targetTier;
 
     localStorage.setItem('bmc_approved_upgrades', JSON.stringify(approved));
 
@@ -489,8 +488,12 @@ export const MembersPage = () => {
               <div>
                 <label className="block mb-1">Membership Plan Tier</label>
                 <CustomSelect
+                  name="planId"
                   value={watch('planId') || plans[0]?.id || ''}
-                  onChange={(e) => setValue('planId', e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target?.value || e?.value || e;
+                    setValue('planId', val, { shouldValidate: true });
+                  }}
                   options={plans.map((p) => ({
                     value: p.id,
                     label: `${p.name} — ${formatCurrency(p.price)}/${p.durationMonths}mo${p.maxAge ? ` (Age < ${p.maxAge})` : ''}`,

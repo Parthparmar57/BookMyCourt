@@ -156,7 +156,7 @@ export const ShopInventoryPage = () => {
           price: Number(productForm.price),
           stock: Number(productForm.stock),
           reorderLevel: Number(productForm.reorderLevel),
-          imageUrl: productForm.imageUrl,
+          imageUrl: productForm.imageUrl?.trim() || null,
           description: productForm.description,
         });
       } else {
@@ -167,7 +167,7 @@ export const ShopInventoryPage = () => {
           price: Number(productForm.price),
           stock: Number(productForm.stock),
           reorderLevel: Number(productForm.reorderLevel),
-          imageUrl: productForm.imageUrl,
+          imageUrl: productForm.imageUrl?.trim() || null,
           description: productForm.description,
         });
       }
@@ -664,7 +664,7 @@ export const ShopInventoryPage = () => {
               </div>
 
               <div>
-                <label className="block mb-1">Product Image URL</label>
+                <label className="block mb-1">Product Image URL <span className="text-slate-400 text-[11px] font-normal">(Optional)</span></label>
                 <input
                   value={productForm.imageUrl}
                   onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}

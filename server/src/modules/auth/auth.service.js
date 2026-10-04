@@ -127,7 +127,12 @@ export const refreshAccessToken = async (token) => {
     const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      include: { member: true, employee: true },
+      include: {
+        member: {
+          include: { plan: true },
+        },
+        employee: true,
+      },
     });
 
     if (!user) {

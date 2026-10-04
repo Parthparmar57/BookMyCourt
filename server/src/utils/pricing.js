@@ -18,10 +18,11 @@ export const calculateCourtPrice = async (prismaClient, courtId, memberId) => {
       include: { plan: true },
     });
 
-    if (member && member.status === MEMBER_STATUS.ACTIVE) {
+    if (member && member.status === MEMBER_STATUS.ACTIVE && member.plan) {
       const now = new Date();
-      if (now <= new Date(member.endDate)) {
-        price = Number(member.plan.courtRate);
+      const isExpired = member.endDate && now > new Date(member.endDate);
+      if (!isExpired) {
+        price = Number(member.plan.courtRate || 0);
       }
     }
   }
@@ -39,12 +40,17 @@ export const getMemberDiscounts = async (prismaClient, memberId) => {
     include: { plan: true },
   });
 
-  if (!member || member.status !== MEMBER_STATUS.ACTIVE || new Date() > new Date(member.endDate)) {
+  if (!member || member.status !== MEMBER_STATUS.ACTIVE || !member.plan) {
+    return { shopDiscountPct: 0, barDiscountPct: 0 };
+  }
+
+  const now = new Date();
+  if (member.endDate && now > new Date(member.endDate)) {
     return { shopDiscountPct: 0, barDiscountPct: 0 };
   }
 
   return {
-    shopDiscountPct: member.plan.shopDiscountPct || 0,
-    barDiscountPct: member.plan.barDiscountPct || 0,
+    shopDiscountPct: member.plan.shopDiscountPct ?? 0,
+    barDiscountPct: member.plan.barDiscountPct ?? 0,
   };
 };

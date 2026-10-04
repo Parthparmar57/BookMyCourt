@@ -374,7 +374,7 @@ export const updateMember = async (id, data, actorId) => {
   const member = await prisma.member.findUnique({ where: { id }, include: { user: true } });
   if (!member) throw new ApiError(404, 'Member not found');
 
-  const { name, email, phone, emergencyContact, photoUrl, status } = data;
+  const { name, email, phone, emergencyContact, photoUrl, status, planId } = data;
 
   return prisma.$transaction(async (tx) => {
     if (name || email || phone) {
@@ -394,6 +394,7 @@ export const updateMember = async (id, data, actorId) => {
         ...(emergencyContact !== undefined && { emergencyContact }),
         ...(photoUrl !== undefined && { photoUrl }),
         ...(status && { status }),
+        ...(planId && { planId }),
       },
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },

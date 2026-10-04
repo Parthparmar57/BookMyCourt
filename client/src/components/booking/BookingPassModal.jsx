@@ -23,9 +23,10 @@ export const BookingPassModal = ({ booking, onClose }) => {
   // Member details
   const memberName = booking.member?.user?.name || booking.walkInName || booking.memberName || 'Valued Member';
   const memberCode = booking.member?.memberCode || (booking.memberId ? `MEM-${booking.memberId.slice(0, 6).toUpperCase()}` : 'GUEST-PASS');
-  const planName = booking.member?.plan?.name || booking.planName || 'Standard Membership';
+  const rawPlanName = booking.member?.plan?.name || booking.planName || booking.member?.user?.plan || 'Silver';
+  const planName = /standard/i.test(rawPlanName) ? 'Silver' : rawPlanName;
 
-  // Membership Tier Badge Detection
+  // Membership Tier Badge Detection (Only 3 plans: Gold, Silver, Junior)
   const getTierBadge = (planStr) => {
     const nameUpper = (planStr || '').toUpperCase();
     if (nameUpper.includes('GOLD')) {
@@ -36,27 +37,19 @@ export const BookingPassModal = ({ booking, onClose }) => {
         printBadge: 'background: #fffbe6; color: #78350f; border: 1px solid #fde68a;'
       };
     }
-    if (nameUpper.includes('SILVER')) {
+    if (nameUpper.includes('JUNIOR') || nameUpper.includes('YOUTH') || nameUpper.includes('CHILD')) {
       return {
-        label: 'SILVER MEMBERSHIP',
-        icon: '🥈',
-        bg: 'bg-slate-100 text-slate-800 border-slate-300',
-        printBadge: 'background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1;'
-      };
-    }
-    if (nameUpper.includes('PLATINUM')) {
-      return {
-        label: 'PLATINUM VIP',
-        icon: '💎',
-        bg: 'bg-indigo-50 text-indigo-900 border-indigo-300',
-        printBadge: 'background: #eef2ff; color: #312e81; border: 1px solid #c7d2fe;'
+        label: 'JUNIOR MEMBERSHIP',
+        icon: '🎽',
+        bg: 'bg-sky-50 text-sky-900 border-sky-300',
+        printBadge: 'background: #f0f9ff; color: #0c4a6e; border: 1px solid #bae6fd;'
       };
     }
     return {
-      label: planStr || 'VIP EXECUTIVE PASS',
-      icon: '👑',
-      bg: 'bg-emerald-50 text-emerald-900 border-emerald-300',
-      printBadge: 'background: #ecfdf5; color: #064e3b; border: 1px solid #a7f3d0;'
+      label: 'SILVER MEMBERSHIP',
+      icon: '🥈',
+      bg: 'bg-slate-100 text-slate-800 border-slate-300',
+      printBadge: 'background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1;'
     };
   };
 
@@ -67,8 +60,20 @@ export const BookingPassModal = ({ booking, onClose }) => {
   const timeFormatted = `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   const dateFormatted = startTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   
-  const isZeroPrice = Number(booking.price || 0) === 0;
-  const priceFormatted = isZeroPrice ? '₹0.00 (Included in Plan)' : `₹${Number(booking.price).toFixed(2)}`;
+  const isGoldPlan = /gold/i.test(planName);
+  const isJuniorPlan = /junior|youth|child/i.test(planName);
+  const rawBookingPrice = Number(booking.price ?? 0);
+
+  let priceFormatted = '';
+  if (isGoldPlan) {
+    priceFormatted = '₹0.00 (Included in Plan)';
+  } else if (rawBookingPrice > 0) {
+    priceFormatted = `₹${rawBookingPrice.toFixed(2)}`;
+  } else if (isJuniorPlan) {
+    priceFormatted = '₹100.00 (Junior Plan Rate)';
+  } else {
+    priceFormatted = '₹200.00 (Silver Plan Rate)';
+  }
   const paymentMethodLabel = booking.paymentMode || 'Direct Approval / Member Plan';
 
   // Encode payload for QR scanner

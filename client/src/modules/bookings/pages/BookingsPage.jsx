@@ -16,6 +16,7 @@ import { useBookingRealtime } from '../../../hooks/useRealtime';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
 import { CustomSelect } from '../../../shared/components/CustomSelect';
+import { BookingPassModal } from '../../../components/booking/BookingPassModal';
 import {
   CheckCircle2,
   AlertCircle,
@@ -85,6 +86,7 @@ export const BookingsPage = () => {
   // Drawer / Selection states
   const [selectedSlot, setSelectedSlot] = useState(null); // { courtId, courtName, sport, slotTime, walkInRate }
   const [inspectedBooking, setInspectedBooking] = useState(null); // Slot object for viewing details & cancellation
+  const [activeTicketBooking, setActiveTicketBooking] = useState(null); // Booking pass modal target
   const [bookingTab, setBookingTab] = useState('member'); // 'member' | 'walkin' | 'maintenance' | 'event'
 
   // Booking Form fields
@@ -311,11 +313,20 @@ export const BookingsPage = () => {
   }, [rawMembers, memberSearch]);
 
   const selectedMemberObj = useMemo(() => {
-    if (isMember && currentMemberId) {
-      return rawMembers.find((m) => m.id === currentMemberId);
+    if (isMember) {
+      return (
+        user?.member ||
+        rawMembers.find(
+          (m) =>
+            m.id === currentMemberId ||
+            m.userId === user?.id ||
+            (m.user?.email && user?.email && m.user.email.toLowerCase() === user.email.toLowerCase()) ||
+            (m.email && user?.email && m.email.toLowerCase() === user.email.toLowerCase())
+        )
+      );
     }
     return rawMembers.find((m) => m.id === selectedMemberId);
-  }, [rawMembers, selectedMemberId, isMember, currentMemberId]);
+  }, [rawMembers, selectedMemberId, isMember, currentMemberId, user]);
 
   // Date Navigation
   const handlePrevDay = () => {
@@ -1601,34 +1612,57 @@ export const BookingsPage = () => {
                 </div>
               ) : null}
 
-              {/* Slot Summary Card */}
-              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-2 text-xs">
+              {/* Slot Summary & Dynamic Plan Pricing Card */}
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2.5 text-xs">
                 <div className="flex justify-between font-medium text-slate-800">
-                  <span>Court & Sport:</span>
-                  <span>{selectedSlot.courtName} ({selectedSlot.sport})</span>
+                  <span className="text-slate-500">Court & Sport:</span>
+                  <span className="font-extrabold text-slate-900">{selectedSlot.courtName} ({selectedSlot.sport})</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
-                  <span>Time Slot:</span>
-                  <span className="font-medium">{date} · {selectedSlot.slotTime} (60 min)</span>
+                  <span className="text-slate-500">Time Slot:</span>
+                  <span className="font-bold text-slate-800">{date} · {selectedSlot.slotTime} (60 min)</span>
                 </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Tariff Baseline:</span>
-                  <span className="font-semibold text-slate-800">
-                    {bookingTab === 'member' && selectedMemberObj?.plan?.courtRate != null
-                      ? `${formatCurrency(selectedMemberObj.plan.courtRate)}/hr (Plan Rate)`
-                      : `${formatCurrency(selectedSlot.walkInRate)}/hr (Walk-in)`}
-                  </span>
+                <div className="flex justify-between text-slate-600 border-t pt-2 border-slate-200/80">
+                  <span className="text-slate-500">Walk-in Standard Rate:</span>
+                  <span className="font-bold text-slate-700">{formatCurrency(selectedSlot.walkInRate)}/hr</span>
                 </div>
+
+                {bookingTab === 'member' && selectedMemberObj?.plan && (
+                  <div className="bg-emerald-50/90 border border-emerald-200 p-3 rounded-xl space-y-1.5 mt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                        {/gold/i.test(selectedMemberObj.plan.name) ? '🥇' : /junior/i.test(selectedMemberObj.plan.name) ? '🎽' : '🥈'} {selectedMemberObj.plan.name} Tier Benefit
+                      </span>
+                      <span className="text-xs font-black text-[#2e7d32]">
+                        {Number(selectedMemberObj.plan.courtRate || 0) === 0 ? 'FREE (100% Off)' : `${formatCurrency(selectedMemberObj.plan.courtRate)}/hr`}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-emerald-950 font-semibold border-t border-emerald-200/60 pt-1.5">
+                      <span>Payable Amount:</span>
+                      <span className="text-sm font-black text-[#2e7d32]">
+                        {Number(selectedMemberObj.plan.courtRate || 0) === 0 ? '₹0.00 (Included in Member Plan)' : formatCurrency(selectedMemberObj.plan.courtRate)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 1. Member Booking Tab Form */}
               {bookingTab === 'member' && (
                 <div className="space-y-3.5 text-xs font-medium">
                   {isMember ? (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-900 space-y-1">
-                      <span className="text-[11px] text-emerald-700 font-semibold block uppercase">Booking As</span>
-                      <p className="font-semibold text-sm">{user?.name}</p>
-                      <p className="text-[11px] text-emerald-800">{user?.email || user?.phone}</p>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 text-emerald-900 space-y-1.5 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800">Booking As Active Member</span>
+                        {selectedMemberObj?.plan?.name && (
+                          <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                            {selectedMemberObj.plan.name} Tier
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-extrabold text-sm text-slate-900">{user?.name}</p>
+                      <p className="text-[11px] text-emerald-800 font-medium">{user?.email || user?.phone}</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -1664,7 +1698,9 @@ export const BookingsPage = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="font-medium">Member Court Rate:</span>
-                            <span className="font-semibold text-emerald-900">{formatCurrency(selectedMemberObj.plan?.courtRate || 0)}/hr</span>
+                            <span className="font-semibold text-emerald-900">
+                              {Number(selectedMemberObj.plan?.courtRate || 0) === 0 ? 'FREE (100% Discount)' : `${formatCurrency(selectedMemberObj.plan?.courtRate)}/hr`}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="font-medium">Daily Limit:</span>
@@ -1804,129 +1840,164 @@ export const BookingsPage = () => {
       )}
 
       {/* ─── MODAL 2: SESSION INSPECTION & CANCELLATION ─── */}
-      {inspectedBooking && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b pb-3 border-gray-100">
-              <div className="flex items-center gap-2">
-                <Info className="w-5 h-5 text-[#2e7d32]" />
-                <h3 className="font-semibold text-base text-slate-800">Session Inspection</h3>
-              </div>
-              <button onClick={() => setInspectedBooking(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {inspectedBooking && (() => {
+        const foundMember = rawMembers.find(
+          (m) =>
+            (m.user?.phone && inspectedBooking.memberPhone && m.user.phone === inspectedBooking.memberPhone) ||
+            (m.user?.name && inspectedBooking.memberName && m.user.name.toLowerCase() === inspectedBooking.memberName.toLowerCase())
+        );
+        const approvedUpgrades = JSON.parse(
+          typeof window !== 'undefined' ? localStorage.getItem('bmc_approved_upgrades') || '{}' : '{}'
+        );
+        const resolvedPlanName =
+          foundMember?.plan?.name ||
+          inspectedBooking.member?.plan?.name ||
+          inspectedBooking.planName ||
+          (inspectedBooking.memberPhone && approvedUpgrades[inspectedBooking.memberPhone]) ||
+          (inspectedBooking.memberName && approvedUpgrades[inspectedBooking.memberName]) ||
+          'Standard Membership';
 
-            <div className="space-y-3 text-xs">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-gray-100 space-y-2">
-                <div className="flex justify-between font-medium text-slate-800 text-sm">
-                  <span>Player / Organizer:</span>
-                  <span className="text-[#1b4332] font-semibold">{inspectedBooking.memberName || 'Court Reservation'}</span>
+        const isGoldPlan = /gold/i.test(resolvedPlanName);
+        const displayPrice = isGoldPlan ? 0 : Number(inspectedBooking.bookingPrice || 0);
+
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between border-b pb-3 border-gray-100">
+                <div className="flex items-center gap-2">
+                  <Info className="w-5 h-5 text-[#2e7d32]" />
+                  <h3 className="font-semibold text-base text-slate-800">Session Inspection</h3>
                 </div>
-                {inspectedBooking.memberPhone && (
+                <button onClick={() => setInspectedBooking(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-gray-100 space-y-2">
+                  <div className="flex justify-between font-medium text-slate-800 text-sm">
+                    <span>Player / Organizer:</span>
+                    <span className="text-[#1b4332] font-semibold">{inspectedBooking.memberName || 'Court Reservation'}</span>
+                  </div>
+                  {inspectedBooking.memberPhone && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Contact Phone:</span>
+                      <span className="font-mono font-medium">{inspectedBooking.memberPhone}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-slate-600 items-center">
+                    <span>Plan Tier / Type:</span>
+                    <span className="font-bold text-emerald-900 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
+                      {resolvedPlanName}
+                    </span>
+                  </div>
                   <div className="flex justify-between text-slate-600">
-                    <span>Contact Phone:</span>
-                    <span className="font-mono font-medium">{inspectedBooking.memberPhone}</span>
+                    <span>Facility:</span>
+                    <span className="font-medium">{inspectedBooking.courtName} ({inspectedBooking.sport})</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Time Slot:</span>
+                    <span className="font-mono font-medium">{date} · {inspectedBooking.slotTime}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Total Charged:</span>
+                    <span className="font-extrabold text-[#2e7d32]">
+                      {displayPrice === 0
+                        ? '₹0.00 (Included in Plan)'
+                        : formatCurrency(displayPrice)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Payment Status:</span>
+                    <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+                      COMPLETED (Direct Approval)
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Booking Status:</span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase ${inspectedBooking.bookingStatus === 'CANCELLED'
+                          ? 'bg-rose-100 text-rose-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                        }`}
+                    >
+                      {inspectedBooking.bookingStatus || 'CONFIRMED'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Cancellation Reason input if not already cancelled */}
+                {inspectedBooking.bookingStatus !== 'CANCELLED' && inspectedBooking.bookingId && (
+                  <div className="space-y-1 pt-1">
+                    <label className="text-[11px] font-medium text-slate-600 block">Cancellation / Release Reason</label>
+                    <input
+                      type="text"
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="e.g. Schedule adjustment, weather block"
+                      className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-rose-500 focus:outline-none"
+                    />
                   </div>
                 )}
-                <div className="flex justify-between text-slate-600">
-                  <span>Plan Tier / Type:</span>
-                  <span className="font-medium text-emerald-800">{inspectedBooking.planName || 'Standard'}</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Facility:</span>
-                  <span className="font-medium">{inspectedBooking.courtName} ({inspectedBooking.sport})</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Time Slot:</span>
-                  <span className="font-mono font-medium">{date} · {inspectedBooking.slotTime}</span>
-                </div>
-                {inspectedBooking.bookingPrice != null && (
-                  <>
-                    <div className="flex justify-between text-slate-600">
-                      <span>Total Charged:</span>
-                      <span className="font-extrabold text-[#2e7d32]">
-                        {Number(inspectedBooking.bookingPrice || 0) === 0
-                          ? '₹0.00 (Included in Plan)'
-                          : formatCurrency(inspectedBooking.bookingPrice)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-slate-600">
-                      <span>Payment Status:</span>
-                      <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
-                        COMPLETED (Direct Approval)
-                      </span>
-                    </div>
-                  </>
-                )}
-                <div className="flex justify-between text-slate-600">
-                  <span>Booking Status:</span>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase ${inspectedBooking.bookingStatus === 'CANCELLED'
-                        ? 'bg-rose-100 text-rose-800'
-                        : 'bg-emerald-100 text-emerald-800'
-                      }`}
-                  >
-                    {inspectedBooking.bookingStatus || 'CONFIRMED'}
-                  </span>
-                </div>
               </div>
 
-              {/* Cancellation Reason input if not already cancelled */}
-              {inspectedBooking.bookingStatus !== 'CANCELLED' && inspectedBooking.bookingId && (
-                <div className="space-y-1 pt-1">
-                  <label className="text-[11px] font-medium text-slate-600 block">Cancellation / Release Reason</label>
-                  <input
-                    type="text"
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    placeholder="e.g. Schedule adjustment, weather block"
-                    className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
-              )}
-            </div>
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={() => setInspectedBooking(null)}
+                  className="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
 
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={() => setInspectedBooking(null)}
-                className="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition-colors cursor-pointer"
-              >
-                Close
-              </button>
-
-              {inspectedBooking.bookingId && (
                 <button
                   onClick={() => {
                     const bkObj = rawBookings.find((b) => b.id === inspectedBooking.bookingId) || inspectedBooking;
-                    setActiveTicketBooking(bkObj);
+                    setActiveTicketBooking({
+                      ...bkObj,
+                      id: inspectedBooking.bookingId || bkObj.id || 'BK-SESSION',
+                      memberName: inspectedBooking.memberName || bkObj.memberName,
+                      memberPhone: inspectedBooking.memberPhone || bkObj.memberPhone,
+                      planName: resolvedPlanName,
+                      courtName: inspectedBooking.courtName || bkObj.court?.name || bkObj.courtName,
+                      sport: inspectedBooking.sport || bkObj.court?.sport || bkObj.sport,
+                      startTime: inspectedBooking.bookingStartTime || bkObj.startTime || new Date().toISOString(),
+                      price: inspectedBooking.bookingPrice ?? bkObj.price ?? 0,
+                      member: {
+                        ...(bkObj.member || {}),
+                        plan: { name: resolvedPlanName },
+                        user: {
+                          name: inspectedBooking.memberName || bkObj.memberName,
+                          phone: inspectedBooking.memberPhone || bkObj.memberPhone
+                        }
+                      }
+                    });
                     setInspectedBooking(null);
                   }}
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Ticket className="w-3.5 h-3.5" />
                   <span>View Pass & QR Code</span>
                 </button>
-              )}
 
-              {inspectedBooking.bookingStatus !== 'CANCELLED' && inspectedBooking.bookingId && (
-                <button
-                  onClick={handleCancelBooking}
-                  disabled={cancelBooking.isPending}
-                  className="py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  {cancelBooking.isPending ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-3.5 h-3.5" />
-                  )}
-                  <span>Cancel</span>
-                </button>
-              )}
+                {inspectedBooking.bookingStatus !== 'CANCELLED' && inspectedBooking.bookingId && (
+                  <button
+                    onClick={handleCancelBooking}
+                    disabled={cancelBooking.isPending}
+                    className="py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {cancelBooking.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                    <span>Cancel</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ─── MODAL 3: SCHEDULE FRIDAY SOCIAL PLAY (STAFF) ─── */}
       {isSchedulingSocial && (
@@ -2170,6 +2241,13 @@ export const BookingsPage = () => {
             </form>
           </div>
         </div>
+      )}
+      {/* ─── MODAL 4: BOOKING PASS & QR CODE MODAL ─── */}
+      {activeTicketBooking && (
+        <BookingPassModal
+          booking={activeTicketBooking}
+          onClose={() => setActiveTicketBooking(null)}
+        />
       )}
     </div>
   );

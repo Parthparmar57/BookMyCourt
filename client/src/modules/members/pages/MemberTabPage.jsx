@@ -61,6 +61,28 @@ export const MemberTabPage = () => {
   // View Sub-tab
   const [activeView, setActiveView] = useState('menu'); // 'menu' | 'orders' | 'tab'
 
+  const approvedUpgrades = JSON.parse(
+    typeof window !== 'undefined' ? localStorage.getItem('bmc_approved_upgrades') || '{}' : '{}'
+  );
+  const activePlanName =
+    user?.member?.plan?.name ||
+    user?.plan ||
+    user?.membershipTier ||
+    approvedUpgrades[user?.email] ||
+    approvedUpgrades[user?.phone] ||
+    approvedUpgrades[user?.member?.memberNo] ||
+    'Gold';
+
+  const getBarDiscountPct = (planName) => {
+    const name = (planName || '').toLowerCase();
+    if (name.includes('gold')) return 15;
+    if (name.includes('silver')) return 5;
+    if (name.includes('junior')) return 10;
+    return user?.member?.plan?.barDiscountPct ?? 15;
+  };
+
+  const barDiscountPct = getBarDiscountPct(activePlanName);
+
   // Cart & Ordering State
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -514,12 +536,12 @@ export const MemberTabPage = () => {
 
   const clearCart = () => setCart([]);
 
-  // Price Calculations (15% Member Discount, 5% GST)
+  // Price Calculations (Dynamic Member Discount, 5% GST)
   const cartSubtotal = cart.reduce(
     (sum, ci) => sum + Number(ci.price) * ci.quantity,
     0
   );
-  const memberDiscount = cartSubtotal * 0.15; // 15% standard member discount
+  const memberDiscount = (cartSubtotal * barDiscountPct) / 100; // Plan-based member discount
   const discountedBase = Math.max(0, cartSubtotal - memberDiscount);
   const tax = discountedBase * 0.05; // 5% GST
   const grandTotal = discountedBase + tax;
@@ -588,7 +610,7 @@ export const MemberTabPage = () => {
             Club Cafeteria & <span className="text-[#2e7d32]">Refreshment Bar</span>
           </h1>
           <p className="text-xs text-slate-600 font-semibold mt-0.5 max-w-xl">
-            Order fresh recovery shakes, nutritious snacks, and meals with your 15% member discount. Dine at tables, request court delivery, or charge to your running tab.
+            Order fresh recovery shakes, nutritious snacks, and meals with your {barDiscountPct}% member discount. Dine at tables, request court delivery, or charge to your running tab.
           </p>
         </div>
 
@@ -605,7 +627,7 @@ export const MemberTabPage = () => {
               {activeTab ? `₹${Number(activeTab.totalAmount || 0).toFixed(2)}` : '₹0.00'}
             </div>
             <span className="text-[10px] font-bold text-[#2e7d32]">
-              15% Member Discount Applied
+              {barDiscountPct}% Member Discount Applied
             </span>
           </div>
         </div>
@@ -827,7 +849,7 @@ export const MemberTabPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredMenu.map((item) => {
                   const originalPrice = Number(item.price);
-                  const memberPrice = originalPrice * 0.85; // 15% Member discount
+                  const memberPrice = originalPrice * (1 - barDiscountPct / 100); // Dynamic Member discount
                   const inCart = cart.find((ci) => ci.id === item.id);
 
                   return (
@@ -866,7 +888,7 @@ export const MemberTabPage = () => {
                             ₹{originalPrice.toFixed(2)}
                           </span>
                           <span className="text-[10px] font-black text-[#2e7d32] bg-emerald-50 px-1.5 py-0.5 rounded">
-                            -15% Member
+                            -{barDiscountPct}% Member
                           </span>
                         </div>
                       </div>
@@ -1035,7 +1057,7 @@ export const MemberTabPage = () => {
                     <div className="flex justify-between text-[#2e7d32] font-semibold">
                       <span className="flex items-center gap-1">
                         <Percent className="w-3.5 h-3.5" />
-                        Member Discount (15%)
+                        Member Discount ({barDiscountPct}%)
                       </span>
                       <span>-₹{memberDiscount.toFixed(2)}</span>
                     </div>
@@ -1251,7 +1273,7 @@ export const MemberTabPage = () => {
                   {activeTab ? `₹${Number(activeTab.totalAmount || 0).toFixed(2)}` : '₹0.00'}
                 </h2>
                 <p className="text-xs text-[#2e7d32] font-semibold pt-1">
-                  Includes 15% Member Discount Applied Automatically
+                  Includes {barDiscountPct}% Member Discount Applied Automatically
                 </p>
               </div>
 
@@ -1470,7 +1492,7 @@ export const MemberTabPage = () => {
                   ₹{Number(activeTab.totalAmount || 0).toFixed(2)}
                 </div>
                 <p className="text-[11px] text-emerald-700 font-semibold">
-                  {activeTab.orders?.length || 1} Orders • 15% Member Discount Applied
+                  {activeTab.orders?.length || 1} Orders • {barDiscountPct}% Member Discount Applied
                 </p>
               </div>
 

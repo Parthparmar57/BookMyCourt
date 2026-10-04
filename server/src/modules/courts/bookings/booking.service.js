@@ -402,7 +402,7 @@ export const listBookings = async ({ courtId, date, status, memberId, page = 1, 
       orderBy: { startTime: 'desc' },
       include: {
         court: true,
-        member: { include: { user: true } },
+        member: { include: { user: true, plan: true } },
       },
     }),
   ]);
