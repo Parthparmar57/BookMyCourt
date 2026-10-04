@@ -14,14 +14,7 @@ const isAllowed = (origin) => {
 };
 
 export const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow non-browser clients (curl, mobile apps, server-to-server) that send no Origin.
-    if (!origin) return callback(null, true);
-    if (isAllowed(origin)) return callback(null, true);
-    // A disallowed origin is a client error (403), not a server fault — tagging
-    // the status keeps it out of the "unhandled server error" logs.
-    return callback(new ApiError(403, `Origin ${origin} is not allowed by CORS`));
-  },
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
