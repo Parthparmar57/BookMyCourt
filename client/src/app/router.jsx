@@ -11,7 +11,6 @@ import { MembershipPage } from '../modules/website/pages/MembershipPage';
 import { ShopPage } from '../modules/website/pages/ShopPage';
 import { TrialPage } from '../modules/website/pages/TrialPage';
 import { LoginPage } from '../modules/website/pages/LoginPage';
-import { RegisterPage } from '../modules/website/pages/RegisterPage';
 import { NotFoundPage } from '../modules/website/pages/NotFoundPage';
 import { ResetPasswordPage } from '../modules/website/pages/ResetPasswordPage';
 
@@ -56,7 +55,6 @@ export const router = createBrowserRouter([
       { path: 'shop', element: <ShopPage /> },
       { path: 'trial', element: <TrialPage /> },
       { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> },
       { path: 'reset-password', element: <ResetPasswordPage /> }
     ]
   },

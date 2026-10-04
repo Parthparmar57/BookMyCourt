@@ -79,13 +79,6 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   }, []);
 
-  const register = useCallback(async (payload) => {
-    const data = await authService.register(payload);
-    setAccessToken(data.accessToken);
-    setUser(withAvatar(data.user));
-    return data.user;
-  }, []);
-
   const logout = useCallback(async () => {
     try {
       await authService.logout();
@@ -105,7 +98,6 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     isLoading,
     login,
-    register,
     logout,
     // Backward-compatible aliases used by existing components
     currentUser: user,

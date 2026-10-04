@@ -122,7 +122,7 @@ export const MembershipPage = () => {
                         </button>
                       ) : (
                         <Link
-                          to={isAuthenticated ? '/trial' : '/register'}
+                          to={isAuthenticated ? '/trial' : '/login'}
                           className={`w-full block text-center font-bold text-sm py-3.5 rounded-xl transition-colors ${
                             popular ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md' : 'bg-slate-900 hover:bg-slate-800 text-white'
                           }`}
