@@ -238,7 +238,7 @@ export const AccountingPage = () => {
           {activeTab === 'expenses' && (
             <button
               onClick={() => setShowExpenseModal(true)}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-2 transition-all"
+              className="bg-[#2e7d32] hover:bg-[#236327] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Log Expense</span>
@@ -322,7 +322,7 @@ export const AccountingPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider">
+                <tr className="bg-emerald-800 text-white uppercase text-[10px] font-bold tracking-wider">
                   <th className="p-4">Ref / Txn No</th>
                   <th className="p-4">Date & Time</th>
                   <th className="p-4">Channel</th>
@@ -386,7 +386,7 @@ export const AccountingPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider">
+                <tr className="bg-emerald-800 text-white uppercase text-[10px] font-bold tracking-wider">
                   <th className="p-4">Invoice No</th>
                   <th className="p-4">Client / Entity</th>
                   <th className="p-4">Due Date</th>
@@ -461,7 +461,7 @@ export const AccountingPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white uppercase text-[10px] tracking-wider">
+                <tr className="bg-emerald-800 text-white uppercase text-[10px] font-bold tracking-wider">
                   <th className="p-4">Category</th>
                   <th className="p-4">Description</th>
                   <th className="p-4">Payee / Vendor</th>
@@ -796,7 +796,7 @@ export const AccountingPage = () => {
               <button
                 type="submit"
                 disabled={createExpense.isPending}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 mt-2"
+                className="w-full bg-[#2e7d32] hover:bg-[#236327] text-white font-extrabold py-3 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 mt-2 cursor-pointer disabled:opacity-50"
               >
                 {createExpense.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Log Expense

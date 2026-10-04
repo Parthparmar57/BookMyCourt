@@ -223,21 +223,21 @@ export const ShopInventoryPage = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             to="/staff/shop"
-            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-2xl flex items-center gap-2 transition-colors shrink-0"
+            className="bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-200/80 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-2xs shrink-0 cursor-pointer"
           >
-            <BarChart2 className="w-4 h-4 text-slate-600" />
+            <BarChart2 className="w-4 h-4 text-emerald-700" />
             View Analytics Dashboard
           </Link>
           <button
             onClick={exportStockCSV}
-            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-2xl flex items-center gap-2 transition-colors shrink-0"
+            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-2xs shrink-0 cursor-pointer"
           >
             <Download className="w-4 h-4 text-slate-600" />
             Export CSV
           </button>
           <button
             onClick={() => openProductModal(null)}
-            className="bg-[#4A812F] hover:bg-[#3b6725] text-white text-xs font-extrabold px-4 py-2 rounded-2xl flex items-center gap-2 transition-colors shrink-0 shadow-xs"
+            className="bg-[#2e7d32] hover:bg-[#236327] text-white text-xs font-extrabold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shrink-0 shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Add Product
@@ -247,7 +247,7 @@ export const ShopInventoryPage = () => {
 
       {/* Visual Stock Diagnostics Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-2xs flex items-center justify-between">
+        <div className="bg-white border-2 border-slate-200/80 p-4 rounded-2xl shadow-xs flex items-center justify-between">
           <div>
             <div className="text-[10px] font-mono uppercase font-bold text-slate-400">Total SKUs</div>
             <div className="text-xl font-black text-slate-900">{totalSkus}</div>
@@ -259,15 +259,18 @@ export const ShopInventoryPage = () => {
 
         <button
           onClick={() => setStockFilter('ALL')}
-          className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${stockFilter === 'ALL' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200'
-            }`}
+          className={`border-2 p-4 rounded-2xl shadow-xs text-left transition-all cursor-pointer ${
+            stockFilter === 'ALL'
+              ? 'bg-emerald-50/50 border-emerald-500 ring-2 ring-emerald-500/20'
+              : 'bg-white border-slate-200/80 hover:border-emerald-300'
+          }`}
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-mono uppercase font-bold text-emerald-600">Optimal Stock</div>
-              <div className="text-xl font-black text-emerald-800">{inStockCount}</div>
+              <div className="text-[10px] font-mono uppercase font-bold text-emerald-700">Optimal Stock</div>
+              <div className="text-xl font-black text-emerald-900">{inStockCount}</div>
             </div>
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+            <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl">
               <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
@@ -275,15 +278,18 @@ export const ShopInventoryPage = () => {
 
         <button
           onClick={() => setStockFilter(stockFilter === 'LOW' ? 'ALL' : 'LOW')}
-          className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${stockFilter === 'LOW' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200'
-            }`}
+          className={`border-2 p-4 rounded-2xl shadow-xs text-left transition-all cursor-pointer ${
+            stockFilter === 'LOW'
+              ? 'bg-amber-50/50 border-amber-500 ring-2 ring-amber-500/20'
+              : 'bg-white border-slate-200/80 hover:border-amber-300'
+          }`}
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-mono uppercase font-bold text-amber-600">Low Stock Alert</div>
-              <div className="text-xl font-black text-amber-800">{lowStockCount}</div>
+              <div className="text-[10px] font-mono uppercase font-bold text-amber-700">Low Stock Alert</div>
+              <div className="text-xl font-black text-amber-900">{lowStockCount}</div>
             </div>
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+            <div className="p-2.5 bg-amber-100 text-amber-700 rounded-xl">
               <AlertTriangle className="w-5 h-5" />
             </div>
           </div>
@@ -291,15 +297,18 @@ export const ShopInventoryPage = () => {
 
         <button
           onClick={() => setStockFilter(stockFilter === 'OUT' ? 'ALL' : 'OUT')}
-          className={`bg-white border p-4 rounded-2xl shadow-2xs text-left transition-all ${stockFilter === 'OUT' ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-200'
-            }`}
+          className={`border-2 p-4 rounded-2xl shadow-xs text-left transition-all cursor-pointer ${
+            stockFilter === 'OUT'
+              ? 'bg-rose-50/50 border-rose-500 ring-2 ring-rose-500/20'
+              : 'bg-white border-slate-200/80 hover:border-rose-300'
+          }`}
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-mono uppercase font-bold text-rose-600">Out of Stock</div>
-              <div className="text-xl font-black text-rose-800">{outOfStockCount}</div>
+              <div className="text-[10px] font-mono uppercase font-bold text-rose-700">Out of Stock</div>
+              <div className="text-xl font-black text-rose-900">{outOfStockCount}</div>
             </div>
-            <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl">
+            <div className="p-2.5 bg-rose-100 text-rose-700 rounded-xl">
               <XCircle className="w-5 h-5" />
             </div>
           </div>
@@ -307,22 +316,22 @@ export const ShopInventoryPage = () => {
       </div>
 
       {/* Search & Category Filter Toolbar */}
-      <div className="bg-white p-4 rounded-3xl border border-gray-200 space-y-3 shadow-xs">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5">
           {/* Search Box */}
-          <div className="relative w-full sm:w-80">
+          <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by SKU, Product Name or Category…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#2e7d32] focus:ring-2 focus:ring-[#2e7d32]/10 transition-all text-slate-900"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -330,15 +339,16 @@ export const ShopInventoryPage = () => {
           </div>
 
           {/* Category Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedCategory === cat
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-[#2e7d32] text-white shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
               >
                 {cat}
               </button>
@@ -348,11 +358,11 @@ export const ShopInventoryPage = () => {
       </div>
 
       {/* Main Inventory Table */}
-      <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-xs">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-950 text-white text-xs font-mono uppercase tracking-wider">
+              <tr className="bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider">
                 <th className="p-4">SKU</th>
                 <th className="p-4">Product Name</th>
                 <th className="p-4">Category</th>
@@ -378,14 +388,14 @@ export const ShopInventoryPage = () => {
                   const stockPercent = Math.min(100, Math.round((p.stock / maxDisplayStock) * 100));
 
                   return (
-                    <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={p.id} className="hover:bg-emerald-50/50 transition-colors">
                       <td className="p-4 font-mono font-bold text-slate-900">{p.sku}</td>
                       <td className="p-4 font-bold text-slate-900">
                         <div className="flex items-center gap-3">
                           {p.imageUrl ? (
                             <img src={p.imageUrl} alt={p.name} className="w-9 h-9 rounded-xl object-cover border border-slate-200" />
                           ) : (
-                            <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-black text-xs">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-800 font-black text-xs shrink-0 shadow-2xs">
                               {p.name.charAt(0)}
                             </div>
                           )}
@@ -396,8 +406,8 @@ export const ShopInventoryPage = () => {
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className="bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
-                          <Tag className="w-3 h-3 text-slate-400" />
+                        <span className="bg-emerald-50 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 border border-emerald-200/60">
+                          <Tag className="w-3 h-3 text-emerald-600" />
                           {p.category}
                         </span>
                       </td>
@@ -436,21 +446,21 @@ export const ShopInventoryPage = () => {
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => openStockIn(p)}
-                            className="px-3.5 h-8 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold flex items-center gap-1.5 text-[11px] shadow-xs transition-all"
+                            className="px-3.5 h-8 rounded-xl bg-[#2e7d32] hover:bg-[#236327] text-white font-extrabold flex items-center gap-1.5 text-[11px] shadow-2xs transition-all cursor-pointer"
                           >
                             <Plus className="w-3.5 h-3.5" /> Stock In
                           </button>
                           <button
                             onClick={() => openProductModal(p)}
                             title="Edit product"
-                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all"
+                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(p)}
                             title="Delete product"
-                            className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-all"
+                            className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-all cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

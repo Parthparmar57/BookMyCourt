@@ -74,9 +74,27 @@ export const registerUser = async ({ name, email, phone, password }) => {
 };
 
 export const loginUser = async ({ login, password }) => {
+  const cleanLogin = (login || '').trim();
+  const searchEmails = [{ equals: cleanLogin, mode: 'insensitive' }];
+
+  if (cleanLogin.toLowerCase().endsWith('@bookmycourt.com')) {
+    searchEmails.push({
+      equals: cleanLogin.replace(/@bookmycourt\.com$/i, '@championsclub.com'),
+      mode: 'insensitive',
+    });
+  } else if (cleanLogin.toLowerCase().endsWith('@championsclub.com')) {
+    searchEmails.push({
+      equals: cleanLogin.replace(/@championsclub\.com$/i, '@bookmycourt.com'),
+      mode: 'insensitive',
+    });
+  }
+
   const user = await prisma.user.findFirst({
     where: {
-      OR: [{ email: login }, { phone: login }],
+      OR: [
+        ...searchEmails.map((emailCondition) => ({ email: emailCondition })),
+        { phone: cleanLogin },
+      ],
     },
     include: {
       member: {
