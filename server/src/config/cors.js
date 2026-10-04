@@ -7,7 +7,8 @@ const allowedOrigins = new Set([env.CLIENT_URL]);
 const isAllowed = (origin) => {
   if (allowedOrigins.has(origin)) return true;
   if (env.NODE_ENV !== 'production') {
-    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    // Permit localhost, 127.0.0.1, and LAN IP ranges (192.168.x.x, 172.x.x.x, 10.x.x.x)
+    return /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin);
   }
   return false;
 };
