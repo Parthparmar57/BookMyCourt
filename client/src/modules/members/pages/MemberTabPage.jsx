@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { formatCurrency, formatDate } from '../../../shared/utils/formatters';
+import { toast } from '../../../shared/utils/toast';
 
 export const MemberTabPage = () => {
   const { user } = useAuth();
@@ -1635,7 +1636,7 @@ export const MemberTabPage = () => {
                       };
                       setSelectedSlipTab(settledData);
                     } catch (err) {
-                      alert(err.response?.data?.message || err.message || 'Failed to settle tab');
+                      toast.error(err.response?.data?.message || err.message || 'Failed to settle tab');
                     }
                   }}
                   className="w-full py-3.5 rounded-2xl bg-[#2e7d32] hover:bg-[#236327] text-white font-extrabold text-xs shadow-md shadow-[#2e7d32]/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60"

@@ -13,6 +13,7 @@ import { Search, UserPlus, AlertCircle, X, Loader2, QrCode, Phone, Mail, ShieldC
 import { QRCodeSVG } from 'qrcode.react';
 import { QRScannerModal } from '../../../components/member/QRScannerModal';
 import { CustomSelect } from '../../../shared/components/CustomSelect';
+import { toast, confirmToast } from '../../../shared/utils/toast';
 
 // Light-Theme First Letter Avatar Fallback Component
 const MemberAvatar = ({ name, photoUrl, size = "w-16 h-16 text-2xl" }) => {
@@ -275,14 +276,21 @@ export const MembersPage = () => {
   };
 
   const handleDeactivate = async (memberId) => {
-    if (window.confirm('Are you sure you want to deactivate/suspend this member account?')) {
+    const confirmed = await confirmToast({
+      title: 'Deactivate member',
+      message: 'Are you sure you want to deactivate/suspend this member account?',
+      confirmLabel: 'Deactivate',
+      danger: true,
+    });
+    if (confirmed) {
       try {
         const updated = await deactivateMember.mutateAsync(memberId);
         if (selectedMember?.id === memberId) {
           setSelectedMember(toView(updated));
         }
+        toast.success('Member deactivated.');
       } catch (err) {
-        alert(err.response?.data?.error?.message || err.message || 'Failed to deactivate member');
+        toast.error(err.response?.data?.error?.message || err.message || 'Failed to deactivate member');
       }
     }
   };

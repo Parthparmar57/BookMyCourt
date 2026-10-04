@@ -8,6 +8,7 @@ import {
   useDeleteProduct,
 } from '../../../hooks/useShop';
 import { formatCurrency } from '../../../shared/utils/formatters';
+import { toast, confirmToast } from '../../../shared/utils/toast';
 import { QueryState } from '../../../shared/components/DataState';
 import { CustomSelect } from '../../../shared/components/CustomSelect';
 import {
@@ -180,11 +181,18 @@ export const ShopInventoryPage = () => {
 
   // Delete a catalog product after confirmation.
   const handleDeleteProduct = async (p) => {
-    if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+    const confirmed = await confirmToast({
+      title: 'Delete product',
+      message: `Delete "${p.name}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteProduct.mutateAsync(p.id);
+      toast.success('Product deleted.');
     } catch (err) {
-      alert(err?.message || 'Could not delete product.');
+      toast.error(err?.message || 'Could not delete product.');
     }
   };
 

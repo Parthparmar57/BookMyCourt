@@ -4,8 +4,9 @@ import { formatCurrency, formatPhone } from '../../../shared/utils/formatters';
 import { QueryState } from '../../../shared/components/DataState';
 import { useDebounce } from '../../../shared/hooks/useDebounce';
 import { CustomSelect } from '../../../shared/components/CustomSelect';
-import { 
-  ShoppingBag, 
+import { toast } from '../../../shared/utils/toast';
+import {
+  ShoppingBag,
   Store, 
   Truck, 
   Clock, 
@@ -77,7 +78,7 @@ export const ShopOrdersPage = () => {
       setActionSuccess(`Order updated to ${label} successfully!`);
       setTimeout(() => setActionSuccess(''), 4000);
     } catch (err) {
-      alert(err?.message || 'Could not update order status.');
+      toast.error(err?.message || 'Could not update order status.');
     }
   };
 
