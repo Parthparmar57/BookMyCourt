@@ -34,7 +34,6 @@ import {
   Plus,
   TrendingUp,
   AlertCircle,
-  DollarSign,
   Users,
   ShoppingBag,
   Download,
@@ -431,7 +430,7 @@ export const BarPage = () => {
           <div className="flex items-center justify-between text-xs font-black tracking-wider text-emerald-200 uppercase">
             <span>TODAY'S BAR REVENUE</span>
             <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-emerald-300" />
+              <Wallet className="w-4 h-4 text-emerald-300" />
             </div>
           </div>
           <p className="text-2xl font-black text-white">{formatCurrency(todayEarnings)}</p>

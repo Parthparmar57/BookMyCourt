@@ -8,14 +8,33 @@ export const useVerifyPayment = () => useMutation({ mutationFn: paymentsApi.veri
 
 /* ---------------- Ledger ---------------- */
 export const useLedger = (filters = {}) =>
-  useQuery({ queryKey: qk.ledger.list(filters), queryFn: () => ledgerApi.list(filters), select: (d) => toCollection(d, 'transactions') });
+  useQuery({
+    queryKey: qk.ledger.list(filters),
+    queryFn: () => ledgerApi.list(filters),
+    select: (d) => {
+      const col = toCollection(d, 'transactions');
+      return {
+        ...col,
+        transactions: col.items,
+        totalAmount: d?.totalAmount ?? col.items.reduce((s, t) => s + Number(t.amount || 0), 0),
+        totalTax: d?.totalTax ?? col.items.reduce((s, t) => s + Number(t.tax || 0), 0),
+      };
+    },
+  });
 
 export const useLedgerSummary = () =>
   useQuery({ queryKey: qk.ledger.summary, queryFn: ledgerApi.summary });
 
 /* ---------------- Invoices ---------------- */
 export const useInvoices = (filters = {}) =>
-  useQuery({ queryKey: qk.invoices.list(filters), queryFn: () => invoicesApi.list(filters), select: (d) => toCollection(d, 'invoices') });
+  useQuery({
+    queryKey: qk.invoices.list(filters),
+    queryFn: () => invoicesApi.list(filters),
+    select: (d) => {
+      const col = toCollection(d, 'invoices');
+      return { ...col, invoices: col.items };
+    },
+  });
 
 export const useInvoice = (id) =>
   useQuery({ queryKey: qk.invoices.detail(id), queryFn: () => invoicesApi.get(id), enabled: !!id });

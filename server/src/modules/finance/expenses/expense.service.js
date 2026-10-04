@@ -23,14 +23,16 @@ export const createExpense = async (data) => {
 };
 
 export const listExpenses = async ({ status, page = 1, limit = 50 }) => {
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const l = Math.max(1, parseInt(limit, 10) || 50);
   const where = { ...(status && { status }) };
 
   const [total, expenses, aggregation] = await Promise.all([
     prisma.expense.count({ where }),
     prisma.expense.findMany({
       where,
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (p - 1) * l,
+      take: l,
       orderBy: { dueDate: 'asc' },
     }),
     prisma.expense.aggregate({
@@ -42,8 +44,8 @@ export const listExpenses = async ({ status, page = 1, limit = 50 }) => {
   return {
     expenses,
     total,
-    page,
-    totalPages: Math.ceil(total / limit),
+    page: p,
+    totalPages: Math.ceil(total / l),
     totalAmount: aggregation._sum.amount || 0,
   };
 };

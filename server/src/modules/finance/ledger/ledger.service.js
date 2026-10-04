@@ -9,6 +9,9 @@ export const listTransactions = async ({
   page = 1,
   limit = 50,
 }) => {
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const l = Math.max(1, parseInt(limit, 10) || 50);
+
   const where = {
     ...(source && { source }),
     ...(paymentMode && { paymentMode }),
@@ -24,8 +27,8 @@ export const listTransactions = async ({
     prisma.transaction.count({ where }),
     prisma.transaction.findMany({
       where,
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (p - 1) * l,
+      take: l,
       orderBy: { date: 'desc' },
       include: {
         member: { include: { user: true } },
@@ -40,8 +43,8 @@ export const listTransactions = async ({
   return {
     transactions,
     total,
-    page,
-    totalPages: Math.ceil(total / limit),
+    page: p,
+    totalPages: Math.ceil(total / l),
     totalAmount: aggregations._sum.amount || 0,
     totalTax: aggregations._sum.tax || 0,
   };

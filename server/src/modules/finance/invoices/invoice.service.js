@@ -54,6 +54,8 @@ export const createInvoice = async (data) => {
 };
 
 export const listInvoices = async ({ status, memberId, page = 1, limit = 20 }, actor) => {
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const l = Math.max(1, parseInt(limit, 10) || 20);
   // A MEMBER may only ever see their own invoices, regardless of query params.
   const scopedMemberId = actor && actor.role === 'MEMBER' ? actor.memberId || '__none__' : memberId;
 
@@ -66,8 +68,8 @@ export const listInvoices = async ({ status, memberId, page = 1, limit = 20 }, a
     prisma.invoice.count({ where }),
     prisma.invoice.findMany({
       where,
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (p - 1) * l,
+      take: l,
       orderBy: { createdAt: 'desc' },
       include: {
         items: true,
@@ -76,7 +78,7 @@ export const listInvoices = async ({ status, memberId, page = 1, limit = 20 }, a
     }),
   ]);
 
-  return { invoices, total, page, totalPages: Math.ceil(total / limit) };
+  return { invoices, total, page: p, totalPages: Math.ceil(total / l) };
 };
 
 export const getInvoiceById = async (id, actor) => {

@@ -12,7 +12,7 @@ import {
   PieChart,
   Activity,
   Layers,
-  DollarSign,
+  Wallet,
   CheckCircle2,
   ArrowUpRight,
   Receipt,
@@ -116,7 +116,7 @@ export const ShopDashboardPage = () => {
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">Stock Valuation</span>
             <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
-              <DollarSign className="w-5 h-5" />
+              <Wallet className="w-5 h-5" />
             </div>
           </div>
           <div>

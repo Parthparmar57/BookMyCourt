@@ -13,7 +13,7 @@ import { CustomSelect } from '../../../shared/components/CustomSelect';
 import { 
   Users, 
   Calendar, 
-  DollarSign, 
+  CreditCard, 
   UserPlus, 
   CheckCircle2, 
   AlertCircle, 
@@ -306,7 +306,7 @@ export const HrPage = () => {
               disabled={runPayroll.isPending}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
             >
-              {runPayroll.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+              {runPayroll.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
               <span>Run Month Payroll</span>
             </button>
           )}

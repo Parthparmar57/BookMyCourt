@@ -32,7 +32,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Activity,
-  DollarSign,
   TrendingUp,
   Settings,
   Search,
