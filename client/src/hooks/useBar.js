@@ -53,6 +53,7 @@ export const useCreateBarOrder = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.barOrders.all });
       qc.invalidateQueries({ queryKey: qk.kitchen.queue });
+      qc.invalidateQueries({ queryKey: qk.barTables.all });
     },
   });
 };
@@ -64,6 +65,7 @@ export const useSettleBarOrder = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.barOrders.all });
       qc.invalidateQueries({ queryKey: qk.tabs.all });
+      qc.invalidateQueries({ queryKey: qk.barTables.all });
     },
   });
 };
@@ -75,6 +77,7 @@ export const useUpdateBarOrderStatus = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.barOrders.all });
       qc.invalidateQueries({ queryKey: qk.kitchen.queue });
+      qc.invalidateQueries({ queryKey: qk.barTables.all });
     },
   });
 };
@@ -125,7 +128,11 @@ export const useUpdateKitchenStatus = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status }) => kitchenApi.updateStatus(id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.kitchen.queue }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.kitchen.queue });
+      qc.invalidateQueries({ queryKey: qk.barOrders.all });
+      qc.invalidateQueries({ queryKey: qk.barTables.all });
+    },
   });
 };
 

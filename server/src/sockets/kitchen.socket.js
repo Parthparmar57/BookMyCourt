@@ -9,3 +9,7 @@ export const emitKitchenStatusUpdate = (order) => {
   emitToRoom('kitchen', 'kitchen_status_changed', order);
   broadcastEvent('order_status_updated', order);
 };
+
+export const emitTableStatusUpdate = (table) => {
+  broadcastEvent('table_status_updated', table);
+};

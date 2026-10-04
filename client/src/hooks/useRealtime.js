@@ -88,15 +88,18 @@ export const useBarOrderRealtime = (onChange) => {
       qc.invalidateQueries({ queryKey: qk.barOrders.all });
       qc.invalidateQueries({ queryKey: qk.tabs.all });
       qc.invalidateQueries({ queryKey: qk.kitchen.queue });
+      qc.invalidateQueries({ queryKey: qk.barTables.all });
       if (onChange) onChange(data);
     };
 
     socket.on('bar_order_updated', invalidate);
     socket.on('order_status_updated', invalidate);
+    socket.on('table_status_updated', invalidate);
 
     return () => {
       socket.off('bar_order_updated', invalidate);
       socket.off('order_status_updated', invalidate);
+      socket.off('table_status_updated', invalidate);
     };
   }, [qc, onChange]);
 };
