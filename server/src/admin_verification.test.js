@@ -207,7 +207,7 @@ test('9. Admin converts lead twice -> check duplicate conversion handling', asyn
       stage: 'QUOTED'
     }
   });
-  const plan = await prisma.plan.findFirst();
+  const plan = await prisma.plan.findFirst({ where: { maxAge: null } }) || await prisma.plan.findFirst();
 
   const conv1 = await request(`/api/leads/${lead.id}/convert`, {
     method: 'POST',
