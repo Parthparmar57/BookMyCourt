@@ -39,7 +39,7 @@ export const MemberCardPage = () => {
     };
   }, []);
 
-  const rawMembers = membersQuery?.data?.items || [];
+  const rawMembers = membersQuery?.data?.members || membersQuery?.data?.items || (Array.isArray(membersQuery?.data) ? membersQuery.data : []);
 
   // Resolve real member profile for logged in user
   const foundMember = rawMembers.find(m =>
@@ -57,7 +57,9 @@ export const MemberCardPage = () => {
   const userPhone = user?.phone || foundMember?.user?.phone || '8401517177';
   const memberNo = realMember?.memberNo || user?.memberNo || `MEM-${userPhone}`;
 
-  // Check localStorage for approved upgrades across all identifier keys
+  const dbPlanName = realMember?.plan?.name || user?.member?.plan?.name || user?.plan || user?.membershipTier;
+
+  // Check localStorage only as a fallback if DB plan is absent
   const approvedUpgrades = JSON.parse(localStorage.getItem('bmc_approved_upgrades') || '{}');
   const approvedTier = 
     approvedUpgrades[userEmail] || 
@@ -65,10 +67,9 @@ export const MemberCardPage = () => {
     approvedUpgrades[userPhone] || 
     approvedUpgrades[memberNo] || 
     approvedUpgrades[user?.id] || 
-    approvedUpgrades[userName] ||
-    approvedUpgrades['GLOBAL_ACTIVE_MEMBER'];
+    approvedUpgrades[userName];
 
-  const rawPlanName = approvedTier || realMember?.plan?.name || user?.plan || user?.membershipTier || 'Silver';
+  const rawPlanName = dbPlanName || approvedTier || 'Silver';
   const planName = rawPlanName.replace(/pass|annual|standard|youth/gi, '').trim() || 'Silver';
   const isGold = /gold/i.test(planName);
   const isJunior = /junior|youth|child/i.test(rawPlanName) || /junior/i.test(planName);

@@ -453,7 +453,7 @@ export const CrmPage = () => {
 
       {/* PIPELINE KANBAN VIEW */}
       {activeTab === 'pipeline' && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4">
+        <div className="grid grid-cols-5 gap-2.5 pb-4 items-start">
           {STAGES.map((stage) => {
             const stageLeads = leads.filter((l) => l.stage === stage.id);
             const isTargeted = dragOverStage === stage.id && draggedLead && isForwardMove(draggedLead.stage, stage.id);
@@ -466,16 +466,16 @@ export const CrmPage = () => {
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDragLeave={(e) => handleDragLeave(e, stage.id)}
                 onDrop={(e) => handleDrop(e, stage.id)}
-                className={`bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col min-h-[500px] transition-all ${
+                className={`bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex flex-col min-h-[500px] w-full min-w-0 transition-all ${
                   isTargeted ? 'ring-2 ring-emerald-500 bg-emerald-50/50 border-emerald-400 shadow-md' : ''
                 }`}
               >
-                <div className={`flex items-center justify-between pb-2 mb-3 border-b ${stage.color} font-extrabold text-xs px-2.5 py-1.5 rounded-xl`}>
-                  <span>{stage.label}</span>
-                  <span className="bg-white/90 px-2 py-0.5 rounded-full text-[10px] font-black">{stageLeads.length}</span>
+                <div className={`flex items-center justify-between pb-2 mb-2.5 border-b ${stage.color} font-extrabold text-xs px-2 py-1 rounded-xl`}>
+                  <span className="truncate">{stage.label}</span>
+                  <span className="bg-white/90 px-1.5 py-0.5 rounded-full text-[10px] font-black shrink-0 ml-1">{stageLeads.length}</span>
                 </div>
 
-                <div className="space-y-3 flex-1 overflow-y-auto">
+                <div className="space-y-2.5 flex-1 overflow-y-auto">
                   {visibleLeads.map((lead) => {
                     const isBeingDragged = draggedLead?.id === lead.id;
                     const canDrag = lead.stage !== 'WON' && lead.stage !== 'LOST';
@@ -485,19 +485,21 @@ export const CrmPage = () => {
                         draggable={canDrag}
                         onDragStart={(e) => handleDragStart(e, lead)}
                         onDragEnd={handleDragEnd}
-                        className={`bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs hover:shadow-md transition-all space-y-2.5 ${
+                        className={`bg-white border border-slate-200 rounded-xl p-2.5 shadow-2xs hover:shadow-md transition-all space-y-2 ${
                           canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
                         } ${isBeingDragged ? 'opacity-40 border-dashed border-emerald-400 ring-2 ring-emerald-300' : ''}`}
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-1.5">
-                            {canDrag && <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />}
-                            <div>
-                              <h4 className="font-extrabold text-slate-900 text-xs">{lead.name}</h4>
-                              <span className="text-[10px] text-slate-500 font-medium">{formatPhone(lead.phone)}</span>
+                        <div className="flex items-start justify-between gap-1">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                              {canDrag && <GripVertical className="w-3 h-3 text-slate-300 shrink-0 cursor-grab" />}
+                              <h4 className="font-extrabold text-slate-900 text-xs truncate leading-tight">{lead.name}</h4>
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-medium font-mono whitespace-nowrap mt-0.5 truncate">
+                              {formatPhone(lead.phone)}
                             </div>
                           </div>
-                          <span className="text-[9px] uppercase px-2 py-0.5 bg-slate-100 font-bold text-slate-600 rounded">
+                          <span className="text-[8px] uppercase tracking-tight px-1.5 py-0.5 bg-slate-100 font-bold text-slate-600 rounded shrink-0 border border-slate-200/60 max-w-[80px] truncate">
                             {lead.interest || lead.sportInterest || 'All Sports'}
                           </span>
                         </div>
@@ -510,28 +512,28 @@ export const CrmPage = () => {
                       )}
 
                       {lead.notes && (
-                        <p className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg line-clamp-2">
+                        <p className="text-[10px] text-slate-600 bg-slate-50 p-1.5 rounded-md line-clamp-2 border border-slate-100 leading-tight">
                           {lead.notes}
                         </p>
                       )}
 
                       {/* Existing quotations on this lead */}
                       {Array.isArray(lead.quotations) && lead.quotations.length > 0 && (
-                        <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                        <div className="pt-1.5 border-t border-slate-100 space-y-1">
                           {lead.quotations.map((q) => (
-                            <div key={q.id} className="bg-purple-50/70 border border-purple-100 rounded-lg p-2 space-y-1">
+                            <div key={q.id} className="bg-purple-50/70 border border-purple-100 rounded-lg p-1.5 space-y-0.5">
                               <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-black text-slate-800 flex items-center gap-1">
+                                <span className="text-[10px] font-black text-slate-800 flex items-center gap-1">
                                   <FileText className="w-3 h-3 text-purple-500" />
                                   {formatCurrency(Number(q.total || q.amount))}
                                 </span>
-                                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-white text-purple-700 border border-purple-200">
+                                <span className="text-[8px] uppercase font-bold px-1 py-0.5 rounded bg-white text-purple-700 border border-purple-200">
                                   {q.status || 'DRAFT'}
                                 </span>
                               </div>
                               {/* Quick status transitions */}
                               {q.status !== 'ACCEPTED' && q.status !== 'REJECTED' && (
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold">
+                                <div className="flex items-center gap-1 text-[8px] font-bold pt-0.5">
                                   {q.status !== 'SENT' && (
                                     <button onClick={() => handleUpdateQuoteStatus(q.id, 'SENT')} className="text-blue-600 hover:text-blue-800 cursor-pointer">Mark Sent</button>
                                   )}
@@ -546,21 +548,21 @@ export const CrmPage = () => {
 
                       {/* Stage Action / Controls */}
                       {lead.stage === 'WON' ? (
-                        <div className="pt-2 border-t border-slate-100">
-                          <div className="w-full text-center inline-flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-800 bg-emerald-50 py-1.5 rounded-lg border border-emerald-200/80">
+                        <div className="pt-1.5 border-t border-slate-100">
+                          <div className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 py-1.5 rounded-lg border border-emerald-200/80 shadow-2xs">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             <span>Won & Converted</span>
                           </div>
                         </div>
                       ) : lead.stage === 'LOST' ? (
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                        <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1">
+                          <span className="inline-flex items-center gap-1 text-[9px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
                             <X className="w-3 h-3 text-slate-400" />
-                            Closed / Lost
+                            Closed
                           </span>
                           <button
                             onClick={() => handleStageMove(lead.id, 'CONTACTED')}
-                            className="text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-medium text-[10px] transition-colors cursor-pointer border border-slate-200"
+                            className="text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded font-bold text-[9px] transition-colors cursor-pointer border border-slate-200"
                             title="Reopen prospect as contacted"
                           >
                             Reopen
@@ -568,37 +570,37 @@ export const CrmPage = () => {
                         </div>
                       ) : (
                         <>
-                          {/* Active Stage Actions */}
-                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-medium gap-1 flex-wrap">
+                          {/* Active Stage Actions Vertical Stack */}
+                          <div className="pt-2 border-t border-slate-100 space-y-1">
                             <button
                               onClick={() => { setSelectedLead(lead); setShowFollowUpModal(true); }}
-                              className="text-slate-600 hover:text-slate-900 flex items-center gap-1 py-0.5 cursor-pointer"
+                              className="w-full flex items-center justify-center gap-1 py-1 px-2 rounded-lg text-[10px] font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
                             >
-                              <PhoneCall className="w-3 h-3 text-emerald-600" />
+                              <PhoneCall className="w-3 h-3 text-emerald-600 shrink-0" />
                               <span>Follow-up</span>
                             </button>
                             <button
                               onClick={() => openQuoteModal(lead)}
-                              className="text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer transition-colors border border-purple-200"
+                              className="w-full flex items-center justify-center gap-1 py-1 px-2 rounded-lg text-[10px] font-semibold text-purple-700 bg-purple-50/80 hover:bg-purple-100 border border-purple-200 transition-colors cursor-pointer"
                               title="Send customized formal quote by email"
                             >
-                              <Send className="w-3 h-3 text-purple-600" />
+                              <Send className="w-3 h-3 text-purple-600 shrink-0" />
                               <span>Send Quote</span>
                             </button>
                             <button
                               onClick={() => { setSelectedLead(lead); setConvertError(''); setShowConvertModal(true); }}
-                              className="text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer font-bold border border-emerald-200"
+                              className="w-full flex items-center justify-center gap-1 py-1 px-2 rounded-lg text-[10px] font-extrabold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer shadow-2xs"
                             >
-                              <UserCheck className="w-3 h-3 text-emerald-600" />
+                              <UserCheck className="w-3 h-3 text-emerald-600 shrink-0" />
                               <span>Convert</span>
                             </button>
                           </div>
 
                           {/* Forward-only Move Stage Selector */}
-                          <div className="pt-1">
+                          <div className="pt-0.5">
                             <CustomSelect
                               value=""
-                              placeholder="Move forward to..."
+                              placeholder="Move stage..."
                               onChange={(e) => {
                                 if (e.target.value) handleStageMove(lead.id, e.target.value);
                               }}
@@ -866,8 +868,12 @@ export const CrmPage = () => {
               <div>
                 <label className="text-slate-700 block mb-1">Select Membership Plan *</label>
                 <CustomSelect
+                  name="planId"
                   value={convertForm.planId}
-                  onChange={(e) => setConvertForm({ ...convertForm, planId: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target?.value || e?.value || e;
+                    setConvertForm({ ...convertForm, planId: val });
+                  }}
                   placeholder="-- Choose Plan --"
                   options={plans.map((p) => ({
                     value: p.id,

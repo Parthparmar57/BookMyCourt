@@ -40,40 +40,41 @@ export const HomePage = () => {
   const plansQuery = usePublicPlans();
   const fallbackPlans = [
     {
-      id: 'gold',
-      name: 'Gold Membership',
-      price: 2999,
-      durationMonths: 1,
-      courtRate: 0,
-      shopDiscountPct: 20,
-      barDiscountPct: 20,
-      maxBookingsDay: 4,
-      popular: true,
-      perks: ['100% Free Court Bookings', '20% Off Gear Shop Purchases', '20% Off Bar & Cafeteria', '14-Day Advance Reservation Window', '4 Daily Booking Slots']
+      id: 'junior',
+      name: 'Junior',
+      price: 4000,
+      durationMonths: 6,
+      courtRate: 100,
+      shopDiscountPct: 15,
+      barDiscountPct: 10,
+      maxBookingsDay: 2,
+      maxAge: 18,
+      popular: false,
+      perks: ['Court Rate: ₹100/hr', 'Pro Shop Discount: 15% OFF', 'Bar & Cafeteria: 10% OFF', 'Up to 2 bookings per day', 'Eligible for players under 18 years']
     },
     {
       id: 'silver',
-      name: 'Silver Membership',
-      price: 1499,
-      durationMonths: 1,
+      name: 'Silver',
+      price: 8000,
+      durationMonths: 6,
       courtRate: 200,
       shopDiscountPct: 10,
-      barDiscountPct: 10,
+      barDiscountPct: 5,
       maxBookingsDay: 2,
       popular: false,
-      perks: ['Discounted Court Rate (₹200/hr)', '10% Off Gear Shop Purchases', '10% Off Bar & Cafeteria', '7-Day Advance Reservation Window', '2 Daily Booking Slots']
+      perks: ['Court Rate: ₹200/hr', 'Pro Shop Discount: 10% OFF', 'Bar & Cafeteria: 5% OFF', 'Up to 2 bookings per day']
     },
     {
-      id: 'junior',
-      name: 'Junior Membership',
-      price: 999,
-      durationMonths: 1,
-      courtRate: 150,
-      shopDiscountPct: 15,
-      barDiscountPct: 10,
-      maxAge: 18,
-      popular: false,
-      perks: ['Special Junior Court Rate (₹150/hr)', 'For Players Under 18 Years', '15% Off Gear Shop', '10% Off Bar & Cafeteria', 'Access to Weekend Junior Mixers']
+      id: 'gold',
+      name: 'Gold',
+      price: 15000,
+      durationMonths: 12,
+      courtRate: 0,
+      shopDiscountPct: 20,
+      barDiscountPct: 15,
+      maxBookingsDay: 2,
+      popular: true,
+      perks: ['Court Rate: 100% FREE', 'Pro Shop Discount: 20% OFF', 'Bar & Cafeteria: 15% OFF', 'Up to 2 bookings per day']
     }
   ];
   const plans = plansQuery.data?.length ? plansQuery.data : fallbackPlans;
@@ -470,7 +471,7 @@ export const HomePage = () => {
                           {formatCurrency(Number(plan.price))}
                         </span>
                         <span className={`text-xs font-bold ${isGold ? 'text-gray-400' : 'text-gray-500'}`}>
-                          / month
+                          / {plan.durationMonths === 12 ? 'year' : plan.durationMonths === 1 ? 'month' : `${plan.durationMonths} mo`}
                         </span>
                       </div>
                     </div>

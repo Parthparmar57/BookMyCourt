@@ -47,7 +47,9 @@ export const getUserById = async (id) => {
       phone: true,
       role: true,
       createdAt: true,
-      member: true,
+      member: {
+        include: { plan: true },
+      },
       employee: true,
     },
   });

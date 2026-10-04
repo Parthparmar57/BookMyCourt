@@ -318,34 +318,66 @@ export const renewMembership = async (memberId, { planId, paymentMode = PAYMENT_
 };
 
 // ─── G3: QR scan lookup ───────────────────────────────────────────────────────
-// The QR payload is the JSON string generated at registration:
-//   JSON.stringify({ memberNo, email, plan })
-// We accept the raw string and resolve the full member profile so the front-desk
-// can identify a member instantly by scanning their QR card.
+// Accepts raw JSON QR payload strings as well as plain memberNo, email, or phone
+// strings so front-desk scanner or manual lookup verifies members seamlessly.
 export const scanMember = async (payload) => {
   if (!payload || typeof payload !== 'string') {
-    throw new ApiError(400, 'QR payload must be a non-empty string');
+    throw new ApiError(400, 'Scan code or payload must be a non-empty string');
   }
 
-  let parsed;
+  const raw = payload.trim();
+  let memberNo = null;
+  let email = null;
+  let phone = null;
+  let id = null;
+
   try {
-    parsed = JSON.parse(payload);
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === 'object' && parsed !== null) {
+      memberNo = parsed.memberNo || null;
+      email = parsed.email || null;
+      phone = parsed.phone || null;
+      id = parsed.id || null;
+    } else if (typeof parsed === 'string') {
+      memberNo = parsed;
+    }
   } catch {
-    throw new ApiError(400, 'Invalid QR payload — expected a JSON string');
+    if (raw.includes('@')) {
+      email = raw;
+    } else if (/^\d{10}$/.test(raw)) {
+      phone = raw;
+    } else {
+      memberNo = raw;
+    }
   }
 
-  const { memberNo, email } = parsed;
+  const searchTerms = new Set();
+  if (raw) searchTerms.add(raw);
+  if (memberNo) searchTerms.add(memberNo);
+  if (email) searchTerms.add(email);
+  if (phone) searchTerms.add(phone);
+  if (id) searchTerms.add(id);
 
-  if (!memberNo && !email) {
-    throw new ApiError(400, 'QR payload must contain memberNo or email');
+  if (email) {
+    if (email.includes('@bookmycourt.com')) searchTerms.add(email.replace('@bookmycourt.com', '@championsclub.com'));
+    if (email.includes('@championsclub.com')) searchTerms.add(email.replace('@championsclub.com', '@bookmycourt.com'));
+  }
+  if (raw.includes('@')) {
+    if (raw.includes('@bookmycourt.com')) searchTerms.add(raw.replace('@bookmycourt.com', '@championsclub.com'));
+    if (raw.includes('@championsclub.com')) searchTerms.add(raw.replace('@championsclub.com', '@bookmycourt.com'));
+  }
+
+  const orConditions = [];
+  for (const term of searchTerms) {
+    orConditions.push({ memberNo: { equals: term, mode: 'insensitive' } });
+    orConditions.push({ id: { equals: term } });
+    orConditions.push({ user: { email: { equals: term, mode: 'insensitive' } } });
+    orConditions.push({ user: { phone: { equals: term } } });
   }
 
   const member = await prisma.member.findFirst({
     where: {
-      OR: [
-        ...(memberNo ? [{ memberNo }] : []),
-        ...(email ? [{ user: { email } }] : []),
-      ],
+      OR: orConditions,
     },
     include: {
       user: { select: { id: true, name: true, email: true, phone: true } },
@@ -359,7 +391,7 @@ export const scanMember = async (payload) => {
     },
   });
 
-  if (!member) throw new ApiError(404, 'No member found for this QR code');
+  if (!member) throw new ApiError(404, `No active member record found for code '${raw}'`);
   const activeTabBalance = (member.tabs || []).reduce(
     (sum, tab) => sum + Number(tab.totalAmount || 0),
     0
@@ -374,7 +406,7 @@ export const updateMember = async (id, data, actorId) => {
   const member = await prisma.member.findUnique({ where: { id }, include: { user: true } });
   if (!member) throw new ApiError(404, 'Member not found');
 
-  const { name, email, phone, emergencyContact, photoUrl, status } = data;
+  const { name, email, phone, emergencyContact, photoUrl, status, planId } = data;
 
   return prisma.$transaction(async (tx) => {
     if (name || email || phone) {
@@ -394,6 +426,7 @@ export const updateMember = async (id, data, actorId) => {
         ...(emergencyContact !== undefined && { emergencyContact }),
         ...(photoUrl !== undefined && { photoUrl }),
         ...(status && { status }),
+        ...(planId && { planId }),
       },
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },

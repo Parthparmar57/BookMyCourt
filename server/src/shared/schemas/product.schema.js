@@ -11,7 +11,7 @@ export const createProductSchema = z.object({
   taxPct: z.coerce.number().min(0).max(100).default(18),
   stock: z.coerce.number().int().min(0).default(0),
   reorderLevel: z.coerce.number().int().min(0).default(5),
-  imageUrl: z.string().url().optional().nullable(),
+  imageUrl: z.string().optional().nullable().transform((v) => (v && v.trim() ? v.trim() : null)),
 });
 
 export const updateProductSchema = createProductSchema.partial();

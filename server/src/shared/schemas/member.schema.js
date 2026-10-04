@@ -20,6 +20,7 @@ export const updateMemberSchema = z.object({
   photoUrl: z.string().url().optional().nullable(),
   emergencyContact: z.string().optional().nullable(),
   status: z.nativeEnum(MEMBER_STATUS).optional(),
+  planId: z.string().uuid().optional(),
 });
 
 export const renewMemberSchema = z.object({

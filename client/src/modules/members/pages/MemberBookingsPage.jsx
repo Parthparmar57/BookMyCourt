@@ -5,6 +5,7 @@ import { useBookings, useCancelBooking } from '../../../hooks/useCourts';
 import { formatDate, formatCurrency } from '../../../shared/utils/formatters';
 import { Calendar, Clock, AlertCircle, XCircle, ArrowLeft, Loader2, Plus, QrCode, Ticket } from 'lucide-react';
 import { BookingPassModal } from '../../../components/booking/BookingPassModal';
+import { toast, confirmToast } from '../../../shared/utils/toast';
 
 export const MemberBookingsPage = () => {
   const { user } = useAuth();
@@ -20,11 +21,19 @@ export const MemberBookingsPage = () => {
   });
 
   const handleCancel = async (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking? The slot will be released.')) {
+    const confirmed = await confirmToast({
+      title: 'Cancel booking',
+      message: 'Are you sure you want to cancel this booking? The slot will be released.',
+      confirmLabel: 'Cancel booking',
+      cancelLabel: 'Keep',
+      danger: true,
+    });
+    if (confirmed) {
       try {
         await cancelBooking.mutateAsync({ id: bookingId, reason: 'Cancelled by member' });
+        toast.success('Booking cancelled.');
       } catch (err) {
-        alert(err?.message || 'Failed to cancel booking');
+        toast.error(err?.message || 'Failed to cancel booking');
       }
     }
   };

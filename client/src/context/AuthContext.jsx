@@ -26,6 +26,8 @@ const withAvatar = (user) => {
     name: cleanName,
     initial,
     memberId: user.memberId || user.member?.id || null,
+    plan: user.member?.plan?.name || user.plan || null,
+    membershipTier: user.member?.plan?.name || user.membershipTier || null,
     avatar:
       user.avatar ||
       `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1b4332&color=ffffff&bold=true&length=1&size=128`,

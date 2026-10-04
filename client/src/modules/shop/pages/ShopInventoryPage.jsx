@@ -8,6 +8,7 @@ import {
   useDeleteProduct,
 } from '../../../hooks/useShop';
 import { formatCurrency } from '../../../shared/utils/formatters';
+import { toast, confirmToast } from '../../../shared/utils/toast';
 import { QueryState } from '../../../shared/components/DataState';
 import { CustomSelect } from '../../../shared/components/CustomSelect';
 import {
@@ -156,7 +157,7 @@ export const ShopInventoryPage = () => {
           price: Number(productForm.price),
           stock: Number(productForm.stock),
           reorderLevel: Number(productForm.reorderLevel),
-          imageUrl: productForm.imageUrl,
+          imageUrl: productForm.imageUrl?.trim() || null,
           description: productForm.description,
         });
       } else {
@@ -167,7 +168,7 @@ export const ShopInventoryPage = () => {
           price: Number(productForm.price),
           stock: Number(productForm.stock),
           reorderLevel: Number(productForm.reorderLevel),
-          imageUrl: productForm.imageUrl,
+          imageUrl: productForm.imageUrl?.trim() || null,
           description: productForm.description,
         });
       }
@@ -180,11 +181,18 @@ export const ShopInventoryPage = () => {
 
   // Delete a catalog product after confirmation.
   const handleDeleteProduct = async (p) => {
-    if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+    const confirmed = await confirmToast({
+      title: 'Delete product',
+      message: `Delete "${p.name}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteProduct.mutateAsync(p.id);
+      toast.success('Product deleted.');
     } catch (err) {
-      alert(err?.message || 'Could not delete product.');
+      toast.error(err?.message || 'Could not delete product.');
     }
   };
 
@@ -664,7 +672,7 @@ export const ShopInventoryPage = () => {
               </div>
 
               <div>
-                <label className="block mb-1">Product Image URL</label>
+                <label className="block mb-1">Product Image URL <span className="text-slate-400 text-[11px] font-normal">(Optional)</span></label>
                 <input
                   value={productForm.imageUrl}
                   onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}

@@ -18,6 +18,7 @@ import {
 } from '../../../hooks/useBar';
 import { formatCurrency } from '../../../shared/utils/formatters';
 import { CustomSelect } from '../../../shared/components/CustomSelect';
+import { toast, confirmToast } from '../../../shared/utils/toast';
 import {
   Coffee,
   Utensils,
@@ -211,7 +212,7 @@ export const BarPage = () => {
       setEditingMenuItem(null);
       setMenuForm({ name: '', category: 'Drinks', price: '', description: '', isAvailable: true });
     } catch (err) {
-      alert(err?.message || 'Error saving menu item');
+      toast.error(err?.message || 'Error saving menu item');
     }
   };
 
@@ -225,7 +226,7 @@ export const BarPage = () => {
       });
       setSettleTabTarget(null);
     } catch (err) {
-      alert(err?.message || 'Could not settle tab.');
+      toast.error(err?.message || 'Could not settle tab.');
     }
   };
 
@@ -834,8 +835,14 @@ export const BarPage = () => {
                     </button>
                     {/* Remove this item from the menu (with confirmation). */}
                     <button
-                      onClick={() => {
-                        if (window.confirm(`Remove "${item.name}" from the menu?`)) {
+                      onClick={async () => {
+                        const confirmed = await confirmToast({
+                          title: 'Remove menu item',
+                          message: `Remove "${item.name}" from the menu?`,
+                          confirmLabel: 'Remove',
+                          danger: true,
+                        });
+                        if (confirmed) {
                           deleteMenuItem.mutate(item.id);
                         }
                       }}
@@ -1092,13 +1099,16 @@ export const BarPage = () => {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                if (!voidReason.trim()) return alert('Please specify a valid reason to void this order.');
+                if (!voidReason.trim()) {
+                  toast.error('Please specify a valid reason to void this order.');
+                  return;
+                }
                 try {
                   await voidBarOrder.mutateAsync({ id: voidTargetOrder.id, reason: voidReason });
                   setVoidTargetOrder(null);
                   setVoidReason('');
                 } catch (err) {
-                  alert(err?.message || 'Could not void order');
+                  toast.error(err?.message || 'Could not void order');
                 }
               }}
               className="space-y-3 text-xs font-semibold"
