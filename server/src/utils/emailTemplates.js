@@ -1,39 +1,9 @@
 /**
- * Branded HTML Email Templates for BookMyCourt.
- * Matches the club's emerald/mint aesthetic with responsive, mobile-ready layout & brand logo header.
+ * Clean, Lightweight White-Background HTML Email Templates for BookMyCourt.
+ * Optimized for high deliverability, fast rendering, and crisp white styling.
  */
 
-import fs from 'fs';
-import path from 'path';
-
-let cachedLogoBase64 = null;
-const getLogoBase64 = () => {
-  if (cachedLogoBase64 !== null) return cachedLogoBase64;
-  try {
-    const primaryPath = path.join(process.cwd(), 'src/assets/bookmycourt_logo.png');
-    let logoPath = fs.existsSync(primaryPath) ? primaryPath : null;
-    if (!logoPath) {
-      const clientPath = path.join(process.cwd(), '../client/public/bookmycourt_logo.png');
-      if (fs.existsSync(clientPath)) logoPath = clientPath;
-    }
-    if (logoPath) {
-      const buf = fs.readFileSync(logoPath);
-      cachedLogoBase64 = `data:image/png;base64,${buf.toString('base64')}`;
-    } else {
-      cachedLogoBase64 = '';
-    }
-  } catch (e) {
-    cachedLogoBase64 = '';
-  }
-  return cachedLogoBase64;
-};
-
 const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => {
-  const logoData = getLogoBase64();
-  const logoHeaderHtml = logoData
-    ? `<img src="${logoData}" alt="BookMyCourt Logo" style="height: 44px; width: auto; max-width: 220px; object-fit: contain; margin-bottom: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));" />`
-    : `<div class="club-badge">BOOKMYCOURT</div>`;
-
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -45,116 +15,125 @@ const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => {
     body {
       margin: 0;
       padding: 0;
-      background-color: #f8fafc;
+      background-color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       color: #1e293b;
       -webkit-font-smoothing: antialiased;
     }
     .wrapper {
       width: 100%;
-      background-color: #f8fafc;
-      padding: 40px 16px;
+      background-color: #ffffff;
+      padding: 20px 10px;
     }
     .container {
-      max-width: 580px;
+      max-width: 560px;
       margin: 0 auto;
       background-color: #ffffff;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
       border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
     }
-    .header {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #047857 100%);
-      padding: 32px 28px;
-      text-align: center;
-      color: #ffffff;
+    .brand-header {
+      padding: 20px 24px;
+      border-bottom: 3px solid #059669;
+      background-color: #ffffff;
     }
-    .club-badge {
-      display: inline-block;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      padding: 4px 12px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-      color: #a7f3d0;
-    }
-    .header h1 {
-      margin: 4px 0 0;
+    .logo-text {
       font-size: 22px;
       font-weight: 800;
+      color: #059669;
       letter-spacing: -0.5px;
-      color: #ffffff;
+      text-decoration: none;
+    }
+    .logo-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: #047857;
+      background-color: #ecfdf5;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-left: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .header {
+      padding: 24px 24px 12px 24px;
+      background-color: #ffffff;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.3px;
     }
     .header p {
       margin: 6px 0 0;
       font-size: 13px;
-      color: #d1fae5;
-      font-weight: 400;
+      color: #64748b;
     }
     .body {
-      padding: 32px 28px;
+      padding: 0 24px 24px 24px;
+      background-color: #ffffff;
     }
     .card {
-      background: #f8fafc;
+      background-color: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      padding: 20px;
-      margin: 20px 0;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 16px 0;
     }
     .badge-pill {
       display: inline-block;
-      padding: 3px 10px;
+      padding: 4px 10px;
       border-radius: 6px;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
     }
-    .badge-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-    .badge-info { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-    .badge-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-amber { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
     .btn-primary {
       display: inline-block;
-      background: #059669;
+      background-color: #059669;
       color: #ffffff !important;
       text-decoration: none;
-      padding: 13px 28px;
-      border-radius: 12px;
+      padding: 12px 24px;
+      border-radius: 8px;
       font-weight: 700;
       font-size: 14px;
-      margin: 18px 0;
+      margin: 16px 0;
       text-align: center;
-      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
     }
     .otp-box {
-      background: #ecfdf5;
-      border: 2px dashed #059669;
-      border-radius: 12px;
+      background-color: #f0fdf4;
+      border: 1.5px dashed #059669;
+      border-radius: 10px;
       padding: 16px;
       text-align: center;
-      margin: 20px 0;
+      margin: 16px 0;
     }
     .otp-code {
       font-size: 32px;
       font-weight: 800;
       letter-spacing: 6px;
-      color: #065f46;
+      color: #047857;
       font-family: monospace;
       margin: 0;
     }
     .table-details {
       width: 100%;
       border-collapse: collapse;
-      margin: 14px 0;
+      margin: 8px 0;
     }
     .table-details td {
-      padding: 8px 0;
+      padding: 10px 0;
       font-size: 13px;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .table-details tr:last-child td {
+      border-bottom: none;
     }
     .table-details td:first-child {
       color: #64748b;
@@ -167,24 +146,24 @@ const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => {
       text-align: right;
     }
     .footer {
-      background-color: #f8fafc;
-      padding: 24px 28px;
+      background-color: #ffffff;
+      padding: 20px 24px;
       border-top: 1px solid #e2e8f0;
       text-align: center;
       font-size: 12px;
       color: #64748b;
-      line-height: 1.6;
-    }
-    .footer strong {
-      color: #334155;
+      line-height: 1.5;
     }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="container">
+      <div class="brand-header">
+        <span class="logo-text">BookMyCourt</span>
+        <span class="logo-tag">SPORTS CLUB</span>
+      </div>
       <div class="header">
-        ${logoHeaderHtml}
         <h1>${title}</h1>
         ${subtitle ? `<p>${subtitle}</p>` : ''}
       </div>
@@ -192,8 +171,7 @@ const baseEmailLayout = ({ title, subtitle, contentHtml, footerNote }) => {
         ${contentHtml}
       </div>
       <div class="footer">
-        <strong>BookMyCourt · Digital Club OS</strong><br>
-        100 Sports Club Boulevard · Tennis, Badminton, Cricket & Padel Facility<br>
+        <strong style="color: #334155;">BookMyCourt · Digital Club OS</strong><br>
         ${footerNote || 'This is an automated operational notification.'}
       </div>
     </div>
@@ -212,7 +190,7 @@ export const getPasswordResetTemplate = ({ name, resetLink, otpCode, expiryMinut
       Hello <strong>${name || 'Member'}</strong>,
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      We received a request to reset your password for your <strong>BookMyCourt</strong> portal account. Use the verification code below or click the reset button to set a new password.
+      We received a request to reset your password for your <strong>BookMyCourt</strong> account. Use the verification code below or click the reset button to set a new password.
     </p>
 
     <div class="otp-box">
@@ -221,11 +199,11 @@ export const getPasswordResetTemplate = ({ name, resetLink, otpCode, expiryMinut
       <div style="font-size: 11px; color: #64748b; margin-top: 6px;">Valid for ${expiryMinutes} minutes</div>
     </div>
 
-    <div style="text-align: center; margin: 24px 0 16px;">
+    <div style="text-align: center; margin: 20px 0 16px;">
       <a href="${resetLink}" class="btn-primary" target="_blank">Reset My Password &rarr;</a>
     </div>
 
-    <div class="card" style="margin-top: 24px; padding: 14px 18px; border-left: 4px solid #f59e0b;">
+    <div class="card" style="margin-top: 20px; padding: 12px 16px; border-left: 4px solid #f59e0b;">
       <div style="font-size: 12px; font-weight: 700; color: #92400e; margin-bottom: 2px;">Security Notice</div>
       <div style="font-size: 12px; color: #78350f; line-height: 1.4;">
         If you did not initiate this request, you can safely ignore this email. Your password will remain unchanged.
@@ -237,7 +215,7 @@ export const getPasswordResetTemplate = ({ name, resetLink, otpCode, expiryMinut
     title: 'Password Reset Request',
     subtitle: 'Secure access to your BookMyCourt account',
     contentHtml,
-    footerNote: 'Need help? Contact our front desk at support@bookmycourt.com',
+    footerNote: 'Need help? Contact front desk support.',
   });
 };
 
@@ -258,7 +236,7 @@ export const getBookingConfirmationTemplate = ({
   const formattedPrice = Number(price) === 0 ? 'FREE (Member Perk)' : `₹${Number(price).toLocaleString('en-IN')}`;
 
   const contentHtml = `
-    <div style="text-align: center; margin-bottom: 20px;">
+    <div style="margin-bottom: 16px;">
       <span class="badge-pill badge-success">Booking Confirmed &#10003;</span>
     </div>
 
@@ -266,7 +244,7 @@ export const getBookingConfirmationTemplate = ({
       Hi <strong>${customerName || 'Player'}</strong>,
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      Your court reservation at <strong>BookMyCourt</strong> has been locked and confirmed. Below are your session details:
+      Your court reservation at <strong>BookMyCourt</strong> has been confirmed. Below are your session details:
     </p>
 
     <div class="card">
@@ -295,12 +273,12 @@ export const getBookingConfirmationTemplate = ({
       </table>
     </div>
 
-    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px; margin: 18px 0; font-size: 13px; color: #166534;">
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin: 16px 0; font-size: 13px; color: #166534;">
       <strong>&#127934; Player Guidelines:</strong>
       <ul style="margin: 6px 0 0; padding-left: 18px; line-height: 1.5;">
         <li>Please arrive 10 minutes prior to your session for check-in.</li>
-        <li>Non-marking sports shoes are mandatory on all indoor courts.</li>
-        <li>Show your booking ID at the Front Desk for swift check-in.</li>
+        <li>Non-marking sports shoes are mandatory on indoor courts.</li>
+        <li>Show your booking ID at the Front Desk upon arrival.</li>
       </ul>
     </div>
   `;
@@ -309,7 +287,7 @@ export const getBookingConfirmationTemplate = ({
     title: 'Court Booking Confirmed',
     subtitle: `${courtName} · ${date} at ${startTime}`,
     contentHtml,
-    footerNote: 'Need to cancel or reschedule? Please manage your booking at least 2 hours in advance.',
+    footerNote: 'Need to manage your reservation? Visit your account dashboard.',
   });
 };
 
@@ -318,7 +296,7 @@ export const getBookingConfirmationTemplate = ({
  */
 export const getEnquiryAcknowledgmentTemplate = ({ name, interest, message }) => {
   const contentHtml = `
-    <div style="text-align: center; margin-bottom: 20px;">
+    <div style="margin-bottom: 16px;">
       <span class="badge-pill badge-info">Inquiry Received &#9993;</span>
     </div>
 
@@ -326,7 +304,7 @@ export const getEnquiryAcknowledgmentTemplate = ({ name, interest, message }) =>
       Dear <strong>${name || 'Visitor'}</strong>,
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      Thank you for reaching out to <strong>BookMyCourt</strong>! We have received your inquiry and our team is already reviewing your request.
+      Thank you for contacting <strong>BookMyCourt</strong>! We have received your inquiry and our team is reviewing your request.
     </p>
 
     <div class="card">
@@ -345,12 +323,8 @@ export const getEnquiryAcknowledgmentTemplate = ({ name, interest, message }) =>
     </div>
 
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      A dedicated front-desk representative will connect with you shortly with our tier packages (Gold, Silver, Junior), court schedules, and trial booking options.
+      A representative will connect with you shortly regarding tier packages, court schedules, and membership options.
     </p>
-
-    <div style="text-align: center; margin-top: 20px;">
-      <a href="tel:+919876543210" class="btn-primary" style="background: #0284c7;">Call Front Desk Directly &rarr;</a>
-    </div>
   `;
 
   return baseEmailLayout({
@@ -375,7 +349,7 @@ export const getQuotationEmailTemplate = ({
   customNotes,
 }) => {
   const contentHtml = `
-    <div style="text-align: center; margin-bottom: 20px;">
+    <div style="margin-bottom: 16px;">
       <span class="badge-pill badge-amber">Official Quotation &#128196;</span>
     </div>
 
@@ -383,11 +357,11 @@ export const getQuotationEmailTemplate = ({
       Dear <strong>${leadName || 'Client'}</strong>,
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      Thank you for your interest in <strong>BookMyCourt</strong>. As discussed with our team, we are delighted to present your customized quotation:
+      Thank you for your interest in <strong>BookMyCourt</strong>. We are pleased to share your customized quotation:
     </p>
 
     <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px;">
         <span style="font-size: 12px; font-weight: 700; color: #64748b;">QUOTE NO: <span style="color: #0f172a; font-family: monospace;">${quotationNo}</span></span>
         <span style="font-size: 12px; color: #64748b;">Valid Until: <strong>${validUntil}</strong></span>
       </div>
@@ -395,29 +369,28 @@ export const getQuotationEmailTemplate = ({
       <table class="table-details">
         <tr>
           <td>Package / Plan</td>
-          <td><strong>${planName || 'Custom Sports Membership Package'}</strong></td>
+          <td><strong>${planName || 'Custom Membership Package'}</strong></td>
         </tr>
         <tr>
           <td>Base Amount</td>
           <td>₹${Number(amount).toLocaleString('en-IN')}</td>
         </tr>
         ${Number(discount) > 0 ? `<tr><td>Special Discount</td><td style="color: #16a34a;">- ₹${Number(discount).toLocaleString('en-IN')}</td></tr>` : ''}
-        <tr style="border-top: 2px solid #cbd5e1;">
-          <td style="font-size: 15px; font-weight: 700; color: #0f172a;">Final Total Amount</td>
-          <td style="font-size: 18px; font-weight: 800; color: #047857;">₹${Number(total).toLocaleString('en-IN')}</td>
+        <tr>
+          <td style="font-size: 14px; font-weight: 700; color: #0f172a;">Final Total Amount</td>
+          <td style="font-size: 16px; font-weight: 800; color: #047857;">₹${Number(total).toLocaleString('en-IN')}</td>
         </tr>
       </table>
 
       ${customNotes ? `
-        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: #475569;">
-          <strong>Notes / Package Inclusions:</strong><br>
-          ${customNotes}
+        <div style="margin-top: 12px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: #475569;">
+          <strong>Package Details:</strong> ${customNotes}
         </div>
       ` : ''}
     </div>
 
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      To accept this quote and activate your membership or trial, simply reply to this email or visit our front desk.
+      To accept this quote and activate your membership, please reply to this email or visit our front desk.
     </p>
   `;
 
@@ -425,7 +398,7 @@ export const getQuotationEmailTemplate = ({
     title: 'Your BookMyCourt Quotation',
     subtitle: `Quotation #${quotationNo} for ${leadName}`,
     contentHtml,
-    footerNote: 'This quote is valid up to the date mentioned above. Subject to club terms & conditions.',
+    footerNote: 'This quote is valid up to the date mentioned above.',
   });
 };
 
@@ -441,22 +414,22 @@ export const getWelcomeMemberEmailTemplate = ({
   startDate,
 }) => {
   const contentHtml = `
-    <div style="text-align: center; margin-bottom: 20px;">
+    <div style="margin-bottom: 16px;">
       <span class="badge-pill badge-success">Membership Activated &#127881;</span>
     </div>
 
-    <p style="font-size: 15px; margin-top: 0; line-height: 1.5;">
+    <p style="font-size: 15px; margin-top: 0; line-height: 1.5; color: #0f172a;">
       Welcome to <strong>BookMyCourt</strong>, <strong>${memberName}</strong>!
     </p>
     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-      Your membership account has been successfully registered. Below are your account credentials to log into our member portal:
+      Your membership account has been registered successfully. Below are your credentials to access the member portal:
     </p>
 
     <div class="card">
       <table class="table-details">
         <tr>
           <td>Member ID</td>
-          <td><strong style="font-family: monospace; color: #047857;">${memberNo}</strong></td>
+          <td><strong style="font-family: monospace; color: #059669;">${memberNo}</strong></td>
         </tr>
         <tr>
           <td>Plan Tier</td>
@@ -467,25 +440,25 @@ export const getWelcomeMemberEmailTemplate = ({
           <td>${startDate || 'Today'}</td>
         </tr>
         <tr>
-          <td>Portal Login Email</td>
+          <td>Login Email</td>
           <td><strong>${email}</strong></td>
         </tr>
         <tr>
-          <td>Portal Password</td>
-          <td><strong style="font-family: monospace; color: #047857; font-size: 16px;">${password}</strong></td>
+          <td>Account Password</td>
+          <td><strong style="font-family: monospace; color: #047857; font-size: 15px; background-color: #ecfdf5; padding: 3px 8px; border-radius: 4px; border: 1px solid #a7f3d0;">${password}</strong></td>
         </tr>
       </table>
     </div>
 
     <p style="font-size: 13px; color: #64748b; line-height: 1.5;">
-      Log into your member portal to reserve court slots, view invoices, book trial sessions, and check cafeteria balances.
+      You can now log into your account to book court slots, view digital passes, check active plans, and manage orders.
     </p>
   `;
 
   return baseEmailLayout({
     title: 'Welcome to BookMyCourt',
-    subtitle: `Membership Account Activated · Member #${memberNo}`,
+    subtitle: `Membership Activated · Member #${memberNo}`,
     contentHtml,
-    footerNote: 'Please keep your credentials confidential. You can change your password anytime after logging in.',
+    footerNote: 'Please keep your credentials safe. You can change your password anytime after logging in.',
   });
 };

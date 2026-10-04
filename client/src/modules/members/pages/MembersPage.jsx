@@ -202,6 +202,15 @@ const PlanTierSelect = ({ value, onChange, plans = [] }) => {
 
 // Normalize a server member (fields live on the user/plan relations) into a flat
 // view model for the table and card.
+const INQUIRY_SOURCE_OPTIONS = [
+  { value: 'WALK_IN', label: 'Walk-in' },
+  { value: 'PHONE_CALL', label: 'Phone Call' },
+  { value: 'INQUIRY_FORM', label: 'Website / Inquiry Form' },
+  { value: 'REFERRAL', label: 'Member Referral' },
+  { value: 'SOCIAL_MEDIA', label: 'Social Media' },
+  { value: 'OTHER', label: 'Other' },
+];
+
 const toView = (m) => ({
   id: m.id,
   memberNo: m.memberNo,
@@ -209,6 +218,7 @@ const toView = (m) => ({
   phone: m.user?.phone || m.phone || '',
   email: m.user?.email || m.email || '',
   emergencyContact: m.emergencyContact || '',
+  inquirySource: m.inquirySource || 'WALK_IN',
   planName: m.plan?.name || m.planName || '—',
   status: m.status || 'ACTIVE',
   qrCode: m.qrCode,
@@ -364,7 +374,7 @@ export const MembersPage = () => {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(memberSchema),
-    defaultValues: { name: '', phone: '', email: '', dob: '', planId: '', startDate: new Date().toISOString().split('T')[0] },
+    defaultValues: { name: '', phone: '', email: '', password: '', dob: '', planId: '', inquirySource: 'WALK_IN', startDate: new Date().toISOString().split('T')[0] },
   });
 
   const planId = watch('planId');
@@ -394,7 +404,7 @@ export const MembersPage = () => {
     }
   };
 
-  const [editFormData, setEditFormData] = useState({ name: '', phone: '', email: '', emergencyContact: '', status: 'ACTIVE' });
+  const [editFormData, setEditFormData] = useState({ name: '', phone: '', email: '', emergencyContact: '', inquirySource: 'WALK_IN', status: 'ACTIVE' });
   const [editError, setEditError] = useState('');
 
   const handleOpenEdit = (m) => {
@@ -405,6 +415,7 @@ export const MembersPage = () => {
       phone: m.phone || '',
       email: m.email || '',
       emergencyContact: m.emergencyContact || '',
+      inquirySource: m.inquirySource || 'WALK_IN',
       status: m.status || 'ACTIVE',
     });
     setEditError('');
@@ -730,6 +741,7 @@ export const MembersPage = () => {
               <Field label="Full Name *" placeholder="e.g. Vikramaditya Singh" error={fieldErr('name')} {...register('name')} />
               <Field label="Phone Number (10 Digits) *" placeholder="9820123456" error={fieldErr('phone')} {...register('phone')} />
               <Field label="Email Address *" type="email" placeholder="user@example.com" error={fieldErr('email')} {...register('email')} />
+              <Field label="Account Password *" type="password" placeholder="Set login password (min 6 characters)" error={fieldErr('password')} {...register('password')} />
               <Field label="Date of Birth *" type="date" error={fieldErr('dob')} {...register('dob')} />
 
               <div>
@@ -747,6 +759,20 @@ export const MembersPage = () => {
                   }))}
                 />
                 {fieldErr('planId') && <p className="text-[11px] text-rose-600 mt-1">{fieldErr('planId')}</p>}
+              </div>
+
+              <div>
+                <label className="block mb-1 font-bold text-slate-700">Inquiry / Registration Source *</label>
+                <CustomSelect
+                  name="inquirySource"
+                  value={watch('inquirySource') || 'WALK_IN'}
+                  onChange={(e) => {
+                    const val = e.target?.value || e?.value || e;
+                    setValue('inquirySource', val, { shouldValidate: true });
+                  }}
+                  options={INQUIRY_SOURCE_OPTIONS}
+                />
+                {fieldErr('inquirySource') && <p className="text-[11px] text-rose-600 mt-1">{fieldErr('inquirySource')}</p>}
               </div>
 
               <button
@@ -820,6 +846,15 @@ export const MembersPage = () => {
                   onChange={(e) => setEditFormData({ ...editFormData, emergencyContact: e.target.value })}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#2e7d32]"
                   placeholder="e.g. Guardian / Relative phone"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Inquiry Source</label>
+                <CustomSelect
+                  value={editFormData.inquirySource || 'WALK_IN'}
+                  onChange={(e) => setEditFormData({ ...editFormData, inquirySource: e.target.value })}
+                  options={INQUIRY_SOURCE_OPTIONS}
                 />
               </div>
 
@@ -926,6 +961,9 @@ export const MembersPage = () => {
                         {selectedMember.email}
                       </span>
                     )}
+                    <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200">
+                      Source: {INQUIRY_SOURCE_OPTIONS.find(o => o.value === selectedMember.inquirySource)?.label || selectedMember.inquirySource || 'Walk-in'}
+                    </span>
                   </div>
                 </div>
               </div>

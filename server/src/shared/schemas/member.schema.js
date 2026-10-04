@@ -11,6 +11,7 @@ export const registerMemberSchema = z.object({
   startDate: z.coerce.date().default(() => new Date()),
   photoUrl: z.string().url().optional().nullable(),
   emergencyContact: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number').optional().nullable(),
+  inquirySource: z.enum(['WALK_IN', 'PHONE_CALL', 'INQUIRY_FORM', 'REFERRAL', 'SOCIAL_MEDIA', 'OTHER']).default('WALK_IN'),
 });
 
 export const updateMemberSchema = z.object({
@@ -19,6 +20,7 @@ export const updateMemberSchema = z.object({
   email: z.string().email().optional(),
   photoUrl: z.string().url().optional().nullable(),
   emergencyContact: z.string().optional().nullable(),
+  inquirySource: z.enum(['WALK_IN', 'PHONE_CALL', 'INQUIRY_FORM', 'REFERRAL', 'SOCIAL_MEDIA', 'OTHER']).optional(),
   status: z.nativeEnum(MEMBER_STATUS).optional(),
   planId: z.string().uuid().optional(),
 });

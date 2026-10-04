@@ -207,6 +207,7 @@ model Member {
   dob                  DateTime
   emergencyContact     String?
   photoUrl             String?
+  inquirySource        String              @default("WALK_IN")
   status               MemberStatus        @default(ACTIVE)
   qrCode               String?
   startDate            DateTime
